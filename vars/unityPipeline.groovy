@@ -38,7 +38,6 @@ def call(body) {
             STEAM_ID = "${args.STEAM_ID}"
             STEAM_DEPOTS = "${args.STEAM_DEPOTS}"
             STEAM_BRANCH = env.BRANCH_NAME.replace("\\", "-")
-            STEAM_CREDS = ''
             
             // configuration for deploying to itch
             ITCH_ID = "${args.ITCH_ID}"
@@ -63,7 +62,6 @@ def call(body) {
                     PROJECT_VERSION = sh(script: "$COMPOSE_UNITY autoversion '$PROJECT_AUTOVERSION' '$WORKSPACE'", returnStdout: true).trim()
                 }
                 steps {
-                    echo 'Setting project version to "$PROJECT_VERSION"...'
                     sh '$COMPOSE_UNITY unity-project-version "$PROJECT" set "$PROJECT_VERSION"'
                 }
             }
@@ -174,7 +172,11 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY steam-buildfile "$BUILDS" "$LOGS" $STEAM_ID $STEAM_DEPOTS $STEAM_BRANCH 1>"$BUILDS/build.vdf"'
-                                sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "$BUILDS/build.vdf" +quit'
+                                script {
+                                    withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
+                                        sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "$BUILDS/build.vdf" +quit'
+                                    }
+                                }
                             }
                         }
                     }
