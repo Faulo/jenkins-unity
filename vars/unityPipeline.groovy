@@ -67,10 +67,7 @@ def call(body) {
             stage('Testing') {
                 when {
                     not {
-                        anyOf {
-                            environment name: 'TEST_MODES', value: ''
-                            environment name: 'TEST_MODES', value: '0'
-                        }
+                        environment name: 'TEST_MODES', value: ''
                     }
                 }
                 steps {
