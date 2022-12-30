@@ -1,8 +1,8 @@
 def call(body) {
     // evaluate the body block, and collect configuration into the object
-    def pipelineParams= [:]
+    def args= [:]
     body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = pipelineParams
+    body.delegate = args
     body()
     
     pipeline {
@@ -10,10 +10,10 @@ def call(body) {
         
         environment { 
             // define unity project location relative to repository
-            PROJECT = "${env.WORKSPACE}"
+            PROJECT = "${env.WORKSPACE}/${args.PROJECT_LOCATION}"
             
             // use auto-versioning based on tags+commits
-            PROJECT_AUTOVERSION = ''
+            PROJECT_AUTOVERSION = args.PROJECT_AUTOVERSION
             
             // temporary folders
             REPORTS = "${env.WORKSPACE}/reports"
@@ -21,28 +21,28 @@ def call(body) {
             LOGS = "${env.WORKSPACE}/logs"
             
             // which Unity Test Runner modes to execute
-            TEST_MODES = 'EditMode PlayMode'
+            TEST_MODES = args.TEST_MODES
             
             // which executables to create
-            BUILD_FOR_WINDOWS = '1'
-            BUILD_FOR_LINUX = '1'
-            BUILD_FOR_MAC = '1'
-            BUILD_FOR_WEBGL = '1'
-            BUILD_FOR_ANDROID = '1'
+            BUILD_FOR_WINDOWS = args.BUILD_FOR_WINDOWS
+            BUILD_FOR_LINUX = args.BUILD_FOR_LINUX
+            BUILD_FOR_MAC = args.BUILD_FOR_MAC
+            BUILD_FOR_WEBGL = args.BUILD_FOR_WEBGL
+            BUILD_FOR_ANDROID = args.BUILD_FOR_ANDROID
             
             // which platforms to deploy to
-            DEPLOY_TO_STEAM = '0'
-            DEPLOY_TO_ITCH = '1'
+            DEPLOY_TO_STEAM = args.DEPLOY_TO_STEAM
+            DEPLOY_TO_ITCH = args.DEPLOY_TO_ITCH
             
             // configration for deploying to steam
-            STEAM_ID = ''
-            STEAM_DEPOTS = ''
+            STEAM_ID = args.STEAM_ID
+            STEAM_DEPOTS = args.STEAM_DEPOTS
             STEAM_BRANCH = env.BRANCH_NAME.replace("\\", "-")
-            STEAM_CREDS = credentials('Faulo-Steam')
+            STEAM_CREDS = ''
             
             // configuration for deploying to itch
-            ITCH_ID = 'faulo/mizu-kiri'
-            BUTLER_API_KEY = credentials('Faulo-itch.io')
+            ITCH_ID = args.ITCH_ID
+            BUTLER_API_KEY = ''
         }
         
         stages {
