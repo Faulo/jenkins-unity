@@ -170,8 +170,8 @@ def call(body) {
                         }
                         steps {
                             dir(env.BUILDS) {
-                                sh '$COMPOSE_UNITY steam-buildfile "$BUILDS" "$LOGS" $STEAM_ID $STEAM_DEPOTS $STEAM_BRANCH 1>"$BUILDS/build.vdf"'
                                 script {
+                                    sh '$COMPOSE_UNITY steam-buildfile "$BUILDS" "$LOGS" $STEAM_ID $STEAM_DEPOTS $STEAM_BRANCH 1>"$BUILDS/build.vdf"'
                                     withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
                                         sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "$BUILDS/build.vdf" +quit'
                                     }
@@ -184,56 +184,23 @@ def call(body) {
                             environment name: 'DEPLOY_TO_ITCH', value: '1'
                         }
                         steps {
-                            script {
-                                withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
-                                    stage('Deploy for: Windows') {
-                                        when {
-                                            environment name: 'BUILD_FOR_WINDOWS', value: '1'
+                            dir(env.BUILDS) {
+                                script {
+                                    withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
+                                        if (env.BUILD_FOR_WINDOWS == '1') {
+                                            sh 'butler push build-windows $ITCH_ID:windows-x64'
                                         }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-windows $ITCH_ID:windows-x64'
-                                            }
+                                        if (env.BUILD_FOR_LINUX == '1') {
+                                            sh 'butler push build-linux $ITCH_ID:linux-x64'
                                         }
-                                    }
-                                    stage('Deploy for: Linux') {
-                                        when {
-                                            environment name: 'BUILD_FOR_LINUX', value: '1'
+                                        if (env.BUILD_FOR_MAC == '1') {
+                                            sh 'butler push build-mac $ITCH_ID:mac-x64'
                                         }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-linux $ITCH_ID:linux-x64'
-                                            }
+                                        if (env.BUILD_FOR_WEBGL == '1') {
+                                            sh 'butler push build-webgl $ITCH_ID:html'
                                         }
-                                    }
-                                    stage('Deploy for: Mac') {
-                                        when {
-                                            environment name: 'BUILD_FOR_MAC', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-mac $ITCH_ID:mac-x64'
-                                            }
-                                        }
-                                    }
-                                    stage('Deploy for: WebGL') {
-                                        when {
-                                            environment name: 'BUILD_FOR_WEBGL', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-webgl $ITCH_ID:html'
-                                            }
-                                        }
-                                    }
-                                    stage('Deploy for: Android') {
-                                        when {
-                                            environment name: 'BUILD_FOR_ANDROID', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-android.apk $ITCH_ID:android'
-                                            }
+                                        if (env.BUILD_FOR_ANDROID == '1') {
+                                            sh 'butler push build-android.apk $ITCH_ID:android'
                                         }
                                     }
                                 }
