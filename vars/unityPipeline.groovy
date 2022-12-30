@@ -183,56 +183,58 @@ def call(body) {
                         when {
                             environment name: 'DEPLOY_TO_ITCH', value: '1'
                         }
-                        script {
-                            withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
-                                stages {
-                                    stage('Deploy for: Windows') {
-                                        when {
-                                            environment name: 'BUILD_FOR_WINDOWS', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-windows $ITCH_ID:windows-x64'
+                        steps {
+                            script {
+                                withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
+                                    stages {
+                                        stage('Deploy for: Windows') {
+                                            when {
+                                                environment name: 'BUILD_FOR_WINDOWS', value: '1'
+                                            }
+                                            steps {
+                                                dir(env.BUILDS) {
+                                                    sh 'butler push build-windows $ITCH_ID:windows-x64'
+                                                }
                                             }
                                         }
-                                    }
-                                    stage('Deploy for: Linux') {
-                                        when {
-                                            environment name: 'BUILD_FOR_LINUX', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-linux $ITCH_ID:linux-x64'
+                                        stage('Deploy for: Linux') {
+                                            when {
+                                                environment name: 'BUILD_FOR_LINUX', value: '1'
+                                            }
+                                            steps {
+                                                dir(env.BUILDS) {
+                                                    sh 'butler push build-linux $ITCH_ID:linux-x64'
+                                                }
                                             }
                                         }
-                                    }
-                                    stage('Deploy for: Mac') {
-                                        when {
-                                            environment name: 'BUILD_FOR_MAC', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-mac $ITCH_ID:mac-x64'
+                                        stage('Deploy for: Mac') {
+                                            when {
+                                                environment name: 'BUILD_FOR_MAC', value: '1'
+                                            }
+                                            steps {
+                                                dir(env.BUILDS) {
+                                                    sh 'butler push build-mac $ITCH_ID:mac-x64'
+                                                }
                                             }
                                         }
-                                    }
-                                    stage('Deploy for: WebGL') {
-                                        when {
-                                            environment name: 'BUILD_FOR_WEBGL', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-webgl $ITCH_ID:html'
+                                        stage('Deploy for: WebGL') {
+                                            when {
+                                                environment name: 'BUILD_FOR_WEBGL', value: '1'
+                                            }
+                                            steps {
+                                                dir(env.BUILDS) {
+                                                    sh 'butler push build-webgl $ITCH_ID:html'
+                                                }
                                             }
                                         }
-                                    }
-                                    stage('Deploy for: Android') {
-                                        when {
-                                            environment name: 'BUILD_FOR_ANDROID', value: '1'
-                                        }
-                                        steps {
-                                            dir(env.BUILDS) {
-                                                sh 'butler push build-android.apk $ITCH_ID:android'
+                                        stage('Deploy for: Android') {
+                                            when {
+                                                environment name: 'BUILD_FOR_ANDROID', value: '1'
+                                            }
+                                            steps {
+                                                dir(env.BUILDS) {
+                                                    sh 'butler push build-android.apk $ITCH_ID:android'
+                                                }
                                             }
                                         }
                                     }
