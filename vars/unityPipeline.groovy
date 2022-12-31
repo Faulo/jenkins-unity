@@ -8,6 +8,11 @@ def call(body) {
     pipeline {
         agent any
         
+        options {
+            disableConcurrentBuilds()
+            disableResume()
+        }
+        
         environment { 
             // define unity project location relative to repository
             PROJECT = "${env.WORKSPACE}/${args.PROJECT_LOCATION}"
