@@ -30,14 +30,14 @@ def call(body) {
     
     if (args.PROJECT_AUTOVERSION != "") {
         stage("Versioning") {
-            def version = sh(script: "$COMPOSE_UNITY autoversion '${args.PROJECT_AUTOVERSION}' '$WORKSPACE'", returnStdout: true).trim()
-            composeUnity "unity-project-version '${args.PROJECT}' set '${version}'"
+            def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '\$WORKSPACE'"
+            callUnity "unity-project-version '${args.PROJECT}' set '${version}'"
         }
     }
     
     if (args.TEST_MODES != "") {
         stage("Testing") {
-            composeUnity "unity-tests '${args.PROJECT}' ${args.TEST_MODES} 1>'$REPORTS/tests.xml'"
+            callUnity "unity-tests '${args.PROJECT}' ${args.TEST_MODES} 1>'${args.REPORTS}/tests.xml'"
             junit 'reports/tests.xml'
         }
     }
