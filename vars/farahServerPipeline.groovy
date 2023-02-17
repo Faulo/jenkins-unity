@@ -38,7 +38,7 @@ def call(body) {
                 steps {
                     dir("$VHOST") {
                         checkout scm
-                        bat "git checkout --force origin/$BRANCH_NAME"
+                        bat "git checkout --force -B $BRANCH_NAME origin/$BRANCH_NAME"
                         bat "$PHP composer.phar update --no-interaction --no-dev"
                     }
                 }
