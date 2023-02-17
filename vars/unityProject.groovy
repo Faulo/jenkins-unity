@@ -49,7 +49,7 @@ def call(body) {
         
         if (args.BUILD_FOR_WINDOWS == '1') {
             stage('Build for: Windows') {
-                callUnity "unity-build '$PROJECT' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
+                callUnity "unity-build '${project}' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
                 junit 'reports/build-windwos.xml'
                 sh 'zip -r build-windows.zip build-windows'                          
                 archiveArtifacts artifacts: 'builds/build-windows.zip'
@@ -58,7 +58,7 @@ def call(body) {
         
         if (args.BUILD_FOR_LINUX == '1') {
             stage('Build for: Linux') {
-                callUnity "unity-build '$PROJECT' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
+                callUnity "unity-build '${project}' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
                 junit 'reports/build-linux.xml'
                 sh 'zip -r build-linux.zip build-linux'                     
                 archiveArtifacts artifacts: 'builds/build-linux.zip'                
