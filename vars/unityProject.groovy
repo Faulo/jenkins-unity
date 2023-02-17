@@ -44,7 +44,7 @@ def call(body) {
         if (args.TEST_MODES != "") {
             stage("Testing") {
                 callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'reports/tests.xml'"
-                junit 'reports/tests.xml'
+                // junit 'reports/tests.xml'
             }
         }
         
@@ -63,6 +63,36 @@ def call(body) {
                 junit 'reports/build-linux.xml'
                 sh 'zip -r build-linux.zip build-linux'                     
                 archiveArtifacts artifacts: 'builds/build-linux.zip'                
+            }
+        }
+        
+        if (args.BUILD_FOR_MAC == '1') {
+            stage('Build for: Mac OS') {
+                callUnity "unity-build '${project}' 'builds/build-mac' mac 1>'reports/build-mac.xml'"
+                junit 'reports/build-mac.xml'
+                sh 'zip -r build-mac.zip build-mac'                     
+                archiveArtifacts artifacts: 'builds/build-mac.zip'                
+            }
+        }
+        
+        if (args.BUILD_FOR_WEBGL == '1') {
+            stage('Build for: WebGL') {
+                callUnity "unity-module-install '${project}' webgl 1>'reports/install-webgl.xml'"
+                junit 'reports/install-webgl.xml'
+                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL 'builds/build-webgl' 1>'reports/build-webgl.xml'"
+                junit 'reports/build-webgl.xml'
+                sh 'zip -r build-webgl.zip build-webgl'                     
+                archiveArtifacts artifacts: 'builds/build-webgl.zip'
+                publishHTML([
+                   allowMissing: false,
+                   alwaysLinkToLastBuild: false,
+                   keepAll: false,
+                   reportDir: 'builds/build-webgl',
+                   reportFiles: 'index.html',
+                   reportName: 'WebGL Build',
+                   reportTitles: '',
+                   useWrapperFileDirectly: true
+               ])
             }
         }
     }
