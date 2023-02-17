@@ -27,6 +27,7 @@ def call(body) {
         
         def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
         
+        checkout scm
         
         stage('Folder (re)creation') {
             sh 'rm -rf reports builds logs'
