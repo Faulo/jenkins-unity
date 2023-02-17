@@ -28,17 +28,19 @@ def call(body) {
     body.delegate = args
     body()
     
+    def project = "$WORKSPACE/{args.PROJECT_LOCATION}"
+    
     node {
         if (args.PROJECT_AUTOVERSION != "") {
             stage("Versioning") {
                 def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '$WORKSPACE'"
-                callUnity "unity-project-version '${args.PROJECT}' set '${version}'"
+                callUnity "unity-project-version '${project}' set '${version}'"
             }
         }
         
         if (args.TEST_MODES != "") {
             stage("Testing") {
-                callUnity "unity-tests '${args.PROJECT}' ${args.TEST_MODES} 1>'${args.REPORTS}/tests.xml'"
+                callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${args.REPORTS}/tests.xml'"
                 junit 'reports/tests.xml'
             }
         }
