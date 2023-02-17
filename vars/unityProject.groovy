@@ -92,8 +92,11 @@ def call(body) {
                    ])
                 }
             }
+        } catch (err) {
+            currentBuild.result = "FAILURE"
+            throw err
         } finally {
-            junit 'reports/*.xml'
+            junit(testResults: 'reports/tests.xml', allowEmptyResults: true)
         }
     }
 }
