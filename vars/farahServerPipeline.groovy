@@ -22,7 +22,7 @@ def call(body) {
         stages {
             stage('Install dependencies') { 
                 steps {
-                    bat "$PHP composer.phar update --no-interaction --no-dev"
+                    bat "$PHP composer.phar update --no-interaction"
                 }
             }
             stage('Run PHPUnit') { 
