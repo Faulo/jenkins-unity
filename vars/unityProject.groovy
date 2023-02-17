@@ -14,7 +14,7 @@ def call(body) {
         DEPLOY_TO_STEAM : "0",
         STEAM_ID : "",
         STEAM_DEPOTS : "",
-        STEAM_BRANCH : "$BRANCH_NAME".replace("\\", "-"),
+        STEAM_BRANCH : "${env.BRANCH_NAME}".replace("\\", "-"),
         
         DEPLOY_TO_ITCH : "0",
         ITCH_ID : "",
@@ -94,7 +94,7 @@ def call(body) {
             }
         }
         
-        if (args.DEPLOYMENT_BRANCHES.contains("$BRANCH_NAME")) {
+        if (args.DEPLOYMENT_BRANCHES.contains("${env.BRANCH_NAME}")) {
             if (args.DEPLOY_TO_STEAM == '1') {
                 stage('Deploy to: Steam') {
                     dir('builds') {
