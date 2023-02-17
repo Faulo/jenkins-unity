@@ -15,7 +15,7 @@ def call(body) {
             DEPLOY_TO_STEAM : "0",
             STEAM_ID : "",
             STEAM_DEPOTS : "",
-            STEAM_BRANCH : "${env.BRANCH_NAME}".replace("\\", "-"),
+            STEAM_BRANCH : "$BRANCH_NAME".replace("\\", "-"),
             
             DEPLOY_TO_ITCH : "0",        
             ITCH_ID : "",
@@ -28,7 +28,7 @@ def call(body) {
         def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
         
         stage('Checkout') {
-            // checkout scm
+            checkout scm
         }
         
         stage('Folder (re)creation') {
@@ -88,12 +88,20 @@ def call(body) {
                    ])
                 }
             }
+            
+            if (args.BUILD_FOR_ANDROID == '1') {
+                stage('Build for: Android') {
+                    callUnity "unity-module-install '${project}' android 1>'reports/install-android.xml'"
+                    callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android 'builds/build-android.apk' 1>'reports/build-android.xml'"
+                    sh 'zip -r build-android.zip build-android.apk'
+                }
+            }
         } catch (err) {
             currentBuild.result = "FAILURE"
             throw err
         } finally {
-            junit(testResults: 'reports/tests.xml', allowEmptyResults: true)    
-            archiveArtifacts(artifacts: 'builds/build-*.*', allowEmptyArchive: true)
+            junit(testResults: 'reports/*.xml', allowEmptyResults: true)    
+            archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
         }
     }
 }
