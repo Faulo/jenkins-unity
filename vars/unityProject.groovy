@@ -18,7 +18,7 @@ def call(body) {
         DEPLOY_TO_STEAM : "0",
         STEAM_ID : "",
         STEAM_DEPOTS : "",
-        STEAM_BRANCH : env.BRANCH_NAME.replace("\\", "-"),
+        STEAM_BRANCH : "${env.BRANCH_NAME}".replace("\\", "-"),
         
         DEPLOY_TO_ITCH : "0",        
         ITCH_ID : "",
