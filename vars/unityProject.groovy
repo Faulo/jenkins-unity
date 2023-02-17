@@ -27,7 +27,9 @@ def call(body) {
         
         def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
         
-        checkout scm
+        stage('Checkout') {
+            checkout scm
+        }
         
         stage('Folder (re)creation') {
             sh 'rm -rf reports builds logs'
@@ -44,14 +46,12 @@ def call(body) {
         if (args.TEST_MODES != "") {
             stage("Testing") {
                 callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'reports/tests.xml'"
-                junit(testResults: 'reports/tests.xml', allowEmptyResults: true)
             }
         }
         
         if (args.BUILD_FOR_WINDOWS == '1') {
             stage('Build for: Windows') {
                 callUnity "unity-build '${project}' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
-                junit 'reports/build-windwos.xml'
                 sh 'zip -r build-windows.zip build-windows'                          
                 archiveArtifacts artifacts: 'builds/build-windows.zip'
             }
@@ -60,7 +60,6 @@ def call(body) {
         if (args.BUILD_FOR_LINUX == '1') {
             stage('Build for: Linux') {
                 callUnity "unity-build '${project}' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
-                junit 'reports/build-linux.xml'
                 sh 'zip -r build-linux.zip build-linux'                     
                 archiveArtifacts artifacts: 'builds/build-linux.zip'                
             }
@@ -69,7 +68,6 @@ def call(body) {
         if (args.BUILD_FOR_MAC == '1') {
             stage('Build for: Mac OS') {
                 callUnity "unity-build '${project}' 'builds/build-mac' mac 1>'reports/build-mac.xml'"
-                junit 'reports/build-mac.xml'
                 sh 'zip -r build-mac.zip build-mac'                     
                 archiveArtifacts artifacts: 'builds/build-mac.zip'                
             }
@@ -78,9 +76,7 @@ def call(body) {
         if (args.BUILD_FOR_WEBGL == '1') {
             stage('Build for: WebGL') {
                 callUnity "unity-module-install '${project}' webgl 1>'reports/install-webgl.xml'"
-                junit 'reports/install-webgl.xml'
                 callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL 'builds/build-webgl' 1>'reports/build-webgl.xml'"
-                junit 'reports/build-webgl.xml'
                 sh 'zip -r build-webgl.zip build-webgl'                     
                 archiveArtifacts artifacts: 'builds/build-webgl.zip'
                 publishHTML([
@@ -93,6 +89,12 @@ def call(body) {
                    reportTitles: '',
                    useWrapperFileDirectly: true
                ])
+            }
+        }
+        
+        post {
+            always {
+                junit 'reports/*.xml'
             }
         }
     }
