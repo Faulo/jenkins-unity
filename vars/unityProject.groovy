@@ -20,8 +20,8 @@ def call(body) {
         STEAM_DEPOTS : "",
         STEAM_BRANCH : env.BRANCH_NAME.replace("\\", "-"),
         
-        DEPLOY_TO_ITCH = "${args.DEPLOY_TO_ITCH}",        
-        ITCH_ID = "",
+        DEPLOY_TO_ITCH : "0",        
+        ITCH_ID : "",
     ]
     
     body.resolveStrategy = Closure.DELEGATE_FIRST
