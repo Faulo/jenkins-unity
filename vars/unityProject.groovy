@@ -28,7 +28,7 @@ def call(body) {
         def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
         
         stage('Checkout') {
-            checkout scm
+            // checkout scm
         }
         
         stage('Folder (re)creation') {
