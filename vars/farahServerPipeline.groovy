@@ -16,7 +16,7 @@ def call(body) {
         
         environment {
             PHP = "${env.PHP_ROOT}${args.PHP_VERSION}\\php.exe"
-            VHOST = "${env.VHOST_ROOT}\\${args.VHOST_PATH}"
+            VHOST = "${env.VHOST_ROOT}\\${args.VHOST_NAME}"
         }
         
         stages {
