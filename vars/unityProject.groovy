@@ -93,7 +93,7 @@ def call(body) {
             throw err
         } finally {
             junit(testResults: 'reports/tests.xml', allowEmptyResults: true)    
-            archiveArtifacts artifacts: 'builds/build-*.*'
+            archiveArtifacts(artifacts: 'builds/build-*.*', allowEmptyArchive: true)
         }
     }
 }
