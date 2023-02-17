@@ -44,7 +44,7 @@ def call(body) {
         if (args.TEST_MODES != "") {
             stage("Testing") {
                 callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'reports/tests.xml'"
-                // junit 'reports/tests.xml'
+                junit(testResults: 'reports/tests.xml', allowEmptyResults: true)
             }
         }
         
