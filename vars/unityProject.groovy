@@ -31,7 +31,7 @@ def call(body) {
     node {
         if (args.PROJECT_AUTOVERSION != "") {
             stage("Versioning") {
-                def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '\$WORKSPACE'"
+                def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '$WORKSPACE'"
                 callUnity "unity-project-version '${args.PROJECT}' set '${version}'"
             }
         }
