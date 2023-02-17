@@ -53,24 +53,21 @@ def call(body) {
             if (args.BUILD_FOR_WINDOWS == '1') {
                 stage('Build for: Windows') {
                     callUnity "unity-build '${project}' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
-                    sh 'zip -r build-windows.zip build-windows'                          
-                    archiveArtifacts artifacts: 'builds/build-windows.zip'
+                    sh 'zip -r build-windows.zip build-windows'
                 }
             }
             
             if (args.BUILD_FOR_LINUX == '1') {
                 stage('Build for: Linux') {
                     callUnity "unity-build '${project}' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
-                    sh 'zip -r build-linux.zip build-linux'                     
-                    archiveArtifacts artifacts: 'builds/build-linux.zip'                
+                    sh 'zip -r build-linux.zip build-linux'
                 }
             }
             
             if (args.BUILD_FOR_MAC == '1') {
                 stage('Build for: Mac OS') {
                     callUnity "unity-build '${project}' 'builds/build-mac' mac 1>'reports/build-mac.xml'"
-                    sh 'zip -r build-mac.zip build-mac'                     
-                    archiveArtifacts artifacts: 'builds/build-mac.zip'                
+                    sh 'zip -r build-mac.zip build-mac'          
                 }
             }
             
@@ -78,8 +75,7 @@ def call(body) {
                 stage('Build for: WebGL') {
                     callUnity "unity-module-install '${project}' webgl 1>'reports/install-webgl.xml'"
                     callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL 'builds/build-webgl' 1>'reports/build-webgl.xml'"
-                    sh 'zip -r build-webgl.zip build-webgl'                     
-                    archiveArtifacts artifacts: 'builds/build-webgl.zip'
+                    sh 'zip -r build-webgl.zip build-webgl'                 
                     publishHTML([
                        allowMissing: false,
                        alwaysLinkToLastBuild: false,
@@ -96,7 +92,8 @@ def call(body) {
             currentBuild.result = "FAILURE"
             throw err
         } finally {
-            junit(testResults: 'reports/tests.xml', allowEmptyResults: true)
+            junit(testResults: 'reports/tests.xml', allowEmptyResults: true)    
+            archiveArtifacts artifacts: 'builds/build-*.*'
         }
     }
 }
