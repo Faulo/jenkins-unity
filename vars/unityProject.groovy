@@ -29,7 +29,7 @@ def call(body) {
         body.delegate = args
         body()
         
-        def project = "${env.WORKSPACE}/${args.PROJECT_LOCATION}"
+        def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
     
         if (args.PROJECT_AUTOVERSION != "") {
             stage("Versioning") {
