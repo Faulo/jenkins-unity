@@ -4,10 +4,6 @@ def call(body) {
             PROJECT_LOCATION : "",
             PROJECT_AUTOVERSION : "",
             
-            REPORTS : "${env.WORKSPACE}/reports",
-            BUILDS : "${env.WORKSPACE}/builds",
-            LOGS : "${env.WORKSPACE}/logs",
-            
             TEST_MODES : "",
             
             BUILD_FOR_WINDOWS : "0",
@@ -33,8 +29,8 @@ def call(body) {
         
         
         stage('Folder (re)creation') {
-            sh 'rm -rf "$REPORTS" "$BUILDS" "$LOGS"'
-            sh 'mkdir -p "$REPORTS" "$BUILDS" "$LOGS"'
+            sh 'rm -rf reports builds logs'
+            sh 'mkdir -p reports builds logs'
         }
         
         if (args.PROJECT_AUTOVERSION != "") {
@@ -46,14 +42,14 @@ def call(body) {
         
         if (args.TEST_MODES != "") {
             stage("Testing") {
-                callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${args.REPORTS}/tests.xml'"
+                callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'reports/tests.xml'"
                 junit 'reports/tests.xml'
             }
         }
         
         if (args.BUILD_FOR_WINDOWS == '1') {
             stage('Build for: Windows') {
-                callUnity "unity-build '$PROJECT' '$BUILDS/build-windows' windows 1>'$REPORTS/build-windows.xml'"
+                callUnity "unity-build '$PROJECT' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
                 junit 'reports/build-windwos.xml'
                 sh 'zip -r build-windows.zip build-windows'                          
                 archiveArtifacts artifacts: 'builds/build-windows.zip'
@@ -62,7 +58,7 @@ def call(body) {
         
         if (args.BUILD_FOR_LINUX == '1') {
             stage('Build for: Linux') {
-                callUnity "unity-build '$PROJECT' '$BUILDS/build-linux' linux 1>'$REPORTS/build-linux.xml'"
+                callUnity "unity-build '$PROJECT' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
                 junit 'reports/build-linux.xml'
                 sh 'zip -r build-linux.zip build-linux'                     
                 archiveArtifacts artifacts: 'builds/build-linux.zip'                
