@@ -78,6 +78,7 @@ def call(body) {
                 steps {
                     echo 'Running tests....'
                     sh '$COMPOSE_UNITY unity-tests "$PROJECT" $TEST_MODES 1>"$REPORTS/tests.xml"'
+                    junit 'reports/tests.xml'
                 }
             }
             stage('Delivery') {
@@ -89,6 +90,7 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY unity-build "$PROJECT" "$BUILDS/build-windows" windows 1>"$REPORTS/build-windows.xml"'
+                                junit 'reports/build-windwos.xml'
                                 sh 'zip -r build-windows.zip build-windows'
                             }
                         }
@@ -100,6 +102,7 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY unity-build "$PROJECT" "$BUILDS/build-linux" linux 1>"$REPORTS/build-linux.xml"'
+                                junit 'reports/build-linux.xml'
                                 sh 'zip -r build-linux.zip build-linux'
                             }
                         }
@@ -111,6 +114,7 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY unity-build "$PROJECT" "$BUILDS/build-mac" mac 1>"$REPORTS/build-mac.xml"'
+                                junit 'reports/build-mac.xml'
                                 sh 'zip -r build-mac.zip build-mac'
                             }
                         }
@@ -122,7 +126,9 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY unity-module-install "$PROJECT" webgl 1>"$REPORTS/install-webgl.xml"'
+                                junit 'reports/install-webgl.xml'
                                 sh '$COMPOSE_UNITY unity-method "$PROJECT" Slothsoft.UnityExtensions.Editor.Build.WebGL "$BUILDS/build-webgl" 1>"$REPORTS/build-webgl.xml"'
+                                junit 'reports/build-webgl.xml'
                                 sh 'zip -r build-webgl.zip build-webgl'
                             }
                         }
@@ -149,7 +155,9 @@ def call(body) {
                         steps {
                             dir(env.BUILDS) {
                                 sh '$COMPOSE_UNITY unity-module-install "$PROJECT" android 1>"$REPORTS/install-android.xml"'
+                                junit 'reports/install-android.xml'
                                 sh '$COMPOSE_UNITY unity-method "$PROJECT" Slothsoft.UnityExtensions.Editor.Build.Android "$BUILDS/build-android.apk" 1>"$REPORTS/build-android.xml"'
+                                junit 'reports/build-android.xml'
                                 sh 'zip -r build-android.zip build-android.apk'
                             }
                         }
@@ -210,12 +218,6 @@ def call(body) {
                         }
                     }
                 }
-            }
-        }
-        
-        post {
-            cleanup {
-                junit "reports/*.xml"
             }
         }
     }
