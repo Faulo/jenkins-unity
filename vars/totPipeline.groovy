@@ -4,42 +4,42 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = args
     body()
-    
+
     pipeline {
         agent any
-        
+
         options {
             disableConcurrentBuilds()
             disableResume()
         }
-        
-        environment { 
+
+        environment {
             // define unity project location relative to repository
             PROJECT = "${env.WORKSPACE}/${args.PROJECT_LOCATION}"
-            
+
             // use auto-versioning based on tags+commits
             PROJECT_AUTOVERSION = "${args.PROJECT_AUTOVERSION}"
-            
+
             // temporary folders
             REPORTS = "${env.WORKSPACE}/reports"
             BUILDS = "${env.WORKSPACE}/builds"
             LOGS = "${env.WORKSPACE}/logs"
-            
+
             // which Unity Test Runner modes to execute
             TEST_MODES = "${args.TEST_MODES}"
-            
+
             // which platforms to deploy to
             DEPLOY_TO_STEAM = "${args.DEPLOY_TO_STEAM}"
-            
+
             // configration for deploying to steam
             STEAM_ID = "${args.STEAM_ID}"
             STEAM_DEPOTS = "${args.STEAM_DEPOTS}"
             STEAM_BRANCH = "${args.STEAM_BRANCH}"
-            
+
             TOT_ASSET = "${args.TOT_ASSET}"
             TOT_EXE = "${args.TOT_EXE}"
         }
-        
+
         stages {
             stage('Folder (re)creation') {
                 steps {
@@ -113,7 +113,7 @@ def call(body) {
                 }
             }
         }
-        
+
         post {
             cleanup {
                 junit "reports/*.xml"

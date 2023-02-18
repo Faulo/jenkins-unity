@@ -4,50 +4,50 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = args
     body()
-    
+
     pipeline {
         agent any
-        
+
         options {
             disableConcurrentBuilds()
             disableResume()
         }
-        
-        environment { 
+
+        environment {
             // define unity project location relative to repository
             PROJECT = "${env.WORKSPACE}/${args.PROJECT_LOCATION}"
-            
+
             // use auto-versioning based on tags+commits
             PROJECT_AUTOVERSION = "${args.PROJECT_AUTOVERSION}"
-            
+
             // temporary folders
             REPORTS = "${env.WORKSPACE}/reports"
             BUILDS = "${env.WORKSPACE}/builds"
             LOGS = "${env.WORKSPACE}/logs"
-            
+
             // which Unity Test Runner modes to execute
             TEST_MODES = "${args.TEST_MODES}"
-            
+
             // which executables to create
             BUILD_FOR_WINDOWS = "${args.BUILD_FOR_WINDOWS}"
             BUILD_FOR_LINUX = "${args.BUILD_FOR_LINUX}"
             BUILD_FOR_MAC = "${args.BUILD_FOR_MAC}"
             BUILD_FOR_WEBGL = "${args.BUILD_FOR_WEBGL}"
             BUILD_FOR_ANDROID = "${args.BUILD_FOR_ANDROID}"
-            
+
             // which platforms to deploy to
             DEPLOY_TO_STEAM = "${args.DEPLOY_TO_STEAM}"
             DEPLOY_TO_ITCH = "${args.DEPLOY_TO_ITCH}"
-            
+
             // configration for deploying to steam
             STEAM_ID = "${args.STEAM_ID}"
             STEAM_DEPOTS = "${args.STEAM_DEPOTS}"
             STEAM_BRANCH = env.BRANCH_NAME.replace("\\", "-")
-            
+
             // configuration for deploying to itch
             ITCH_ID = "${args.ITCH_ID}"
         }
-        
+
         stages {
             stage('Folder (re)creation') {
                 steps {
@@ -146,7 +146,7 @@ def call(body) {
                                ])
                             }
                         }
-    
+
                     }
                     stage('Build for: Android') {
                         when {

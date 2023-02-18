@@ -4,28 +4,28 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = args
     body()
-    
+
     pipeline {
         agent any
-        
+
         options {
             disableConcurrentBuilds()
             disableResume()
         }
-        
-        
+
+
         environment {
             PHP = "${env.PHP_ROOT}${args.PHP_VERSION}\\php.exe"
             VHOST = "${env.VHOST_ROOT}\\${args.VHOST_NAME}"
         }
-        
+
         stages {
-            stage('Install dependencies') { 
+            stage('Install dependencies') {
                 steps {
                     bat "$PHP composer.phar update --no-interaction"
                 }
             }
-            stage('Run PHPUnit') { 
+            stage('Run PHPUnit') {
                 steps {
                     bat "$PHP vendor/phpunit/phpunit/phpunit --log-junit phpunit.results.xml"
                     junit 'phpunit.results.xml'
