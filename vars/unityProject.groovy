@@ -119,19 +119,19 @@ def call(body) {
 							stage('Deploying to: itch.io') {
 								withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
 									if (args.BUILD_FOR_WINDOWS == '1') {
-										sh 'butler push --if-changed build-windows $ITCH_ID:windows-x64'
+										sh "butler push --if-changed build-windows ${args.ITCH_ID}:windows-x64"
 									}
 									if (args.BUILD_FOR_LINUX == '1') {
-										sh 'butler push --if-changed build-linux $ITCH_ID:linux-x64'
+										sh "butler push --if-changed build-linux ${args.ITCH_ID}:linux-x64"
 									}
 									if (args.BUILD_FOR_MAC == '1') {
-										sh 'butler push --if-changed build-mac $ITCH_ID:mac-x64'
+										sh "butler push --if-changed build-mac ${args.ITCH_ID}:mac-x64"
 									}
 									if (args.BUILD_FOR_WEBGL == '1') {
-										sh 'butler push --if-changed build-webgl $ITCH_ID:html'
+										sh "butler push --if-changed build-webgl ${args.ITCH_ID}:html"
 									}
 									if (args.BUILD_FOR_ANDROID == '1') {
-										sh 'butler push --if-changed build-android.apk $ITCH_ID:android'
+										sh "butler push --if-changed build-android.apk ${args.ITCH_ID}:android"
 									}
 								}
 							}
