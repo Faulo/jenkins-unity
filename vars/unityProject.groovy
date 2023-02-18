@@ -49,21 +49,21 @@ def call(body) {
         
         if (args.BUILD_FOR_WINDOWS == '1') {
             stage('Build for: Windows') {
-                callUnity "unity-build '${project}' 'builds/build-windows' windows 1>'reports/build-windows.xml'"
+                callUnity "unity-build '${project}' '$WORKSPACE/builds/build-windows' windows 1>'reports/build-windows.xml'"
                 sh 'zip -r build-windows.zip build-windows'
             }
         }
         
         if (args.BUILD_FOR_LINUX == '1') {
             stage('Build for: Linux') {
-                callUnity "unity-build '${project}' 'builds/build-linux' linux 1>'reports/build-linux.xml'"
+                callUnity "unity-build '${project}' '$WORKSPACE/builds/build-linux' linux 1>'reports/build-linux.xml'"
                 sh 'zip -r build-linux.zip build-linux'
             }
         }
         
         if (args.BUILD_FOR_MAC == '1') {
             stage('Build for: Mac OS') {
-                callUnity "unity-build '${project}' 'builds/build-mac' mac 1>'reports/build-mac.xml'"
+                callUnity "unity-build '${project}' '$WORKSPACE/builds/build-mac' mac 1>'reports/build-mac.xml'"
                 sh 'zip -r build-mac.zip build-mac'          
             }
         }
@@ -71,7 +71,7 @@ def call(body) {
         if (args.BUILD_FOR_WEBGL == '1') {
             stage('Build for: WebGL') {
                 callUnity "unity-module-install '${project}' webgl 1>'reports/install-webgl.xml'"
-                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL 'builds/build-webgl' 1>'reports/build-webgl.xml'"
+                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '$WORKSPACE/builds/build-webgl' 1>'reports/build-webgl.xml'"
                 sh 'zip -r build-webgl.zip build-webgl'                 
                 publishHTML([
                    allowMissing: false,
@@ -89,7 +89,7 @@ def call(body) {
         if (args.BUILD_FOR_ANDROID == '1') {
             stage('Build for: Android') {
                 callUnity "unity-module-install '${project}' android 1>'reports/install-android.xml'"
-                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android 'builds/build-android.apk' 1>'reports/build-android.xml'"
+                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '$WORKSPACE/builds/build-android.apk' 1>'reports/build-android.xml'"
                 sh 'zip -r build-android.zip build-android.apk'
             }
         }
@@ -98,7 +98,7 @@ def call(body) {
             if (args.DEPLOY_TO_STEAM == '1') {
                 stage('Deploy to: Steam') {
                     dir('builds') {
-                        callUnity "steam-buildfile 'builds' 'logs' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'build.vdf'"
+                        callUnity "steam-buildfile '$WORKSPACE/builds' 'logs' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'build.vdf'"
                         withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
                             sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "build.vdf" +quit'
                         }
