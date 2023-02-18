@@ -32,6 +32,7 @@ def call(body) {
 
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
+	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
     if (args.PROJECT_AUTOVERSION != "") {
         stage("Versioning") {
@@ -98,7 +99,7 @@ def call(body) {
                     }
                 }
 
-                if (args.DEPLOYMENT_BRANCHES.contains("${env.BRANCH_NAME}")) {
+                if (deployAny) {
                     if (args.DEPLOY_TO_STEAM == '1') {
                         stage('Deploy to: Steam') {
                             callUnity "steam-buildfile '${builds}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'build.vdf'"
