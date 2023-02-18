@@ -54,21 +54,21 @@ def call(body) {
                 if (args.BUILD_FOR_WINDOWS == '1') {
                     stage('Build for: Windows') {
                         callUnity "unity-build '${project}' '${builds}/build-windows' windows 1>'${reports}/build-windows.xml'"
-                        sh 'zip -r builds/build-windows.zip builds/build-windows'
+                        sh 'zip -r build-windows.zip build-windows'
                     }
                 }
 
                 if (args.BUILD_FOR_LINUX == '1') {
                     stage('Build for: Linux') {
                         callUnity "unity-build '${project}' '${builds}/build-linux' linux 1>'${reports}/build-linux.xml'"
-                        sh 'zip -r builds/build-linux.zip builds/build-linux'
+                        sh 'zip -r build-linux.zip build-linux'
                     }
                 }
 
                 if (args.BUILD_FOR_MAC == '1') {
                     stage('Build for: Mac OS') {
                         callUnity "unity-build '${project}' '${builds}/build-mac' mac 1>'${reports}/build-mac.xml'"
-                        sh 'zip -r builds/build-mac.zip builds/build-mac'
+                        sh 'zip -r build-mac.zip build-mac'
                     }
                 }
 
@@ -76,12 +76,12 @@ def call(body) {
                     stage('Build for: WebGL') {
                         callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
                         callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${builds}/build-webgl' 1>'${reports}/build-webgl.xml'"
-                        sh 'zip -r builds/build-webgl.zip builds/build-webgl'
+                        sh 'zip -r build-webgl.zip build-webgl'
                         publishHTML([
                            allowMissing: false,
                            alwaysLinkToLastBuild: false,
                            keepAll: false,
-                           reportDir: 'builds/build-webgl',
+                           reportDir: 'build-webgl',
                            reportFiles: 'index.html',
                            reportName: 'WebGL Build',
                            reportTitles: '',
@@ -94,7 +94,7 @@ def call(body) {
                     stage('Build for: Android') {
                         callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
                         callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${builds}/build-android.apk' 1>'${reports}/build-android.xml'"
-                        sh 'zip -r builds/build-android.zip builds/build-android.apk'
+                        sh 'zip -r build-android.zip build-android.apk'
                     }
                 }
 
@@ -140,10 +140,10 @@ def call(body) {
         dir('reports') {
             deleteDir()
         }
-
+		
+		archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
         dir('builds') {
             deleteDir()
         }
-        archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
     }
 }
