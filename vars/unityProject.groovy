@@ -41,7 +41,7 @@ def call(body) {
     }
     
     try {
-        dir('reports') { }
+        sh "mkdir -p '${reports}'"
     
         if (testAny) {
             stage("Testing") {
