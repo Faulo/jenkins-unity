@@ -143,14 +143,16 @@ def call(body) {
 			currentBuild.result = "FAILURE"
 			throw err
 		} finally {
-			junit(testResults: 'reports/*.xml', allowEmptyResults: true)
-			dir('reports') {
-				deleteDir()
-			}
+			stage('Gathering reports and artifacts') {
+				junit(testResults: 'reports/*.xml', allowEmptyResults: true)
+				dir('reports') {
+					deleteDir()
+				}
 
-			archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
-			dir('builds') {
-				deleteDir()
+				archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
+				dir('builds') {
+					deleteDir()
+				}
 			}
 		}
 	}

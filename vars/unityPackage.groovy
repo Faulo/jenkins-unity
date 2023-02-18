@@ -53,9 +53,11 @@ def call(body) {
 		currentBuild.result = "FAILURE"
 		throw err
 	} finally {
-		junit(testResults: 'reports/*.xml', allowEmptyResults: true)
-		dir('reports') {
-			deleteDir()
+		stage('Gathering reports') {
+			junit(testResults: 'reports/*.xml', allowEmptyResults: true)
+			dir('reports') {
+				deleteDir()
+			}
 		}
 	}
 }
