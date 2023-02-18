@@ -25,7 +25,7 @@ def call(body) {
     body.resolveStrategy = Closure.DELEGATE_FIRST
     body.delegate = args
     body()
-	
+
 	if (args.PROJECT_LOCATION == '') {
 		args.PROJECT_LOCATION = '.'
 	}
@@ -38,7 +38,7 @@ def call(body) {
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
-	
+
 	dir(args.PROJECT_LOCATION) {
 		if (versionAny) {
 			stage("Auto-Versioning") {
@@ -46,16 +46,16 @@ def call(body) {
 				callUnity "unity-project-version '${project}' set '${version}'"
 			}
 		}
-	
+
 		try {
 			sh "mkdir -p '${reports}'"
-	
+
 			if (testAny) {
 				stage("Testing: ${args.TEST_MODES}") {
 					callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
 				}
 			}
-	
+
 			if (buildAny) {
 				dir('builds') {
 					if (args.BUILD_FOR_WINDOWS == '1') {
@@ -64,21 +64,21 @@ def call(body) {
 							sh 'zip -r build-windows.zip build-windows'
 						}
 					}
-	
+
 					if (args.BUILD_FOR_LINUX == '1') {
 						stage('Building for: Linux') {
 							callUnity "unity-build '${project}' '${builds}/build-linux' linux 1>'${reports}/build-linux.xml'"
 							sh 'zip -r build-linux.zip build-linux'
 						}
 					}
-	
+
 					if (args.BUILD_FOR_MAC == '1') {
 						stage('Building for: MacOS') {
 							callUnity "unity-build '${project}' '${builds}/build-mac' mac 1>'${reports}/build-mac.xml'"
 							sh 'zip -r build-mac.zip build-mac'
 						}
 					}
-	
+
 					if (args.BUILD_FOR_WEBGL == '1') {
 						stage('Building for: WebGL') {
 							callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
@@ -96,7 +96,7 @@ def call(body) {
 						   ])
 						}
 					}
-	
+
 					if (args.BUILD_FOR_ANDROID == '1') {
 						stage('Building for: Android') {
 							callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
@@ -104,7 +104,7 @@ def call(body) {
 							sh 'zip -r build-android.zip build-android.apk'
 						}
 					}
-	
+
 					if (deployAny) {
 						if (args.DEPLOY_TO_STEAM == '1') {
 							stage('Deploying to: Steam') {
@@ -114,7 +114,7 @@ def call(body) {
 								}
 							}
 						}
-	
+
 						if (args.DEPLOY_TO_ITCH == '1') {
 							stage('Deploying to: itch.io') {
 								withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
@@ -147,7 +147,7 @@ def call(body) {
 			dir('reports') {
 				deleteDir()
 			}
-	
+
 			archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
 			dir('builds') {
 				deleteDir()
