@@ -103,9 +103,9 @@ def call(body) {
                 if (deployAny) {
                     if (args.DEPLOY_TO_STEAM == '1') {
                         stage('Deploying to: Steam') {
-                            callUnity "steam-buildfile '${builds}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'build.vdf'"
+                            callUnity "steam-buildfile '${builds}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'${builds}/deploy-steam.vdf'"
                             withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
-                                sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "build.vdf" +quit'
+                                sh 'steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build "${builds}/deploy-steam.vdf" +quit'
                             }
                         }
                     }
