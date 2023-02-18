@@ -20,7 +20,7 @@ def call(body) {
 
 	def pack = "$WORKSPACE/${args.PACKAGE_LOCATION}"
 	def project = "$WORKSPACE/empty-project"
-	def reports = "${WORKSPACE}/reports"
+	def reports = "$WORKSPACE/reports"
 
 	def testAny = args.TEST_MODES != ''
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
