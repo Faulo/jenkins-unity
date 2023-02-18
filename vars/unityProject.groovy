@@ -41,7 +41,7 @@ def call(body) {
     }
     
     try {
-        dir 'reports'
+        dir('reports') { }
     
         if (testAny) {
             stage("Testing") {
