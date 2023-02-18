@@ -19,8 +19,8 @@ def call(body) {
 	}
 
 	def pack = "$WORKSPACE/${args.PACKAGE_LOCATION}"
-	def project = "$WORKSPACE/empty-project"
-	def reports = "$WORKSPACE/reports"
+	def project = "$WORKSPACE_TMP/empty-project"
+	def reports = "$WORKSPACE_TMP/reports"
 
 	def testAny = args.TEST_MODES != ''
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
@@ -29,7 +29,7 @@ def call(body) {
 		sh "mkdir -p '${reports}'"
 
 		if (testAny) {
-			dir('empty-project') {
+			dir(project) {
 				deleteDir()
 			}
 
@@ -54,8 +54,8 @@ def call(body) {
 		throw err
 	} finally {
 		stage('Gathering reports') {
-			junit(testResults: 'reports/*.xml', allowEmptyResults: true)
-			dir('reports') {
+			dir(reports) {
+				junit(testResults: '*.xml', allowEmptyResults: true)
 				deleteDir()
 			}
 		}
