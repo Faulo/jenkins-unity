@@ -82,7 +82,7 @@ def call(body) {
 					stage('Building for: Windows') {
 						callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
 						junit(testResults: 'build-windows.xml')
-						sh 'zip -r build-windows.zip build-windows'
+						callShell 'zip -r build-windows.zip build-windows'
 						archiveArtifacts(artifacts: 'build-windows.zip')
 					}
 				}
@@ -91,7 +91,7 @@ def call(body) {
 					stage('Building for: Linux') {
 						callUnity "unity-build '${project}' '${reports}/build-linux' linux 1>'${reports}/build-linux.xml'"
 						junit(testResults: 'build-linux.xml')
-						sh 'zip -r build-linux.zip build-linux'
+						callShell 'zip -r build-linux.zip build-linux'
 						archiveArtifacts(artifacts: 'build-linux.zip')
 					}
 				}
@@ -100,7 +100,7 @@ def call(body) {
 					stage('Building for: MacOS') {
 						callUnity "unity-build '${project}' '${reports}/build-mac' mac 1>'${reports}/build-mac.xml'"
 						junit(testResults: 'build-mac.xml')
-						sh 'zip -r build-mac.zip build-mac'
+						callShell 'zip -r build-mac.zip build-mac'
 						archiveArtifacts(artifacts: 'build-mac.zip')
 					}
 				}
@@ -111,7 +111,7 @@ def call(body) {
 						junit(testResults: 'install-webgl.xml')
 						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/build-webgl' 1>'${reports}/build-webgl.xml'"
 						junit(testResults: 'build-webgl.xml')
-						sh 'zip -r build-webgl.zip build-webgl'
+						callShell 'zip -r build-webgl.zip build-webgl'
 						archiveArtifacts(artifacts: 'build-webgl.zip')
 						publishHTML([
 							allowMissing: false,
@@ -132,7 +132,7 @@ def call(body) {
 						junit(testResults: 'install-android.xml')
 						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/build-android.apk' 1>'${reports}/build-android.xml'"
 						junit(testResults: 'build-android.xml')
-						sh 'zip -r build-android.zip build-android.apk'
+						callShell 'zip -r build-android.zip build-android.apk'
 						archiveArtifacts(artifacts: 'build-android.zip')
 					}
 				}
@@ -148,7 +148,7 @@ def call(body) {
 							withCredentials([
 								usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
 							]) {
-								sh "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+								callShell "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 							}
 						}
 					}
@@ -159,19 +159,19 @@ def call(body) {
 								string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
 							]) {
 								if (args.BUILD_FOR_WINDOWS == '1') {
-									sh "butler push --if-changed build-windows ${args.ITCH_ID}:windows-x64"
+									callShell "butler push --if-changed build-windows ${args.ITCH_ID}:windows-x64"
 								}
 								if (args.BUILD_FOR_LINUX == '1') {
-									sh "butler push --if-changed build-linux ${args.ITCH_ID}:linux-x64"
+									callShell "butler push --if-changed build-linux ${args.ITCH_ID}:linux-x64"
 								}
 								if (args.BUILD_FOR_MAC == '1') {
-									sh "butler push --if-changed build-mac ${args.ITCH_ID}:mac-x64"
+									callShell "butler push --if-changed build-mac ${args.ITCH_ID}:mac-x64"
 								}
 								if (args.BUILD_FOR_WEBGL == '1') {
-									sh "butler push --if-changed build-webgl ${args.ITCH_ID}:html"
+									callShell "butler push --if-changed build-webgl ${args.ITCH_ID}:html"
 								}
 								if (args.BUILD_FOR_ANDROID == '1') {
-									sh "butler push --if-changed build-android.apk ${args.ITCH_ID}:android"
+									callShell "butler push --if-changed build-android.apk ${args.ITCH_ID}:android"
 								}
 							}
 						}
