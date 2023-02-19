@@ -32,9 +32,14 @@ def call(body) {
 	if (args.containsKey('PROJECT_LOCATION')) {
 		args.LOCATION = args.PROJECT_LOCATION
 	}
+	echo args.AUTOVERSION
+	
 	if (args.containsKey('PROJECT_AUTOVERSION')) {
+		echo "CONTAINS KEY"
 		args.AUTOVERSION = args.PROJECT_AUTOVERSION
 	}
+	
+	echo args.AUTOVERSION
 
 	// we want a path-compatible location
 	if (args.LOCATION == '') {
