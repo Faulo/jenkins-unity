@@ -1,7 +1,8 @@
 def call(body) {
     def args= [
-        PROJECT_LOCATION : "",
-        PROJECT_AUTOVERSION : "",
+        LOCATION : "",
+
+		AUTOVERSION : "",
 
         TEST_MODES : "",
 
@@ -26,20 +27,29 @@ def call(body) {
     body.delegate = args
     body()
 
-	if (args.PROJECT_LOCATION == '') {
-		args.PROJECT_LOCATION = '.'
+	// backwards compatibility
+	if (args.PROJECT_LOCATION != null) {
+		args.LOCATION = args.PROJECT_LOCATION
+	}
+	if (args.PROJECT_AUTOVERSION != null) {
+		args.AUTOVERSION = args.PROJECT_AUTOVERSION
 	}
 
-    def project = "$WORKSPACE/${args.PROJECT_LOCATION}"
-    def reports = "${project}/reports"
-    def builds = "${project}/builds"
+	// we want a path-compatible location
+	if (args.LOCATION == '') {
+		args.LOCATION = '.'
+	}
+
+    def project = "$WORKSPACE/${args.LOCATION}"
+    def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
+    def builds = "$WORKSPACE_TMP/${args.LOCATION}/builds"
 
 	def versionAny = args.PROJECT_AUTOVERSION != ''
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	dir(args.PROJECT_LOCATION) {
+	dir(args.LOCATION) {
 		if (versionAny) {
 			stage("Auto-Versioning") {
 				def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '$WORKSPACE'"
@@ -57,7 +67,7 @@ def call(body) {
 			}
 
 			if (buildAny) {
-				dir('builds') {
+				dir(builds) {
 					if (args.BUILD_FOR_WINDOWS == '1') {
 						stage('Building for: Windows') {
 							callUnity "unity-build '${project}' '${builds}/build-windows' windows 1>'${reports}/build-windows.xml'"
@@ -110,7 +120,7 @@ def call(body) {
 							stage('Deploying to: Steam') {
 								callUnity "steam-buildfile '${builds}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'${builds}/deploy-steam.vdf'"
 								withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
-									sh "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${builds}/deploy-steam.vdf' +quit"
+									sh "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${builds}/deploy-steam.vdf' +quit"
 								}
 							}
 						}
@@ -144,13 +154,13 @@ def call(body) {
 			throw err
 		} finally {
 			stage('Gathering reports and artifacts') {
-				junit(testResults: 'reports/*.xml', allowEmptyResults: true)
-				dir('reports') {
+				dir(reports) {
+					junit(testResults: '*.xml', allowEmptyResults: true)
 					deleteDir()
 				}
 
-				archiveArtifacts(artifacts: 'builds/*.zip', allowEmptyArchive: true)
-				dir('builds') {
+				dir(builds) {
+					archiveArtifacts(artifacts: '*.zip', allowEmptyArchive: true)
 					deleteDir()
 				}
 			}

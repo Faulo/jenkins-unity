@@ -1,26 +1,32 @@
 def call(body) {
 	def args= [
-		PACKAGE_LOCATION : "",
+		LOCATION : "",
 
 		TEST_MODES : "",
 
 		DEPLOY_TO_VERDACCIO : "0",
 		VERDACCIO_URL : "http://verdaccio:4873",
 
-		DEPLOYMENT_BRANCHES : [ "main", "/main" ],
+		DEPLOYMENT_BRANCHES : [ "main" ],
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
 	body.delegate = args
 	body()
-
-	if (args.PACKAGE_LOCATION == '') {
-		args.PACKAGE_LOCATION = '.'
+	
+	// backwards compatibility
+	if (args.PACKAGE_LOCATION != null) {
+		args.LOCATION = args.PACKAGE_LOCATION
+	}
+	
+	// we want a path-compatible location
+	if (args.LOCATION == '') {
+		args.LOCATION = '.'
 	}
 
-	def pack = "$WORKSPACE/${args.PACKAGE_LOCATION}"
-	def project = "$WORKSPACE_TMP/empty-project"
-	def reports = "$WORKSPACE_TMP/reports"
+	def pack = "$WORKSPACE/${args.LOCATION}"
+	def project = "$WORKSPACE_TMP/${args.LOCATION}/project"
+	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 
 	def testAny = args.TEST_MODES != ''
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
