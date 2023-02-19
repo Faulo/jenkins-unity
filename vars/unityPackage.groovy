@@ -1,7 +1,8 @@
 def call(body) {
+	assert env.containsKey('BRANCH_NAME')
+
 	def args= [
 		LOCATION : "",
-		BRANCH_NAME : "",
 
 		TEST_MODES : "",
 
@@ -25,17 +26,12 @@ def call(body) {
 		args.LOCATION = '.'
 	}
 
-	// we want the branch name
-	if (args.BRANCH_NAME == '') {
-		args.BRANCH_NAME = "${env.BRANCH_NAME}"
-	}
-
 	def pack = "$WORKSPACE/${args.LOCATION}"
 	def project = "$WORKSPACE_TMP/${args.LOCATION}/project"
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 
 	def testAny = args.TEST_MODES != ''
-	def deployAny = args.DEPLOYMENT_BRANCHES.contains(args.BRANCH_NAME)
+	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	try {
 		sh "mkdir -p '${reports}'"

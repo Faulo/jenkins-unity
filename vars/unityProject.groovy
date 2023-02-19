@@ -1,7 +1,8 @@
 def call(body) {
+	assert env.containsKey('BRANCH_NAME')
+
     def args= [
         LOCATION : "",
-		BRANCH_NAME : "",
 
 		AUTOVERSION : "",
 
@@ -41,14 +42,9 @@ def call(body) {
 		args.LOCATION = '.'
 	}
 
-	// we want the branch name
-	if (args.BRANCH_NAME == '') {
-		args.BRANCH_NAME = "${env.BRANCH_NAME}"
-	}
-
 	// steam branches can't contain slashes or spaces
 	if (args.STEAM_BRANCH == '') {
-		args.STEAM_BRANCH = args.BRANCH_NAME.replace("/", " ").trim().replace(" ", "-")
+		args.STEAM_BRANCH = env.BRANCH_NAME.replace("/", " ").trim().replace(" ", "-")
 	}
 
     def project = "$WORKSPACE/${args.LOCATION}"
@@ -58,7 +54,7 @@ def call(body) {
 	def versionAny = args.AUTOVERSION != ''
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
-	def deployAny = args.DEPLOYMENT_BRANCHES.contains(args.BRANCH_NAME)
+	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	dir(args.LOCATION) {
 		if (versionAny) {
