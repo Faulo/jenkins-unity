@@ -54,6 +54,10 @@ def call(body) {
 	}
 
 	if (deployAny) {
+		if (currentBuild.currentResult != "SUCCESS") {
+			error "Current result is '${currentBuild.currentResult}', skipping deployment."
+		}
+
 		if (args.DEPLOY_TO_VERDACCIO == '1') {
 			stage('Deploying to: Verdaccio') {
 				echo "Deploying package '${pack}' to Verdaccio at ${args.VERDACCIO_URL}"
