@@ -32,14 +32,9 @@ def call(body) {
 	if (args.containsKey('PROJECT_LOCATION')) {
 		args.LOCATION = args.PROJECT_LOCATION
 	}
-	echo args.AUTOVERSION
-	
 	if (args.containsKey('PROJECT_AUTOVERSION')) {
-		echo "CONTAINS KEY"
 		args.AUTOVERSION = args.PROJECT_AUTOVERSION
 	}
-	
-	echo args.AUTOVERSION
 
 	// we want a path-compatible location
 	if (args.LOCATION == '') {
@@ -60,7 +55,7 @@ def call(body) {
     def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
     def builds = "$WORKSPACE_TMP/${args.LOCATION}/builds"
 
-	def versionAny = args.PROJECT_AUTOVERSION != ''
+	def versionAny = args.AUTOVERSION != ''
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(args.BRANCH_NAME)
@@ -68,7 +63,7 @@ def call(body) {
 	dir(args.LOCATION) {
 		if (versionAny) {
 			stage("Auto-Versioning") {
-				def version = callUnity "autoversion '${args.PROJECT_AUTOVERSION}' '$WORKSPACE'"
+				def version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
 				callUnity "unity-project-version '${project}' set '${version}'"
 			}
 		}
