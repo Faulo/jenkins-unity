@@ -65,7 +65,7 @@ def call(body) {
 
 				if (localVersion != publishedVersion) {
 					stage('Deploying to: Verdaccio') {
-						echo "Deploying package '${pack}' version ${localVersion} to Verdaccio at ${args.VERDACCIO_URL} with version ${publishedVersion}."
+						echo "Found version '${publishedVersion}', updating to version '${localVersion}'..."
 						callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 					}
 				}
