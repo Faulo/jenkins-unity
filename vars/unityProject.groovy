@@ -28,10 +28,10 @@ def call(body) {
     body()
 
 	// backwards compatibility
-	if (args.PROJECT_LOCATION != null) {
+	if (args.containsKey('PROJECT_LOCATION')) {
 		args.LOCATION = args.PROJECT_LOCATION
 	}
-	if (args.PROJECT_AUTOVERSION != null) {
+	if (args.containsKey('PROJECT_AUTOVERSION')) {
 		args.AUTOVERSION = args.PROJECT_AUTOVERSION
 	}
 

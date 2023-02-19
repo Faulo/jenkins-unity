@@ -15,7 +15,7 @@ def call(body) {
 	body()
 	
 	// backwards compatibility
-	if (args.PACKAGE_LOCATION != null) {
+	if (args.containsKey('PACKAGE_LOCATION')) {
 		args.LOCATION = args.PACKAGE_LOCATION
 	}
 	
