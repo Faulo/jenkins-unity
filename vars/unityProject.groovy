@@ -1,6 +1,7 @@
 def call(body) {
     def args= [
         LOCATION : "",
+		BRANCH_NAME : "",
 
 		AUTOVERSION : "",
 
@@ -15,12 +16,12 @@ def call(body) {
         DEPLOY_TO_STEAM : "0",
         STEAM_ID : "",
         STEAM_DEPOTS : "",
-        STEAM_BRANCH : "${env.BRANCH_NAME}".replace("\\", "-"),
+        STEAM_BRANCH : "",
 
         DEPLOY_TO_ITCH : "0",
         ITCH_ID : "",
 
-        DEPLOYMENT_BRANCHES : [ "main" ],
+        DEPLOYMENT_BRANCHES : [ "main", "/main" ],
     ]
 
     body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -40,6 +41,16 @@ def call(body) {
 		args.LOCATION = '.'
 	}
 
+	// we want the branch name
+	if (args.BRANCH_NAME == '') {
+		args.BRANCH_NAME = "${env.BRANCH_NAME}"
+	}
+
+	// steam branches can't contain slashes or spaces
+	if (args.STEAM_BRANCH == '') {
+		args.STEAM_BRANCH = args.BRANCH_NAME.replace("/", " ").trim().replace(" ", "-")
+	}
+
     def project = "$WORKSPACE/${args.LOCATION}"
     def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
     def builds = "$WORKSPACE_TMP/${args.LOCATION}/builds"
@@ -47,7 +58,7 @@ def call(body) {
 	def versionAny = args.PROJECT_AUTOVERSION != ''
     def testAny = args.TEST_MODES != ''
     def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
-	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+	def deployAny = args.DEPLOYMENT_BRANCHES.contains(args.BRANCH_NAME)
 
 	dir(args.LOCATION) {
 		if (versionAny) {

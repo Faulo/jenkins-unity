@@ -1,27 +1,33 @@
 def call(body) {
 	def args= [
 		LOCATION : "",
+		BRANCH_NAME : "",
 
 		TEST_MODES : "",
 
 		DEPLOY_TO_VERDACCIO : "0",
 		VERDACCIO_URL : "http://verdaccio:4873",
 
-		DEPLOYMENT_BRANCHES : [ "main" ],
+		DEPLOYMENT_BRANCHES : [ "main", "/main" ],
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
 	body.delegate = args
 	body()
-	
+
 	// backwards compatibility
 	if (args.containsKey('PACKAGE_LOCATION')) {
 		args.LOCATION = args.PACKAGE_LOCATION
 	}
-	
+
 	// we want a path-compatible location
 	if (args.LOCATION == '') {
 		args.LOCATION = '.'
+	}
+
+	// we want the branch name
+	if (args.BRANCH_NAME == '') {
+		args.BRANCH_NAME = "${env.BRANCH_NAME}"
 	}
 
 	def pack = "$WORKSPACE/${args.LOCATION}"
@@ -29,7 +35,7 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 
 	def testAny = args.TEST_MODES != ''
-	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+	def deployAny = args.DEPLOYMENT_BRANCHES.contains(args.BRANCH_NAME)
 
 	try {
 		sh "mkdir -p '${reports}'"
