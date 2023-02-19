@@ -33,37 +33,31 @@ def call(body) {
 	def testAny = args.TEST_MODES != ''
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	try {
-		sh "mkdir -p '${reports}'"
+	if (testAny) {
+		dir(project) {
+			deleteDir()
+		}
 
-		if (testAny) {
-			dir(project) {
-				deleteDir()
-			}
+		dir(reports) {
+			deleteDir()
 
 			stage("Creating empty project with package") {
 				callUnity "unity-package-install '${pack}' '${project}' 1>'${reports}/package-install.xml'"
+				junit(testResults: 'package-install.xml', allowEmptyResults: true)
 			}
 
 			stage("Testing: ${args.TEST_MODES}") {
 				callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+				junit(testResults: 'tests.xml', allowEmptyResults: true)
 			}
 		}
+	}
 
-		if (deployAny) {
-			if (args.DEPLOY_TO_VERDACCIO == '1') {
-				stage('Deploying to: Verdaccio') {
-					echo "Deploying package '${pack}' to Verdaccio at ${args.VERDACCIO_URL}"
-				}
+	if (deployAny) {
+		if (args.DEPLOY_TO_VERDACCIO == '1') {
+			stage('Deploying to: Verdaccio') {
+				echo "Deploying package '${pack}' to Verdaccio at ${args.VERDACCIO_URL}"
 			}
-		}
-	} catch (err) {
-		currentBuild.result = "FAILURE"
-		throw err
-	} finally {
-		dir(reports) {
-			junit(testResults: '*.xml', allowEmptyResults: true)
-			deleteDir()
 		}
 	}
 }
