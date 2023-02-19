@@ -138,12 +138,12 @@ def call(body) {
 				}
 
 				if (deployAny) {
-					if (currentBuild.currentResult != "SUCCESS") {
-						error "Current result is '${currentBuild.currentResult}', skipping deployment."
-					}
-
 					if (args.DEPLOY_TO_STEAM == '1') {
 						stage('Deploying to: Steam') {
+							if (currentBuild.currentResult != "SUCCESS") {
+								error "Current result is '${currentBuild.currentResult}', skipping deployment."
+							}
+
 							callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'${reports}/deploy-steam.vdf'"
 							withCredentials([
 								usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
@@ -155,6 +155,10 @@ def call(body) {
 
 					if (args.DEPLOY_TO_ITCH == '1') {
 						stage('Deploying to: itch.io') {
+							if (currentBuild.currentResult != "SUCCESS") {
+								error "Current result is '${currentBuild.currentResult}', skipping deployment."
+							}
+
 							withCredentials([
 								string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
 							]) {
