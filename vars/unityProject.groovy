@@ -1,33 +1,33 @@
 def call(body) {
 	assert env.BRANCH_NAME != null
 
-    def args= [
-        LOCATION : "",
+	def args= [
+		LOCATION : "",
 
 		AUTOVERSION : "",
 
-        TEST_MODES : "",
+		TEST_MODES : "",
 
-        BUILD_FOR_WINDOWS : "0",
-        BUILD_FOR_LINUX : "0",
-        BUILD_FOR_MAC : "0",
-        BUILD_FOR_WEBGL : "0",
-        BUILD_FOR_ANDROID : "0",
+		BUILD_FOR_WINDOWS : "0",
+		BUILD_FOR_LINUX : "0",
+		BUILD_FOR_MAC : "0",
+		BUILD_FOR_WEBGL : "0",
+		BUILD_FOR_ANDROID : "0",
 
-        DEPLOY_TO_STEAM : "0",
-        STEAM_ID : "",
-        STEAM_DEPOTS : "",
-        STEAM_BRANCH : "",
+		DEPLOY_TO_STEAM : "0",
+		STEAM_ID : "",
+		STEAM_DEPOTS : "",
+		STEAM_BRANCH : "",
 
-        DEPLOY_TO_ITCH : "0",
-        ITCH_ID : "",
+		DEPLOY_TO_ITCH : "0",
+		ITCH_ID : "",
 
-        DEPLOYMENT_BRANCHES : [ "main", "/main" ],
-    ]
+		DEPLOYMENT_BRANCHES : ["main", "/main"],
+	]
 
-    body.resolveStrategy = Closure.DELEGATE_FIRST
-    body.delegate = args
-    body()
+	body.resolveStrategy = Closure.DELEGATE_FIRST
+	body.delegate = args
+	body()
 
 	// backwards compatibility
 	if (args.containsKey('PROJECT_LOCATION')) {
@@ -47,13 +47,19 @@ def call(body) {
 		args.STEAM_BRANCH = env.BRANCH_NAME.replace("/", " ").trim().replace(" ", "-")
 	}
 
-    def project = "$WORKSPACE/${args.LOCATION}"
-    def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
-    def builds = "$WORKSPACE_TMP/${args.LOCATION}/builds"
+	def project = "$WORKSPACE/${args.LOCATION}"
+	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
+	def builds = "$WORKSPACE_TMP/${args.LOCATION}/builds"
 
 	def versionAny = args.AUTOVERSION != ''
-    def testAny = args.TEST_MODES != ''
-    def buildAny = [args.BUILD_FOR_WINDOWS, args.BUILD_FOR_LINUX, args.BUILD_FOR_MAC, args.BUILD_FOR_WEBGL, args.BUILD_FOR_ANDROID].contains('1');
+	def testAny = args.TEST_MODES != ''
+	def buildAny = [
+		args.BUILD_FOR_WINDOWS,
+		args.BUILD_FOR_LINUX,
+		args.BUILD_FOR_MAC,
+		args.BUILD_FOR_WEBGL,
+		args.BUILD_FOR_ANDROID
+	].contains('1');
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	dir(args.LOCATION) {
@@ -102,15 +108,15 @@ def call(body) {
 							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${builds}/build-webgl' 1>'${reports}/build-webgl.xml'"
 							sh 'zip -r build-webgl.zip build-webgl'
 							publishHTML([
-							   allowMissing: false,
-							   alwaysLinkToLastBuild: false,
-							   keepAll: false,
-							   reportDir: 'build-webgl',
-							   reportFiles: 'index.html',
-							   reportName: 'WebGL Build',
-							   reportTitles: '',
-							   useWrapperFileDirectly: true
-						   ])
+								allowMissing: false,
+								alwaysLinkToLastBuild: false,
+								keepAll: false,
+								reportDir: 'build-webgl',
+								reportFiles: 'index.html',
+								reportName: 'WebGL Build',
+								reportTitles: '',
+								useWrapperFileDirectly: true
+							])
 						}
 					}
 
@@ -126,7 +132,9 @@ def call(body) {
 						if (args.DEPLOY_TO_STEAM == '1') {
 							stage('Deploying to: Steam') {
 								callUnity "steam-buildfile '${builds}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'${builds}/deploy-steam.vdf'"
-								withCredentials([usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')]) {
+								withCredentials([
+									usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
+								]) {
 									sh "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${builds}/deploy-steam.vdf' +quit"
 								}
 							}
@@ -134,7 +142,9 @@ def call(body) {
 
 						if (args.DEPLOY_TO_ITCH == '1') {
 							stage('Deploying to: itch.io') {
-								withCredentials([string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')]) {
+								withCredentials([
+									string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
+								]) {
 									if (args.BUILD_FOR_WINDOWS == '1') {
 										sh "butler push --if-changed build-windows ${args.ITCH_ID}:windows-x64"
 									}
@@ -160,16 +170,14 @@ def call(body) {
 			currentBuild.result = "FAILURE"
 			throw err
 		} finally {
-			stage('Gathering reports and artifacts') {
-				dir(reports) {
-					junit(testResults: '*.xml', allowEmptyResults: true)
-					deleteDir()
-				}
+			dir(reports) {
+				junit(testResults: '*.xml', allowEmptyResults: true)
+				deleteDir()
+			}
 
-				dir(builds) {
-					archiveArtifacts(artifacts: '*.zip', allowEmptyArchive: true)
-					deleteDir()
-				}
+			dir(builds) {
+				archiveArtifacts(artifacts: '*.zip', allowEmptyArchive: true)
+				deleteDir()
 			}
 		}
 	}

@@ -9,7 +9,7 @@ def call(body) {
 		DEPLOY_TO_VERDACCIO : "0",
 		VERDACCIO_URL : "http://verdaccio:4873",
 
-		DEPLOYMENT_BRANCHES : [ "main", "/main" ],
+		DEPLOYMENT_BRANCHES : ["main", "/main"],
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -61,11 +61,9 @@ def call(body) {
 		currentBuild.result = "FAILURE"
 		throw err
 	} finally {
-		stage('Gathering reports') {
-			dir(reports) {
-				junit(testResults: '*.xml', allowEmptyResults: true)
-				deleteDir()
-			}
+		dir(reports) {
+			junit(testResults: '*.xml', allowEmptyResults: true)
+			deleteDir()
 		}
 	}
 }
