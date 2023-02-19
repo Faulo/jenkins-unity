@@ -1,5 +1,5 @@
 def call(body) {
-	assert env.containsKey('BRANCH_NAME')
+	assert env.BRANCH_NAME != null
 
     def args= [
         LOCATION : "",
