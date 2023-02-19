@@ -54,10 +54,6 @@ def call(body) {
 	}
 
 	if (deployAny) {
-		if (currentBuild.currentResult != "SUCCESS") {
-			error "Current result is '${currentBuild.currentResult}', skipping deployment."
-		}
-
 		if (args.DEPLOY_TO_VERDACCIO == '1') {
 			dir(pack) {
 				def localVersion = callShell "node --eval=\"process.stdout.write(require('./package.json').version)\""
@@ -65,7 +61,10 @@ def call(body) {
 
 				if (localVersion != publishedVersion) {
 					stage('Deploying to: Verdaccio') {
-						echo "Found version '${publishedVersion}', updating to version '${localVersion}'..."
+						if (currentBuild.currentResult != "SUCCESS") {
+							error "Current result is '${currentBuild.currentResult}', skipping deployment of version ${localVersion}."
+						}
+						echo "Deploying update: ${publishedVersion} => ${localVersion}"
 						callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 					}
 				}
