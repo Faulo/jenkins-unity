@@ -7,7 +7,7 @@ def call(body) {
 		DEPLOY_TO_VERDACCIO : "0",
 		VERDACCIO_URL : "http://verdaccio:4873",
 
-		DEPLOYMENT_BRANCHES : [ "main" ],
+		DEPLOYMENT_BRANCHES : [ "main", "/main" ],
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
