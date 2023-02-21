@@ -2,9 +2,11 @@
 This repository adds build commands for Unity.
 
 ## Usage
-All of these commands need to be placed inside a node block of the iterative or a steps block of the declarative Jenkins pipeline.
+All of these commands need to be placed inside a `node` block of the iterative or a `steps` block of the declarative Jenkins pipeline.
 
 All values are optional and default to the first value from among the possible values below.
+
+The `unityProject` command:
 ```groovy
 unityProject {
 	// Relative path to the Unity project inside the repository.
@@ -56,6 +58,26 @@ unityProject {
 	ITCH_ID : "",
 
 	// Only attempt to deploy if the current VCS branch is among the branches listed.
-	DEPLOYMENT_BRANCHES : ["main", "/main"],
+	DEPLOYMENT_BRANCHES : ['main', '/main'],
+}
+```
+
+The `unityPackage` command:
+```groovy
+unityPackage {
+	// Relative path to the Unity package inside the repository.
+	LOCATION : '',
+	
+	// If given, run these unit tests
+	TEST_MODES : '' | 'EditMode' | 'PlayMode' | 'EditMode PlayMode'
+
+	// If '1', deploy the package as-is to a Verdaccio.
+	DEPLOY_TO_VERDACCIO : '0' | '1',
+	
+	// The URL of the Verdaccio server to use for deployment.
+	VERDACCIO_URL : 'http://verdaccio:4873',
+
+	// Only attempt to deploy if the current VCS branch is among the branches listed.
+	DEPLOYMENT_BRANCHES : ['main', '/main'],
 }
 ```
