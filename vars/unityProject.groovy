@@ -16,7 +16,9 @@ def call(body) {
 
 		DEPLOY_TO_STEAM : "0",
 		STEAM_ID : "",
-		STEAM_DEPOTS : "",
+		STEAM_DEPOT_WINDOWS : "",
+		STEAM_DEPOT_LINUX : "",
+		STEAM_DEPOT_MAC : "",
 		STEAM_BRANCH : "",
 
 		DEPLOY_TO_ITCH : "0",
@@ -146,7 +148,22 @@ def call(body) {
 							error "Current result is '${currentBuild.currentResult}', skipping deployment."
 						}
 
-						callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${args.STEAM_DEPOTS} ${args.STEAM_BRANCH} 1>'${reports}/deploy-steam.vdf'"
+						def depots = '';
+						if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
+							depots += "${args.STEAM_DEPOT_WINDOWS}=build-windows "
+						}
+						if (args.BUILD_FOR_LINUX == '1' && args.STEAM_DEPOT_LINUX != '') {
+							depots += "${args.STEAM_DEPOT_LINUX}=build-linux "
+						}
+						if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
+							depots += "${args.STEAM_DEPOT_MAC}=build-windows "
+						}
+
+						if (depots == '') {
+							error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
+						}
+
+						callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH} 1>'${reports}/deploy-steam.vdf'"
 						withCredentials([
 							usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
 						]) {
