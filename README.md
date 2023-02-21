@@ -6,7 +6,10 @@ All of these commands need to be placed inside a `node` block of the iterative o
 
 All values are optional and default to the first value from among the possible values below.
 
-The `unityProject` command:
+
+### The `unityProject` command
+This command locates a Unity project inside the repository, runs its unit tests, builds executables, and (if successful) deploys the executables to either Steam or itch.io.
+
 ```groovy
 unityProject {
 	// Relative path to the Unity project inside the repository.
@@ -62,7 +65,10 @@ unityProject {
 }
 ```
 
-The `unityPackage` command:
+### The `unityPackage` command
+
+This command locates a Unity package inside the repository, runs its unit tests, and (if successful) deploys it to a Verdaccio server.
+
 ```groovy
 unityPackage {
 	// Relative path to the Unity package inside the repository.
