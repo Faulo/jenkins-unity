@@ -15,6 +15,7 @@ def call(body) {
 		BUILD_FOR_ANDROID : "0",
 
 		DEPLOY_TO_STEAM : "0",
+		STEAM_CREDENTIALS : "",
 		STEAM_ID : "",
 		STEAM_DEPOT_WINDOWS : "",
 		STEAM_DEPOT_LINUX : "",
@@ -22,6 +23,7 @@ def call(body) {
 		STEAM_BRANCH : "",
 
 		DEPLOY_TO_ITCH : "0",
+		ITCH_CREDENTIALS : "",
 		ITCH_ID : "",
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],

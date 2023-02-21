@@ -39,26 +39,32 @@ unityProject {
 	// If '1', deploy the created executables to Steam.
 	DEPLOY_TO_STEAM : '0' | '1',
 	
+	// The Jenkins credentials to use for Steam deployment. These will be fed to `steamcmd` and should consist of user name and password.
+	STEAM_CREDENTIALS : '',
+	
 	// The Steam App ID to deploy to.
 	STEAM_ID : '',
 	
 	// The Steam Depot ID to deploy the Windows executable to.
-	STEAM_DEPOT_WINDOWS : "",
+	STEAM_DEPOT_WINDOWS : '',
 	
 	// The Steam Depot ID to deploy the Linux executable to.
-	STEAM_DEPOT_LINUX : "",
+	STEAM_DEPOT_LINUX : '',
 	
 	// The Steam Depot ID to deploy the Mac executable to.
-	STEAM_DEPOT_MAC : "",
+	STEAM_DEPOT_MAC : '',
 	
-	// The Steam branch to deploy to. Defaults to the current VCS branch with all slashes replaced with dashes ("/main/feature" becomes "main-feature").
-	STEAM_BRANCH : "",
+	// The Steam branch to deploy to. Defaults to the current VCS branch with all slashes replaced with dashes ('/main/feature' becomes 'main-feature').
+	STEAM_BRANCH : '',
 
 	// If '1', deploy the created executables to itch.io.
-	DEPLOY_TO_ITCH : "0",
+	DEPLOY_TO_ITCH : '0',
 	
-	// The ID of the itch.io page (usually consists of "${author}/${game}").
-	ITCH_ID : "",
+	// The Jenkins credentials to use for itch.io deployment. These will be fed to `butler` and should consist of an authentification token.
+	ITCH_CREDENTIALS : '',
+	
+	// The ID of the itch.io page (usually consists of '${author}/${game}').
+	ITCH_ID : '',
 
 	// Only attempt to deploy if the current VCS branch is among the branches listed.
 	DEPLOYMENT_BRANCHES : ['main', '/main'],
