@@ -8,7 +8,7 @@ All values are optional and default to the first value from among the possible v
 
 
 ### The `unityProject` command
-This command locates a Unity project inside the repository, runs its unit tests, builds executables, and (if successful) deploys the executables to either Steam or itch.io.
+This command locates a Unity project inside the repository, updates the project version, runs its unit tests, builds executables, and (if successful) deploys the executables to either Steam or itch.io.
 
 ```groovy
 unityProject {
