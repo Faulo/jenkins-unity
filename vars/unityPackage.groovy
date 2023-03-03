@@ -56,8 +56,8 @@ def call(body) {
 	if (deployAny) {
 		if (args.DEPLOY_TO_VERDACCIO == '1') {
 			dir(pack) {
-				def localVersion = callShell "node --eval=\"process.stdout.write(require('./package.json').version)\""
-				def publishedVersion = callShell "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
+				def localVersion = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
+				def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
 
 				if (localVersion != publishedVersion) {
 					stage('Deploying to: Verdaccio') {

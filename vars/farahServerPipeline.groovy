@@ -22,12 +22,12 @@ def call(body) {
 		stages {
 			stage('Install dependencies') {
 				steps {
-					bat "$PHP composer.phar update --no-interaction"
+					callShell "$PHP composer.phar update --no-interaction"
 				}
 			}
 			stage('Run PHPUnit') {
 				steps {
-					bat "$PHP vendor/phpunit/phpunit/phpunit --log-junit phpunit.results.xml"
+					callShell "$PHP vendor/phpunit/phpunit/phpunit --log-junit phpunit.results.xml"
 					junit 'phpunit.results.xml'
 				}
 			}
@@ -38,8 +38,8 @@ def call(body) {
 				steps {
 					dir("$VHOST") {
 						checkout scm
-						bat "git checkout --force -B $BRANCH_NAME origin/$BRANCH_NAME"
-						bat "$PHP composer.phar update --no-interaction --no-dev"
+						callShell "git checkout --force -B $BRANCH_NAME origin/$BRANCH_NAME"
+						callShell "$PHP composer.phar update --no-interaction --no-dev"
 					}
 				}
 			}

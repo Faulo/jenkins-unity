@@ -88,7 +88,7 @@ def call(body) {
 				stage('Building for: Windows') {
 					callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
 					junit(testResults: 'build-windows.xml')
-					callShell 'zip -r build-windows.zip build-windows'
+					callShellStatus 'zip -r build-windows.zip build-windows'
 					archiveArtifacts(artifacts: 'build-windows.zip')
 				}
 			}
@@ -97,7 +97,7 @@ def call(body) {
 				stage('Building for: Linux') {
 					callUnity "unity-build '${project}' '${reports}/build-linux' linux 1>'${reports}/build-linux.xml'"
 					junit(testResults: 'build-linux.xml')
-					callShell 'zip -r build-linux.zip build-linux'
+					callShellStatus 'zip -r build-linux.zip build-linux'
 					archiveArtifacts(artifacts: 'build-linux.zip')
 				}
 			}
@@ -106,7 +106,7 @@ def call(body) {
 				stage('Building for: MacOS') {
 					callUnity "unity-build '${project}' '${reports}/build-mac' mac 1>'${reports}/build-mac.xml'"
 					junit(testResults: 'build-mac.xml')
-					callShell 'zip -r build-mac.zip build-mac'
+					callShellStatus 'zip -r build-mac.zip build-mac'
 					archiveArtifacts(artifacts: 'build-mac.zip')
 				}
 			}
@@ -117,7 +117,7 @@ def call(body) {
 					junit(testResults: 'install-webgl.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/build-webgl' 1>'${reports}/build-webgl.xml'"
 					junit(testResults: 'build-webgl.xml')
-					callShell 'zip -r build-webgl.zip build-webgl'
+					callShellStatus 'zip -r build-webgl.zip build-webgl'
 					archiveArtifacts(artifacts: 'build-webgl.zip')
 					publishHTML([
 						allowMissing: false,
@@ -138,7 +138,7 @@ def call(body) {
 					junit(testResults: 'install-android.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/build-android.apk' 1>'${reports}/build-android.xml'"
 					junit(testResults: 'build-android.xml')
-					callShell 'zip -r build-android.zip build-android.apk'
+					callShellStatus 'zip -r build-android.zip build-android.apk'
 					archiveArtifacts(artifacts: 'build-android.zip')
 				}
 			}
