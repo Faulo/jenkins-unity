@@ -1,3 +1,7 @@
 def String call(String script) {
-	return sh(script: script, returnStdout: true).trim();
+	if (isUnix()) {
+		return sh(script: script, returnStdout: true).trim();
+	} else {
+		return bat(script: script, returnStdout: true).trim();
+	}
 }
