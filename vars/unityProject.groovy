@@ -88,8 +88,7 @@ def call(body) {
 				stage('Building for: Windows') {
 					callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
 					junit(testResults: 'build-windows.xml')
-					callShellStatus 'zip -r build-windows.zip build-windows'
-					archiveArtifacts(artifacts: 'build-windows.zip')
+					zip(zipFile: 'build-windows.zip', dir: 'build-windows', archive: true)
 				}
 			}
 
@@ -97,8 +96,7 @@ def call(body) {
 				stage('Building for: Linux') {
 					callUnity "unity-build '${project}' '${reports}/build-linux' linux 1>'${reports}/build-linux.xml'"
 					junit(testResults: 'build-linux.xml')
-					callShellStatus 'zip -r build-linux.zip build-linux'
-					archiveArtifacts(artifacts: 'build-linux.zip')
+					zip(zipFile: 'build-linux.zip', dir: 'build-linux', archive: true)
 				}
 			}
 
@@ -106,8 +104,7 @@ def call(body) {
 				stage('Building for: MacOS') {
 					callUnity "unity-build '${project}' '${reports}/build-mac' mac 1>'${reports}/build-mac.xml'"
 					junit(testResults: 'build-mac.xml')
-					callShellStatus 'zip -r build-mac.zip build-mac'
-					archiveArtifacts(artifacts: 'build-mac.zip')
+					zip(zipFile: 'build-mac.zip', dir: 'build-mac', archive: true)
 				}
 			}
 
@@ -117,8 +114,7 @@ def call(body) {
 					junit(testResults: 'install-webgl.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/build-webgl' 1>'${reports}/build-webgl.xml'"
 					junit(testResults: 'build-webgl.xml')
-					callShellStatus 'zip -r build-webgl.zip build-webgl'
-					archiveArtifacts(artifacts: 'build-webgl.zip')
+					zip(zipFile: 'build-webgl.zip', dir: 'build-webgl', archive: true)
 					publishHTML([
 						allowMissing: false,
 						alwaysLinkToLastBuild: false,
@@ -138,8 +134,7 @@ def call(body) {
 					junit(testResults: 'install-android.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/build-android.apk' 1>'${reports}/build-android.xml'"
 					junit(testResults: 'build-android.xml')
-					callShellStatus 'zip -r build-android.zip build-android.apk'
-					archiveArtifacts(artifacts: 'build-android.zip')
+					archiveArtifacts(artifacts: 'build-android.apk')
 				}
 			}
 
