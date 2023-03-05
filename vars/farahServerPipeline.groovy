@@ -6,7 +6,9 @@ def call(body) {
 	body()
 
 	pipeline {
-		agent any
+		agent {
+			label 'vhost'
+		}
 
 		options {
 			disableConcurrentBuilds()

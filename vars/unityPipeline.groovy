@@ -4,7 +4,7 @@ def call(body) {
 		disableResume()
 	])
 
-	node {
+	node('unity') {
 		checkout scm
 
 		unityProject(body)
