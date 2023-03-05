@@ -164,7 +164,7 @@ def call(body) {
 						withCredentials([
 							usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
 						]) {
-							callShell "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+							callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 						}
 					}
 				}
