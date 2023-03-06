@@ -153,7 +153,7 @@ def call(body) {
 							depots += "${args.STEAM_DEPOT_LINUX}=build-linux "
 						}
 						if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
-							depots += "${args.STEAM_DEPOT_MAC}=build-windows "
+							depots += "${args.STEAM_DEPOT_MAC}=build-mac "
 						}
 
 						if (depots == '') {
