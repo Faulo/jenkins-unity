@@ -1,6 +1,6 @@
 def call(body) {
 	properties([
-		disableConcurrentBuilds(abortPrevious: true),
+		disableConcurrentBuilds(),
 		disableResume()
 	])
 

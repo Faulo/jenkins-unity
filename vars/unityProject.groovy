@@ -153,7 +153,7 @@ def call(body) {
 							depots += "${args.STEAM_DEPOT_LINUX}=build-linux "
 						}
 						if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
-							depots += "${args.STEAM_DEPOT_MAC}=build-windows "
+							depots += "${args.STEAM_DEPOT_MAC}=build-mac "
 						}
 
 						if (depots == '') {
@@ -164,7 +164,7 @@ def call(body) {
 						withCredentials([
 							usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
 						]) {
-							callShell "steamcmd +login \$STEAM_CREDS_USR \$STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+							callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 						}
 					}
 				}
