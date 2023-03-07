@@ -6,6 +6,8 @@ def call(body) {
 
 		AUTOVERSION : "",
 
+		BUILD_DOCUMENTATION : "0",
+
 		TEST_MODES : "",
 
 		BUILD_FOR_WINDOWS : "0",
@@ -53,8 +55,10 @@ def call(body) {
 
 	def project = "$WORKSPACE/${args.LOCATION}"
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
+	def docs = "${project}/Documentation~"
 
 	def versionAny = args.AUTOVERSION != ''
+	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def testAny = args.TEST_MODES != ''
 	def buildAny = [
 		args.BUILD_FOR_WINDOWS,
@@ -75,6 +79,34 @@ def call(body) {
 
 	dir(reports) {
 		deleteDir()
+
+		if (docsAny) {
+			stage("Building: Documentation") {
+				dir(docs) {
+					deleteDir()
+				}
+
+				callUnity "unity-documentation '${project}'"
+				callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+				junit(testResults: 'build-solution.xml')
+
+				dir(docs) {
+					callShell "dotnet tool restore"
+					callShell "dotnet tool run docfx"
+
+					publishHTML([
+						allowMissing: false,
+						alwaysLinkToLastBuild: false,
+						keepAll: false,
+						reportDir: 'html',
+						reportFiles: 'index.html',
+						reportName: 'Documentation',
+						reportTitles: '',
+						useWrapperFileDirectly: true
+					])
+				}
+			}
+		}
 
 		if (testAny) {
 			stage("Testing: ${args.TEST_MODES}") {

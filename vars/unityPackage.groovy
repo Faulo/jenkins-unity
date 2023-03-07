@@ -34,10 +34,10 @@ def call(body) {
 	def docs = "${project}/Documentation~"
 
 	def testAny = args.TEST_MODES != ''
-	def buildAny = args.BUILD_DOCUMENTATION == '1'
+	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	if (testAny || buildAny) {
+	if (testAny || docsAny) {
 		dir(project) {
 			deleteDir()
 		}
@@ -50,7 +50,7 @@ def call(body) {
 				junit(testResults: 'package-install.xml')
 			}
 
-			if (buildAny) {
+			if (docsAny) {
 				stage("Building: Documentation") {
 					dir(docs) {
 						deleteDir()
