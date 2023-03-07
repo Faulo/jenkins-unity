@@ -20,6 +20,10 @@ unityProject {
 	AUTOVERSION : '' | 'git' | 'plastic',
 	
 	
+	// Automatically create C# docs using DocFX
+	BUILD_DOCUMENTATION = '1'
+	
+	
 	// If given, run these unit tests
 	TEST_MODES : '' | 'EditMode' | 'PlayMode' | 'EditMode PlayMode'
 
@@ -85,6 +89,10 @@ This command locates a Unity package inside the repository, runs its unit tests,
 unityPackage {
 	// Relative path to the Unity package inside the repository.
 	LOCATION : '',
+	
+	
+	// Automatically create C# docs using DocFX
+	BUILD_DOCUMENTATION = '1'
 	
 	
 	// If given, run these unit tests
