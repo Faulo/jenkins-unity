@@ -6,6 +6,8 @@ def call(body) {
 
 		TEST_MODES : "",
 
+		BUILD_DOCUMENTATION : "0",
+
 		DEPLOY_TO_VERDACCIO : "0",
 		VERDACCIO_URL : "http://verdaccio:4873",
 
@@ -29,11 +31,13 @@ def call(body) {
 	def pack = "$WORKSPACE/${args.LOCATION}"
 	def project = "$WORKSPACE_TMP/${args.LOCATION}/project"
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
+	def docs = "${project}/Documentation~"
 
 	def testAny = args.TEST_MODES != ''
+	def buildAny = args.BUILD_DOCUMENTATION == '1'
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	if (testAny) {
+	if (testAny || buildAny) {
 		dir(project) {
 			deleteDir()
 		}
@@ -43,12 +47,42 @@ def call(body) {
 
 			stage("Creating empty project with package") {
 				callUnity "unity-package-install '${pack}' '${project}' 1>'${reports}/package-install.xml'"
-				junit(testResults: 'package-install.xml', allowEmptyResults: true)
+				junit(testResults: 'package-install.xml')
 			}
 
-			stage("Testing: ${args.TEST_MODES}") {
-				callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
-				junit(testResults: 'tests.xml', allowEmptyResults: true)
+			if (buildAny) {
+				stage("Building: Documentation") {
+					dir(docs) {
+						deleteDir()
+					}
+
+					callUnity "unity-documentation '${project}'"
+					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+					junit(testResults: 'build-solution.xml')
+
+					dir(docs) {
+						callShell "dotnet tool restore"
+						callShell "dotnet tool run docfx"
+
+						publishHTML([
+							allowMissing: false,
+							alwaysLinkToLastBuild: false,
+							keepAll: false,
+							reportDir: 'html',
+							reportFiles: 'index.html',
+							reportName: 'Documentation',
+							reportTitles: '',
+							useWrapperFileDirectly: true
+						])
+					}
+				}
+			}
+
+			if (testAny) {
+				stage("Testing: ${args.TEST_MODES}") {
+					callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+					junit(testResults: 'tests.xml', allowEmptyResults: true)
+				}
 			}
 		}
 	}
