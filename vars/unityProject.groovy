@@ -55,7 +55,7 @@ def call(body) {
 
 	def project = "$WORKSPACE/${args.LOCATION}"
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
-	def docs = "${project}/Documentation~"
+	def docs = "${project}/.Documentation"
 
 	def versionAny = args.AUTOVERSION != ''
 	def docsAny = args.BUILD_DOCUMENTATION == '1'

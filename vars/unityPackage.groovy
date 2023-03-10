@@ -31,7 +31,7 @@ def call(body) {
 	def pack = "$WORKSPACE/${args.LOCATION}"
 	def project = "$WORKSPACE_TMP/${args.LOCATION}/project"
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
-	def docs = "${project}/Documentation~"
+	def docs = "${project}/.Documentation"
 
 	def testAny = args.TEST_MODES != ''
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
