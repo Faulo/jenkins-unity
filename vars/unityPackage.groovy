@@ -61,7 +61,7 @@ def call(body) {
 					junit(testResults: 'build-solution.xml')
 
 					dir(docs) {
-						catchError {
+						catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 							callShell "dotnet tool restore"
 							callShell "dotnet tool run docfx"
 
