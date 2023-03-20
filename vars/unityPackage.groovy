@@ -61,19 +61,21 @@ def call(body) {
 					junit(testResults: 'build-solution.xml')
 
 					dir(docs) {
-						callShell "dotnet tool restore"
-						callShell "dotnet tool run docfx"
+						catchError {
+							callShell "dotnet tool restore"
+							callShell "dotnet tool run docfx"
 
-						publishHTML([
-							allowMissing: false,
-							alwaysLinkToLastBuild: false,
-							keepAll: false,
-							reportDir: 'html',
-							reportFiles: 'index.html',
-							reportName: 'Documentation',
-							reportTitles: '',
-							useWrapperFileDirectly: true
-						])
+							publishHTML([
+								allowMissing: false,
+								alwaysLinkToLastBuild: false,
+								keepAll: false,
+								reportDir: 'html',
+								reportFiles: 'index.html',
+								reportName: 'Documentation',
+								reportTitles: '',
+								useWrapperFileDirectly: true
+							])
+						}
 					}
 				}
 			}
