@@ -101,7 +101,7 @@ def call(body) {
 						def changelogContent = readFile(args.CHANGELOG_LOCATION)
 						def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
 						if (!changelogContent.find(expectedChangelogLine)) {
-							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '${expectedChangelogLine}'. Current changelog is:\n${changelogContent}"
+							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
 						}
 					}
 				}
