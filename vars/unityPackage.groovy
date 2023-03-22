@@ -98,7 +98,7 @@ def call(body) {
 							unstable "${args.CHANGELOG_LOCATION} is missing."
 						}
 
-						def changelogContent = readFile(args.VERDACCIO_CHANGELOG)
+						def changelogContent = readFile(args.CHANGELOG_LOCATION)
 						def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
 						if (!changelogContent.find(expectedChangelogLine)) {
 							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '${expectedChangelogLine}'. Current changelog is:\n${changelogContent}"
