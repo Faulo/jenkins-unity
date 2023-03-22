@@ -5,6 +5,8 @@ def call(body) {
 		LOCATION : "",
 
 		TEST_MODES : "",
+		TEST_CHANGELOG : '1',
+		CHANGELOG_LOCATION : 'CHANGELOG.md',
 
 		BUILD_DOCUMENTATION : "0",
 
@@ -36,6 +38,8 @@ def call(body) {
 	def testAny = args.TEST_MODES != ''
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+
+	def localVersion = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
 
 	if (testAny || docsAny) {
 		dir(project) {
@@ -80,6 +84,22 @@ def call(body) {
 				}
 			}
 
+			if (args.TEST_CHANGELOG == '1') {
+				dir(pack) {
+					stage("Testing: ${args.CHANGELOG_LOCATION}") {
+						if (!fileExists(args.CHANGELOG_LOCATION)) {
+							unstable "${args.CHANGELOG_LOCATION} is missing."
+						}
+
+						def changelogContent = readFile(args.VERDACCIO_CHANGELOG)
+						def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
+						if (!changelogContent.find(expectedChangelogLine)) {
+							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '${expectedChangelogLine}'. Current changelog is:\n${changelogContent}"
+						}
+					}
+				}
+			}
+
 			if (testAny) {
 				stage("Testing: ${args.TEST_MODES}") {
 					callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
@@ -92,14 +112,14 @@ def call(body) {
 	if (deployAny) {
 		if (args.DEPLOY_TO_VERDACCIO == '1') {
 			dir(pack) {
-				def localVersion = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
 				def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
 
 				if (localVersion != publishedVersion) {
 					stage('Deploying to: Verdaccio') {
 						if (currentBuild.currentResult != "SUCCESS") {
-							error "Current result is '${currentBuild.currentResult}', skipping deployment of version ${localVersion}."
+							error "Current result is '${currentBuild.currentResult}', aborting deployment of version ${localVersion}."
 						}
+
 						echo "Deploying update: ${publishedVersion} => ${localVersion}"
 						callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 					}
