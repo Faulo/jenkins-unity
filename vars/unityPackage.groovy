@@ -14,6 +14,8 @@ def call(body) {
 		VERDACCIO_URL : "http://verdaccio:4873",
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
+
+		VERSION : ''
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -39,7 +41,12 @@ def call(body) {
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	def localVersion = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
+	if (args.VERSION == '') {
+		dir(pack) {
+			args.VERSION = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
+		}
+	}
+	def localVersion = args.VERSION
 
 	if (testAny || docsAny) {
 		dir(project) {
