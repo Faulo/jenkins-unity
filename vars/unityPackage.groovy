@@ -1,7 +1,7 @@
 def call(body) {
 	assert env.BRANCH_NAME != null
 
-	def args= [
+	def args = [
 		LOCATION : "",
 
 		TEST_MODES : "",
