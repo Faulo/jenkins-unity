@@ -1,5 +1,9 @@
 # Unity Commands for Jenkins
-This repository adds build commands for Unity.
+This repository adds build commands for Unity to a Jenkins pipeline context.
+
+### Prerequisites
+
+The Jenkins server needs access to a node tagged with the label `unity`. That node needs the environment variable `COMPOSE_UNITY`, which should point to a working installation of the composer package [slothsoft/unity](https://github.com/Faulo/slothsoft-unity). (On Linux, this would be something like `composer -d /var/unity exec`, whereas on Windows, it could be `composer -d C:\Webserver\unity exec`. Consult that package for information on how to handle Unity licenses.)
 
 ## Usage
 All of these commands need to be placed inside a `node` block of the iterative or a `steps` block of the declarative Jenkins pipeline.
