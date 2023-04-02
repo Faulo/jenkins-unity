@@ -1,4 +1,4 @@
-# Jenkins Pipeline
+# Unity Commands for Jenkins
 This repository adds build commands for Unity.
 
 ## Usage
