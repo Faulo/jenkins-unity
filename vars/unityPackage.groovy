@@ -48,6 +48,22 @@ def call(body) {
 	}
 	def localVersion = args.VERSION
 
+	if (args.TEST_CHANGELOG == '1') {
+		dir(pack) {
+			stage("Testing: ${args.CHANGELOG_LOCATION}") {
+				if (!fileExists(args.CHANGELOG_LOCATION)) {
+					unstable "${args.CHANGELOG_LOCATION} is missing."
+				}
+
+				def changelogContent = readFile(args.CHANGELOG_LOCATION)
+				def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
+				if (!changelogContent.find(expectedChangelogLine)) {
+					unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
+				}
+			}
+		}
+	}
+
 	if (testAny || docsAny) {
 		dir(project) {
 			deleteDir()
@@ -86,22 +102,6 @@ def call(body) {
 								reportTitles: '',
 								useWrapperFileDirectly: true
 							])
-						}
-					}
-				}
-			}
-
-			if (args.TEST_CHANGELOG == '1') {
-				dir(pack) {
-					stage("Testing: ${args.CHANGELOG_LOCATION}") {
-						if (!fileExists(args.CHANGELOG_LOCATION)) {
-							unstable "${args.CHANGELOG_LOCATION} is missing."
-						}
-
-						def changelogContent = readFile(args.CHANGELOG_LOCATION)
-						def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
-						if (!changelogContent.find(expectedChangelogLine)) {
-							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
 						}
 					}
 				}
