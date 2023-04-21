@@ -127,12 +127,12 @@ def call(body) {
 								fileCopyOperation(
 								includes: args.EDITORCONFIG_LOCATION,
 								targetLocation: project,
-								flatten: true
+								flattenFiles: true
 								)
 							])
 						}
 						dir(project) {
-							callShell "dotnet format --verify-no-changes"
+							callShell "dotnet format --verify-no-changes project.sln"
 						}
 					}
 				}
