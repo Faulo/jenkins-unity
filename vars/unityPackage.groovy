@@ -118,15 +118,20 @@ def call(body) {
 
 			if (testAny) {
 				if (args.TEST_FORMATTING == '1') {
-					dir(project) {
-						stage("Test: C# formatting") {
+					stage("Test: C# formatting") {
+						dir(env.WORKSPACE) {
 							if (!fileExists(args.EDITORCONFIG_LOCATION)) {
 								unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
 							}
 							fileOperations([
-								fileCopyOperation(includes: args.EDITORCONFIG_LOCATION, targetLocation: '.')
+								fileCopyOperation(
+								includes: args.EDITORCONFIG_LOCATION,
+								targetLocation: project,
+								flatten: true
+								)
 							])
-
+						}
+						dir(project) {
 							callShell "dotnet format --verify-no-changes"
 						}
 					}
