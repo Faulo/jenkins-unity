@@ -2,17 +2,20 @@ def call(body) {
 	assert env.BRANCH_NAME != null
 
 	def args = [
-		LOCATION : "",
+		LOCATION : '',
 
-		TEST_MODES : "",
+		TEST_MODES : '',
+
 		TEST_CHANGELOG : '1',
-		TEST_FORMATTING : '0',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
 
-		BUILD_DOCUMENTATION : "0",
+		TEST_FORMATTING : '0',
+		EDITORCONFIG_LOCATION : '.editorconfig',
 
-		DEPLOY_TO_VERDACCIO : "0",
-		VERDACCIO_URL : "http://verdaccio:4873",
+		BUILD_DOCUMENTATION : '0',
+
+		DEPLOY_TO_VERDACCIO : '0',
+		VERDACCIO_URL : 'http://verdaccio:4873',
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
 
@@ -54,7 +57,7 @@ def call(body) {
 		dir(pack) {
 			stage("Test: ${args.CHANGELOG_LOCATION}") {
 				if (!fileExists(args.CHANGELOG_LOCATION)) {
-					unstable "${args.CHANGELOG_LOCATION} is missing."
+					unstable "Changelog at '${args.CHANGELOG_LOCATION}' is missing."
 				}
 
 				def changelogContent = readFile(args.CHANGELOG_LOCATION)
@@ -117,12 +120,14 @@ def call(body) {
 				if (args.TEST_FORMATTING == '1') {
 					dir(project) {
 						stage("Test: C# formatting") {
-							def files = callShellStdout("ls | grep '^.*csproj'").split("\n")
-							for (file in files) {
-								warnError("Code needs formatting!") {
-									callShell "dotnet format --verify-no-changes ${file}"
-								}
+							if (!fileExists(args.EDITORCONFIG_LOCATION)) {
+								unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
 							}
+							fileOperations([
+								fileCopyOperation(includes: args.EDITORCONFIG_LOCATION, targetLocation: '.')
+							])
+
+							callShell "dotnet format --verify-no-changes"
 						}
 					}
 				}
