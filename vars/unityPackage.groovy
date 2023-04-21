@@ -6,6 +6,7 @@ def call(body) {
 
 		TEST_MODES : "",
 		TEST_CHANGELOG : '1',
+		TEST_FORMATTING : '0',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
 
 		BUILD_DOCUMENTATION : "0",
@@ -37,7 +38,7 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
-	def testAny = args.TEST_MODES != ''
+	def testAny = args.TEST_MODES != '' || args.TEST_FORMATTING == '1'
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
@@ -108,9 +109,24 @@ def call(body) {
 			}
 
 			if (testAny) {
-				stage("Testing: ${args.TEST_MODES}") {
-					callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
-					junit(testResults: 'tests.xml', allowEmptyResults: true)
+				if (args.TEST_FORMATTING == '1') {
+					dir(project) {
+						stage("Testing: Formatting") {
+							def files = callShellStdout("ls | grep '^.*csproj'").split("\n")
+							for (file in files) {
+								warnError("Code needs formatting!") {
+									callShell "dotnet format --verify-no-changes ${file}"
+								}
+							}
+						}
+					}
+				}
+
+				if (args.TEST_MODES != '') {
+					stage("Testing: ${args.TEST_MODES}") {
+						callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+						junit(testResults: 'tests.xml', allowEmptyResults: true)
+					}
 				}
 			}
 		}
