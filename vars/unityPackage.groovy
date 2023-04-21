@@ -40,6 +40,7 @@ def call(body) {
 
 	def testAny = args.TEST_MODES != '' || args.TEST_FORMATTING == '1'
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
+	def solutionAny = args.TEST_FORMATTING == '1' || docyAny
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	if (args.VERSION == '') {
@@ -51,7 +52,7 @@ def call(body) {
 
 	if (args.TEST_CHANGELOG == '1') {
 		dir(pack) {
-			stage("Testing: ${args.CHANGELOG_LOCATION}") {
+			stage("Test: ${args.CHANGELOG_LOCATION}") {
 				if (!fileExists(args.CHANGELOG_LOCATION)) {
 					unstable "${args.CHANGELOG_LOCATION} is missing."
 				}
@@ -73,21 +74,25 @@ def call(body) {
 		dir(reports) {
 			deleteDir()
 
-			stage("Creating empty project with package") {
+			stage("Build: Empty project with package") {
 				callUnity "unity-package-install '${pack}' '${project}' 1>'${reports}/package-install.xml'"
 				junit(testResults: 'package-install.xml')
 			}
 
+			if (solutionAny) {
+				stage("Build: C# solution") {
+					callUnity "unity-documentation '${project}'"
+					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+					junit(testResults: 'build-solution.xml')
+				}
+			}
+
 			if (docsAny) {
-				stage("Building: Documentation") {
+				stage("Build: DocFX documentation") {
 					catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 						dir(docs) {
 							deleteDir()
 						}
-
-						callUnity "unity-documentation '${project}'"
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
-						junit(testResults: 'build-solution.xml')
 
 						dir(docs) {
 							callShell "dotnet tool restore"
@@ -111,7 +116,7 @@ def call(body) {
 			if (testAny) {
 				if (args.TEST_FORMATTING == '1') {
 					dir(project) {
-						stage("Testing: Formatting") {
+						stage("Test: C# formatting") {
 							def files = callShellStdout("ls | grep '^.*csproj'").split("\n")
 							for (file in files) {
 								warnError("Code needs formatting!") {
@@ -123,7 +128,7 @@ def call(body) {
 				}
 
 				if (args.TEST_MODES != '') {
-					stage("Testing: ${args.TEST_MODES}") {
+					stage("Test: ${args.TEST_MODES}") {
 						callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
 						junit(testResults: 'tests.xml', allowEmptyResults: true)
 					}
@@ -138,7 +143,7 @@ def call(body) {
 				def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
 
 				if (localVersion != publishedVersion) {
-					stage('Deploying to: Verdaccio') {
+					stage('Deploy to: Verdaccio') {
 						if (currentBuild.currentResult != "SUCCESS") {
 							error "Current result is '${currentBuild.currentResult}', aborting deployment of version ${localVersion}."
 						}
