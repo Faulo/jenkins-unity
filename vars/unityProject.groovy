@@ -71,7 +71,7 @@ def call(body) {
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	if (versionAny) {
-		stage("Auto-Versioning") {
+		stage("Set: Project version") {
 			def version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
 			callUnity "unity-project-version '${project}' set '${version}'"
 		}
