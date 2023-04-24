@@ -28,8 +28,9 @@ unityProject {
 	BUILD_DOCUMENTATION = '1'
 	
 	
-	// If given, run these unit tests
-	TEST_MODES : '' | 'EditMode' | 'PlayMode' | 'EditMode PlayMode'
+	// Run these unit tests
+	TEST_UNITY : '1',
+	TEST_MODES : 'EditMode PlayMode',
 
 
 	// If '1', create a Windows executable.
@@ -99,12 +100,21 @@ unityPackage {
 	BUILD_DOCUMENTATION = '1'
 	
 	
-	// If given, run these unit tests
-	TEST_MODES : '' | 'EditMode' | 'PlayMode' | 'EditMode PlayMode'
+	// Run these unit tests
+	TEST_UNITY : '1',
+	TEST_MODES : 'EditMode PlayMode',
 
+
+	// Verify that a current changelog entry exists
+	TEST_CHANGELOG : '1',
+	CHANGELOG_LOCATION : 'CHANGELOG.md',
+
+	// Verify that files are formatted according to an .editorconfig
+	TEST_FORMATTING : '1',
+	EDITORCONFIG_LOCATION : '.editorconfig',
 
 	// If '1', deploy the package as-is to a Verdaccio.
-	DEPLOY_TO_VERDACCIO : '0' | '1',
+	DEPLOY_TO_VERDACCIO : '1',
 	
 	// The URL of the Verdaccio server to use for deployment.
 	VERDACCIO_URL : 'http://verdaccio:4873',
