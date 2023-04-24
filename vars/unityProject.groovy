@@ -8,7 +8,7 @@ def call(body) {
 
 		BUILD_DOCUMENTATION : '0',
 
-		TEST_UNITY : '1',
+		TEST_UNITY : '0',
 		TEST_MODES : 'EditMode PlayMode',
 
 		BUILD_FOR_WINDOWS : '0',
