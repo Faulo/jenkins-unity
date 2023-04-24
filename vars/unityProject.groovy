@@ -2,31 +2,32 @@ def call(body) {
 	assert env.BRANCH_NAME != null
 
 	def args = [
-		LOCATION : "",
+		LOCATION : '',
 
-		AUTOVERSION : "",
+		AUTOVERSION : '',
 
-		BUILD_DOCUMENTATION : "0",
+		BUILD_DOCUMENTATION : '0',
 
-		TEST_MODES : "",
+		TEST_UNITY : '0',
+		TEST_MODES : 'EditMode PlayMode',
 
-		BUILD_FOR_WINDOWS : "0",
-		BUILD_FOR_LINUX : "0",
-		BUILD_FOR_MAC : "0",
-		BUILD_FOR_WEBGL : "0",
-		BUILD_FOR_ANDROID : "0",
+		BUILD_FOR_WINDOWS : '0',
+		BUILD_FOR_LINUX : '0',
+		BUILD_FOR_MAC : '0',
+		BUILD_FOR_WEBGL : '0',
+		BUILD_FOR_ANDROID : '0',
 
-		DEPLOY_TO_STEAM : "0",
-		STEAM_CREDENTIALS : "",
-		STEAM_ID : "",
-		STEAM_DEPOT_WINDOWS : "",
-		STEAM_DEPOT_LINUX : "",
-		STEAM_DEPOT_MAC : "",
-		STEAM_BRANCH : "",
+		DEPLOY_TO_STEAM : '0',
+		STEAM_CREDENTIALS : '',
+		STEAM_ID : '',
+		STEAM_DEPOT_WINDOWS : '',
+		STEAM_DEPOT_LINUX : '',
+		STEAM_DEPOT_MAC : '',
+		STEAM_BRANCH : '',
 
-		DEPLOY_TO_ITCH : "0",
-		ITCH_CREDENTIALS : "",
-		ITCH_ID : "",
+		DEPLOY_TO_ITCH : '0',
+		ITCH_CREDENTIALS : '',
+		ITCH_ID : '',
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
 	]
@@ -59,7 +60,7 @@ def call(body) {
 
 	def versionAny = args.AUTOVERSION != ''
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
-	def testAny = args.TEST_MODES != ''
+	def testAny = args.TEST_UNITY == '1'
 	def buildAny = [
 		args.BUILD_FOR_WINDOWS,
 		args.BUILD_FOR_LINUX,
@@ -81,7 +82,7 @@ def call(body) {
 		deleteDir()
 
 		if (docsAny) {
-			stage("Building: Documentation") {
+			stage("Build: DocFX documentation") {
 				catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 					dir(docs) {
 						deleteDir()
@@ -111,7 +112,10 @@ def call(body) {
 		}
 
 		if (testAny) {
-			stage("Testing: ${args.TEST_MODES}") {
+			stage("Test: Unity Test Runner") {
+				if (args.TEST_MODES == '') {
+					unstable "Parameter TEST_MODES is missing."
+				}
 				callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
 				junit(testResults: 'tests.xml', allowEmptyResults: true)
 			}
@@ -119,7 +123,7 @@ def call(body) {
 
 		if (buildAny) {
 			if (args.BUILD_FOR_WINDOWS == '1') {
-				stage('Building for: Windows') {
+				stage('Build: Windows') {
 					callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
 					junit(testResults: 'build-windows.xml')
 					zip(zipFile: 'build-windows.zip', dir: 'build-windows', archive: true)
@@ -127,7 +131,7 @@ def call(body) {
 			}
 
 			if (args.BUILD_FOR_LINUX == '1') {
-				stage('Building for: Linux') {
+				stage('Build: Linux') {
 					callUnity "unity-build '${project}' '${reports}/build-linux' linux 1>'${reports}/build-linux.xml'"
 					junit(testResults: 'build-linux.xml')
 					zip(zipFile: 'build-linux.zip', dir: 'build-linux', archive: true)
@@ -135,7 +139,7 @@ def call(body) {
 			}
 
 			if (args.BUILD_FOR_MAC == '1') {
-				stage('Building for: MacOS') {
+				stage('Build: MacOS') {
 					callUnity "unity-build '${project}' '${reports}/build-mac' mac 1>'${reports}/build-mac.xml'"
 					junit(testResults: 'build-mac.xml')
 					zip(zipFile: 'build-mac.zip', dir: 'build-mac', archive: true)
@@ -143,7 +147,7 @@ def call(body) {
 			}
 
 			if (args.BUILD_FOR_WEBGL == '1') {
-				stage('Building for: WebGL') {
+				stage('Build: WebGL') {
 					callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
 					junit(testResults: 'install-webgl.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/build-webgl' 1>'${reports}/build-webgl.xml'"
@@ -163,7 +167,7 @@ def call(body) {
 			}
 
 			if (args.BUILD_FOR_ANDROID == '1') {
-				stage('Building for: Android') {
+				stage('Build: Android') {
 					callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
 					junit(testResults: 'install-android.xml')
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/build-android.apk' 1>'${reports}/build-android.xml'"
@@ -174,7 +178,7 @@ def call(body) {
 
 			if (deployAny) {
 				if (args.DEPLOY_TO_STEAM == '1') {
-					stage('Deploying to: Steam') {
+					stage('Deploy to: Steam') {
 						if (currentBuild.currentResult != "SUCCESS") {
 							error "Current result is '${currentBuild.currentResult}', skipping deployment."
 						}
@@ -204,7 +208,7 @@ def call(body) {
 				}
 
 				if (args.DEPLOY_TO_ITCH == '1') {
-					stage('Deploying to: itch.io') {
+					stage('Deploy to: itch.io') {
 						if (currentBuild.currentResult != "SUCCESS") {
 							error "Current result is '${currentBuild.currentResult}', skipping deployment."
 						}
