@@ -60,6 +60,7 @@ def call(body) {
 
 	def versionAny = args.AUTOVERSION != ''
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
+	def solutionAny = docsAny
 	def testAny = args.TEST_UNITY == '1'
 	def buildAny = [
 		args.BUILD_FOR_WINDOWS,
@@ -81,6 +82,13 @@ def call(body) {
 	dir(reports) {
 		deleteDir()
 
+		if (solutionAny) {
+			stage("Build: C# solution") {
+				callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+				junit(testResults: 'build-solution.xml')
+			}
+		}
+
 		if (docsAny) {
 			stage("Build: DocFX documentation") {
 				catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
@@ -89,8 +97,6 @@ def call(body) {
 					}
 
 					callUnity "unity-documentation '${project}'"
-					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
-					junit(testResults: 'build-solution.xml')
 
 					dir(docs) {
 						callShell "dotnet tool restore"

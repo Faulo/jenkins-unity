@@ -85,7 +85,6 @@ def call(body) {
 
 			if (solutionAny) {
 				stage("Build: C# solution") {
-					callUnity "unity-documentation '${project}'"
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
 					junit(testResults: 'build-solution.xml')
 				}
@@ -97,6 +96,8 @@ def call(body) {
 						dir(docs) {
 							deleteDir()
 						}
+
+						callUnity "unity-documentation '${project}'"
 
 						dir(docs) {
 							callShell "dotnet tool restore"
