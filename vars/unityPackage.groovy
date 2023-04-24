@@ -134,7 +134,9 @@ def call(body) {
 							])
 						}
 						dir(project) {
-							callShell "dotnet format --verify-no-changes project.sln"
+							warnError("Code needs formatting!") {
+								callShell "dotnet format --verify-no-changes project.sln"
+							}
 						}
 					}
 				}
