@@ -4,7 +4,8 @@ def call(body) {
 	def args = [
 		LOCATION : '',
 
-		TEST_MODES : '',
+		TEST_UNITY : '1',
+		TEST_MODES : 'EditMode PlayMode',
 
 		TEST_CHANGELOG : '1',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
@@ -41,7 +42,7 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
-	def testAny = args.TEST_MODES != '' || args.TEST_FORMATTING == '1'
+	def testAny = args.TEST_UNITY == '1' || args.TEST_FORMATTING == '1'
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
 	def solutionAny = args.TEST_FORMATTING == '1' || docyAny
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
@@ -137,8 +138,11 @@ def call(body) {
 					}
 				}
 
-				if (args.TEST_MODES != '') {
-					stage("Test: ${args.TEST_MODES}") {
+				if (args.TEST_UNITY == '1') {
+					stage("Test: Unity Test Runner") {
+						if (args.TEST_MODES == '') {
+							unstable "Parameter TEST_MODES is missing."
+						}
 						callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
 						junit(testResults: 'tests.xml', allowEmptyResults: true)
 					}
