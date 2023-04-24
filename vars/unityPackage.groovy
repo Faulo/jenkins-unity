@@ -44,7 +44,7 @@ def call(body) {
 
 	def testAny = args.TEST_UNITY == '1' || args.TEST_FORMATTING == '1'
 	def docsAny = args.BUILD_DOCUMENTATION == '1'
-	def solutionAny = args.TEST_FORMATTING == '1' || docyAny
+	def solutionAny = args.TEST_FORMATTING == '1' || docsAny
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
 	if (args.VERSION == '') {
