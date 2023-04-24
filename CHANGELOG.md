@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved the changelog test to be the first stage to be run.
 
 ### Added
-- Added 'TEST_FORMATTING' for packages. Requires the package to have [Slothsoft's UnityExtensions](https://github.com/Faulo/UnityExtensions) installed.
+- Added 'TEST_FORMATTING' and 'EDITORCONFIG_LOCATION' for packages. Requires the custom manifest for [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) to include [Slothsoft's UnityExtensions](https://github.com/Faulo/UnityExtensions).
 
 ## [1.0.0] - 2023-04-02
 
