@@ -112,7 +112,7 @@ def call(body) {
 		}
 
 		if (testAny) {
-			stage("Test: Unity Test Runner") {
+			stage("Test: ${args.TEST_MODES}") {
 				if (args.TEST_MODES == '') {
 					unstable "Parameter TEST_MODES is missing."
 				}

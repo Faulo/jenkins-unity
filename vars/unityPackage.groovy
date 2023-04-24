@@ -119,7 +119,7 @@ def call(body) {
 
 			if (testAny) {
 				if (args.TEST_FORMATTING == '1') {
-					stage("Test: C# formatting") {
+					stage("Test: ${args.EDITORCONFIG_LOCATION}") {
 						dir(env.WORKSPACE) {
 							if (!fileExists(args.EDITORCONFIG_LOCATION)) {
 								unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
@@ -139,7 +139,7 @@ def call(body) {
 				}
 
 				if (args.TEST_UNITY == '1') {
-					stage("Test: Unity Test Runner") {
+					stage("Test: ${args.TEST_MODES}") {
 						if (args.TEST_MODES == '') {
 							unstable "Parameter TEST_MODES is missing."
 						}
