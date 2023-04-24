@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2023-04-24
+
+### Changed
+- Changed TEST_MODES parameter by adding TEST_UNITY to determine whether or not any Test Runner tests will be run. TEST_UNITY is '1' by default for packages, '0' for projects.
+- Changed most stage names.
+- Moved the changelog test to be the first stage to be run.
+
+### Added
+- Added 'TEST_FORMATTING' for packages. Requires the package to have [Slothsoft's UnityExtensions](https://github.com/Faulo/UnityExtensions) installed.
+
 ## [1.0.0] - 2023-04-02
 
 ### Added
