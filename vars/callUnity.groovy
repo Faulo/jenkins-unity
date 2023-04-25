@@ -12,7 +12,7 @@ class CallUnity {
 
 def String call(String body) {
 	if (CallUnity.initialize()) {
-		callComposer('update');
+		callComposer('update --no-dev');
 	}
 	return callComposer("exec ${body}");
 }
