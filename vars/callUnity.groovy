@@ -1,3 +1,7 @@
 def String call(String body) {
-	return callShellStdout("$COMPOSE_UNITY ${body}");
+	if (!callUnity.called) {
+		callUnity.called = true;
+		callComposer('update');
+	}
+	return callComposer("exec ${body}");
 }
