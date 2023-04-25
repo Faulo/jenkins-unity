@@ -1,15 +1,18 @@
 class CallUnity {
 	static boolean isInitialized = false;
 
-	static String call(String body) {
+	static boolean initialize() {
 		if (!isInitialized) {
 			isInitialized = true;
-			callComposer('update');
+			return true;
 		}
-		return callComposer("exec ${body}");
+		return false;
 	}
 }
 
 def String call(String body) {
-	return CallUnity.call(body);
+	if (CallUnity.initialize()) {
+		callComposer('update');
+	}
+	return callComposer("exec ${body}");
 }
