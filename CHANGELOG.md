@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2023-04-25
+
+### Added
+- Added `callComposer` command using the `COMPOSE_UNITY` variable.
+
+### Changed
+- Changed the expected `COMPOSE_UNITY` envrionment variable to just point to a valid composer installation, excluding the `exec`.
+
 ## [1.1.0] - 2023-04-24
 
 ### Changed
