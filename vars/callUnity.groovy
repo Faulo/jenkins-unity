@@ -1,6 +1,7 @@
+def boolean callUnityInitialized = false;
 def String call(String body) {
-	if (!callUnity.called) {
-		callUnity.called = true;
+	if (!callUnityInitialized) {
+		callUnityInitialized = true;
 		callComposer('update');
 	}
 	return callComposer("exec ${body}");
