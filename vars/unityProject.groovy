@@ -122,17 +122,19 @@ def call(body) {
 
 		if (args.TEST_FORMATTING == '1') {
 			stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-				dir(env.WORKSPACE) {
-					if (!fileExists(args.EDITORCONFIG_LOCATION)) {
-						unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
+				if (!fileExists("${project}/.editorconfig")) {
+					dir(env.WORKSPACE) {
+						if (!fileExists(args.EDITORCONFIG_LOCATION)) {
+							unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
+						}
+						fileOperations([
+							fileCopyOperation(
+							includes: args.EDITORCONFIG_LOCATION,
+							targetLocation: project,
+							flattenFiles: true
+							)
+						])
 					}
-					fileOperations([
-						fileCopyOperation(
-						includes: args.EDITORCONFIG_LOCATION,
-						targetLocation: project,
-						flattenFiles: true
-						)
-					])
 				}
 				dir(project) {
 					def files = findFiles(glob: '*.sln')
