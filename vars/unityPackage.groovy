@@ -42,10 +42,8 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
-	def testAny = args.TEST_UNITY == '1' || args.TEST_FORMATTING == '1'
-	def docsAny = args.BUILD_DOCUMENTATION == '1'
-	def solutionAny = args.TEST_FORMATTING == '1' || docsAny
-	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+	def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
+	def createProject = createSolution || args.TEST_UNITY == '1'
 
 	if (args.VERSION == '') {
 		dir(pack) {
@@ -70,7 +68,7 @@ def call(body) {
 		}
 	}
 
-	if (testAny || docsAny) {
+	if (createProject) {
 		dir(project) {
 			deleteDir()
 		}
@@ -83,14 +81,14 @@ def call(body) {
 				junit(testResults: 'package-install.xml')
 			}
 
-			if (solutionAny) {
+			if (createSolution) {
 				stage("Build: C# solution") {
 					callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
 					junit(testResults: 'build-solution.xml')
 				}
 			}
 
-			if (docsAny) {
+			if (args.BUILD_DOCUMENTATION == '1') {
 				stage("Build: DocFX documentation") {
 					catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 						dir(docs) {
@@ -118,43 +116,41 @@ def call(body) {
 				}
 			}
 
-			if (testAny) {
-				if (args.TEST_FORMATTING == '1') {
-					stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-						dir(env.WORKSPACE) {
-							if (!fileExists(args.EDITORCONFIG_LOCATION)) {
-								unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
-							}
-							fileOperations([
-								fileCopyOperation(
-								includes: args.EDITORCONFIG_LOCATION,
-								targetLocation: project,
-								flattenFiles: true
-								)
-							])
+			if (args.TEST_FORMATTING == '1') {
+				stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+					dir(env.WORKSPACE) {
+						if (!fileExists(args.EDITORCONFIG_LOCATION)) {
+							unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
 						}
-						dir(project) {
-							warnError("Code needs formatting!") {
-								callShell "dotnet format --verify-no-changes project.sln"
-							}
+						fileOperations([
+							fileCopyOperation(
+							includes: args.EDITORCONFIG_LOCATION,
+							targetLocation: project,
+							flattenFiles: true
+							)
+						])
+					}
+					dir(project) {
+						warnError("Code needs formatting!") {
+							callShell "dotnet format --verify-no-changes project.sln"
 						}
 					}
 				}
+			}
 
-				if (args.TEST_UNITY == '1') {
-					stage("Test: ${args.TEST_MODES}") {
-						if (args.TEST_MODES == '') {
-							unstable "Parameter TEST_MODES is missing."
-						}
-						callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
-						junit(testResults: 'tests.xml', allowEmptyResults: true)
+			if (args.TEST_UNITY == '1') {
+				stage("Test: ${args.TEST_MODES}") {
+					if (args.TEST_MODES == '') {
+						unstable "Parameter TEST_MODES is missing."
 					}
+					callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+					junit(testResults: 'tests.xml', allowEmptyResults: true)
 				}
 			}
 		}
 	}
 
-	if (deployAny) {
+	if (args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)) {
 		if (args.DEPLOY_TO_VERDACCIO == '1') {
 			dir(pack) {
 				def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"

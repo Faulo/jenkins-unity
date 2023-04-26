@@ -1,4 +1,4 @@
-class CallUnity {
+class CallUnityInitializer {
 	static boolean isInitialized = false;
 
 	static boolean initialize() {
@@ -11,7 +11,7 @@ class CallUnity {
 }
 
 def String call(String body) {
-	if (CallUnity.initialize()) {
+	if (CallUnityInitializer.initialize()) {
 		callComposer('update --no-interaction --no-dev');
 	}
 	return callComposer("exec ${body}");
