@@ -11,6 +11,9 @@ def call(body) {
 		TEST_UNITY : '0',
 		TEST_MODES : 'EditMode PlayMode',
 
+		TEST_FORMATTING : '0',
+		EDITORCONFIG_LOCATION : '.editorconfig',
+
 		BUILD_FOR_WINDOWS : '0',
 		BUILD_FOR_LINUX : '0',
 		BUILD_FOR_MAC : '0',
@@ -60,7 +63,7 @@ def call(body) {
 
 	def setVersion = args.AUTOVERSION != ''
 
-	def createSolution = args.BUILD_DOCUMENTATION == '1'
+	def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
 	def createBuild = [
 		args.BUILD_FOR_WINDOWS,
 		args.BUILD_FOR_LINUX,
@@ -112,6 +115,31 @@ def call(body) {
 							reportTitles: '',
 							useWrapperFileDirectly: true
 						])
+					}
+				}
+			}
+		}
+
+		if (args.TEST_FORMATTING == '1') {
+			stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+				dir(env.WORKSPACE) {
+					if (!fileExists(args.EDITORCONFIG_LOCATION)) {
+						unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
+					}
+					fileOperations([
+						fileCopyOperation(
+						includes: args.EDITORCONFIG_LOCATION,
+						targetLocation: project,
+						flattenFiles: true
+						)
+					])
+				}
+				dir(project) {
+					def files = findFiles(glob: '*.sln')
+					for (file in files) {
+						warnError("Code needs formatting!") {
+							callShell "dotnet format --verify-no-changes ${file.name}"
+						}
 					}
 				}
 			}
