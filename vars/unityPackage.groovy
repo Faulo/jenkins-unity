@@ -42,6 +42,10 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
+	if (!fileExists(pack)) {
+		error "Package folder '${pack}' does not exist!"
+	}
+
 	def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
 	def createProject = createSolution || args.TEST_UNITY == '1'
 
