@@ -123,17 +123,14 @@ def call(body) {
 
 			if (args.TEST_FORMATTING == '1') {
 				stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+					def editorconfigTarget = "${project}/.editorconfig"
 					dir(env.WORKSPACE) {
-						if (!fileExists(args.EDITORCONFIG_LOCATION)) {
-							unstable "Editor Config at '${args.EDITORCONFIG_LOCATION}' is missing."
+						def editorconfigSource = args.EDITORCONFIG_LOCATION
+						if (!fileExists(editorconfigSource)) {
+							unstable "Editor Config at '${editorconfigSource}' is missing."
 						}
-						fileOperations([
-							fileCopyOperation(
-							includes: args.EDITORCONFIG_LOCATION,
-							targetLocation: project,
-							flattenFiles: true
-							)
-						])
+						def editorconfigContent = readFile(file: editorconfigSource)
+						writeFile(file: "${editorconfigTarget}", text: editorconfigContent)
 					}
 					dir(project) {
 						def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
