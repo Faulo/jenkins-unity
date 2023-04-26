@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2023-04-26
+
+### Added
+- Added `TEST_FORMATTING`, `EDITORCONFIG_LOCATION`, and `FORMATTING_EXCLUDE` parameters to `unityProject` command.
+- Added `FORMATTING_EXCLUDE` to `unityPackage` command.
+
 ## [2.0.0] - 2023-04-25
 
 ### Added
