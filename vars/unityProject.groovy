@@ -58,20 +58,20 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
-	def versionAny = args.AUTOVERSION != ''
-	def docsAny = args.BUILD_DOCUMENTATION == '1'
-	def solutionAny = docsAny
-	def testAny = args.TEST_UNITY == '1'
-	def buildAny = [
+	def setVersion = args.AUTOVERSION != ''
+
+	def createSolution = args.BUILD_DOCUMENTATION == '1'
+	def createBuild = [
 		args.BUILD_FOR_WINDOWS,
 		args.BUILD_FOR_LINUX,
 		args.BUILD_FOR_MAC,
 		args.BUILD_FOR_WEBGL,
 		args.BUILD_FOR_ANDROID
 	].contains('1');
+
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
 
-	if (versionAny) {
+	if (setVersion) {
 		stage("Set: Project version") {
 			def version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
 			callUnity "unity-project-version '${project}' set '${version}'"
@@ -82,14 +82,14 @@ def call(body) {
 	dir(reports) {
 		deleteDir()
 
-		if (solutionAny) {
+		if (createSolution) {
 			stage("Build: C# solution") {
 				callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
 				junit(testResults: 'build-solution.xml')
 			}
 		}
 
-		if (docsAny) {
+		if (args.BUILD_DOCUMENTATION == '1') {
 			stage("Build: DocFX documentation") {
 				catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 					dir(docs) {
@@ -117,7 +117,7 @@ def call(body) {
 			}
 		}
 
-		if (testAny) {
+		if (args.TEST_UNITY == '1') {
 			stage("Test: ${args.TEST_MODES}") {
 				if (args.TEST_MODES == '') {
 					unstable "Parameter TEST_MODES is missing."
@@ -127,7 +127,7 @@ def call(body) {
 			}
 		}
 
-		if (buildAny) {
+		if (createBuild) {
 			if (args.BUILD_FOR_WINDOWS == '1') {
 				stage('Build: Windows') {
 					callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
