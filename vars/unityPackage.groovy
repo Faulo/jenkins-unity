@@ -12,6 +12,7 @@ def call(body) {
 
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
+		FORMATTING_EXCLUDE : '',
 
 		BUILD_DOCUMENTATION : '0',
 
@@ -135,8 +136,9 @@ def call(body) {
 						])
 					}
 					dir(project) {
+						def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
 						warnError("Code needs formatting!") {
-							callShell "dotnet format --verify-no-changes project.sln"
+							callShell "dotnet format --verify-no-changes project.sln${exclude}"
 						}
 					}
 				}
