@@ -13,6 +13,7 @@ def call(body) {
 
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
+		FORMATTING_EXCLUDE : '',
 
 		BUILD_FOR_WINDOWS : '0',
 		BUILD_FOR_LINUX : '0',
@@ -137,10 +138,11 @@ def call(body) {
 					}
 				}
 				dir(project) {
+					def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
 					def files = findFiles(glob: '*.sln')
 					for (file in files) {
 						warnError("Code needs formatting!") {
-							callShell "dotnet format --verify-no-changes ${file.name}"
+							callShell "dotnet format --verify-no-changes ${file.name}${exclude}"
 						}
 					}
 				}
