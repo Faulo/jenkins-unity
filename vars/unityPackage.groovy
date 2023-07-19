@@ -18,10 +18,12 @@ def call(body) {
 
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
+		VERDACCIO_STORAGE : '/var/verdaccio',
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
 
-		VERSION : ''
+		VERSION : '',
+		ID : ''
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -56,6 +58,13 @@ def call(body) {
 		}
 	}
 	def localVersion = args.VERSION
+
+	if (args.ID == '') {
+		dir(pack) {
+			args.ID = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').name)\""
+		}
+	}
+	def id = args.ID
 
 	if (args.TEST_CHANGELOG == '1') {
 		dir(pack) {
@@ -165,7 +174,48 @@ def call(body) {
 						}
 
 						echo "Deploying update: ${publishedVersion} => ${localVersion}"
-						callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
+						try {
+							callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
+						} catch(e) {
+							echo "Deployment via NPM failed, switching to manual mode..."
+
+							dir(pack + "/..") {
+								callShell "mv '${id}' package"
+								callShell "tar -zcvf package.tgz package"
+								callShell "mv package '${id}'"
+								callShell "chmod 0777 package.tgz"
+								archiveArtifacts(artifacts: 'package.tgz')
+
+								def file = "${id}-${localVersion}.tgz"
+								def hash = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
+								def timestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+
+								def packageData = readJSON(file: "${id}/package.json")
+								packageData.readmeFilename = "README.md"
+								packageData.description = ""
+								packageData._id = "${id}@${localVersion}".toString()
+								packageData._nodeVersion = "18.16.1"
+								packageData._npmVersion = "9.5.1-ulisses.1"
+								packageData.dist = [
+									shasum: hash,
+									tarball: "${args.VERDACCIO_URL}/${id}/-/${file}".toString()
+								]
+
+								callShell "mv package.tgz '${args.VERDACCIO_STORAGE}/${id}/${file}'"
+
+								def storageData = readJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json")
+								storageData.versions[localVersion] = packageData
+								storageData.time["modified"] = timestamp
+								storageData.time[localVersion] = timestamp
+								storageData["dist-tags"]["latest"] = localVersion
+								storageData._attachments[file] = [
+									shasum: hash,
+									version: localVersion
+								]
+
+								writeJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json", json: storageData, pretty: 2)
+							}
+						}
 					}
 				}
 			}
