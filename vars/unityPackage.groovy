@@ -184,7 +184,6 @@ def call(body) {
 								callShell "tar -zcvf package.tgz package"
 								callShell "mv package '${id}'"
 								callShell "chmod 0777 package.tgz"
-								archiveArtifacts(artifacts: 'package.tgz')
 
 								def file = "${id}-${localVersion}.tgz"
 								def hash = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
