@@ -160,6 +160,10 @@ def call(body) {
 				}
 			}
 		}
+		
+		dir(project) {
+			deleteDir()
+		}
 	}
 
 	if (args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)) {
