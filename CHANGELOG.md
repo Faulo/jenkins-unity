@@ -7,11 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [2.3.0] - 2023-07-28
+
+### Added
+- Added stage names for projects and packages.
+
+
+## [2.2.0] - 2023-07-19
+
+### Fixed
+- Fixed package deployment failing for packages >500MB.
+
+
 ## [2.1.0] - 2023-04-26
 
 ### Added
 - Added `TEST_FORMATTING`, `EDITORCONFIG_LOCATION`, and `FORMATTING_EXCLUDE` parameters to `unityProject` command.
 - Added `FORMATTING_EXCLUDE` to `unityPackage` command.
+
 
 ## [2.0.0] - 2023-04-25
 
@@ -20,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Changed the expected `COMPOSE_UNITY` envrionment variable to just point to a valid composer installation, excluding the `exec`.
+
 
 ## [1.1.0] - 2023-04-24
 
@@ -30,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added 'TEST_FORMATTING' and 'EDITORCONFIG_LOCATION' for packages. Requires the custom manifest for [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) to include [Slothsoft's UnityExtensions](https://github.com/Faulo/UnityExtensions).
+
 
 ## [1.0.0] - 2023-04-02
 
