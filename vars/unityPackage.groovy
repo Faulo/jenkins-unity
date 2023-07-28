@@ -66,7 +66,7 @@ def call(body) {
 	}
 	def id = args.ID
 
-	stage(id) {
+	stage("Package: ${id}") {
 
 		if (args.TEST_CHANGELOG == '1') {
 			dir(pack) {
