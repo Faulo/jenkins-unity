@@ -89,7 +89,7 @@ def call(body) {
 			stage("Set: Project version") {
 				def version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
 				if (args.AUTOVERSION_REVISION == '1') {
-					version += "+r${env.BUILD_NUMBER}"
+					version += "+${env.BUILD_NUMBER}"
 				}
 				callUnity "unity-project-version '${project}' set '${version}'"
 			}
