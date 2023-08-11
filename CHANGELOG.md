@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.4.0] - 2023-08-11
+
+### Added
+- Add AUTOVERSION_REVISION option for adding the build number when auto-versioning.
+
+
 ## [2.3.0] - 2023-07-28
 
 ### Added

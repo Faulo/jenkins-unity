@@ -23,6 +23,9 @@ unityProject {
 	// Automatically set the version of the Unity project based on the tags and commits of the VCS.
 	AUTOVERSION : '' | 'git' | 'plastic',
 	
+	// Automatically append the build number to the version of the project.
+	AUTOVERSION_REVISION : '0'
+	
 	
 	// Automatically create C# docs using DocFX
 	BUILD_DOCUMENTATION = '1'
