@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.4.1] - 2023-08-15
+
+### Added
+- Add AUTOVERSION_REVISION_PREFIX option for adding a string before the revision when auto-versioning.
+- Add AUTOVERSION_REVISION_SUFFIX option for adding a string after the revision when auto-versioning.
+
+
 ## [2.4.0] - 2023-08-11
 
 ### Added
