@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.5.0] - 2023-11-06
 
+### Fixed
+- Added -buildTarget parameters to WebGL and Android build commands.
+
+
+## [2.5.0] - 2023-11-06
+
 ### Added
 - Add BUILD_NAME option for specifying the names of the created .zip and .apk files.
 
