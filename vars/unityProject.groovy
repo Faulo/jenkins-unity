@@ -203,7 +203,7 @@ def call(body) {
 					stage('Build: WebGL') {
 						callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
 						junit(testResults: 'install-webgl.xml')
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/${args.BUILD_NAME}-webgl' 1>'${reports}/${args.BUILD_NAME}-webgl.xml'"
+						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/${args.BUILD_NAME}-webgl' -buildTarget WebGL 1>'${reports}/${args.BUILD_NAME}-webgl.xml'"
 						junit(testResults: "${args.BUILD_NAME}-webgl.xml")
 						zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
 						publishHTML([
@@ -223,7 +223,7 @@ def call(body) {
 					stage('Build: Android') {
 						callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
 						junit(testResults: 'install-android.xml')
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/${args.BUILD_NAME}-android.apk' 1>'${reports}/${args.BUILD_NAME}-android.xml'"
+						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/${args.BUILD_NAME}-android.apk' -buildTarget Android 1>'${reports}/${args.BUILD_NAME}-android.xml'"
 						junit(testResults: "${args.BUILD_NAME}-android.xml")
 						archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
 					}
