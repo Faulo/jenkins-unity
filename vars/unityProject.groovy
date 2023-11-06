@@ -23,6 +23,7 @@ def call(body) {
 		BUILD_FOR_MAC : '0',
 		BUILD_FOR_WEBGL : '0',
 		BUILD_FOR_ANDROID : '0',
+		BUILD_NAME : '',
 
 		DEPLOY_TO_STEAM : '0',
 		STEAM_CREDENTIALS : '',
@@ -54,6 +55,10 @@ def call(body) {
 	// we want a path-compatible location
 	if (args.LOCATION == '') {
 		args.LOCATION = '.'
+	}
+
+	if (args.BUILD_NAME == '') {
+		args.BUILD_NAME = 'build'
 	}
 
 	// steam branches can't contain slashes or spaces
@@ -172,25 +177,25 @@ def call(body) {
 			if (createBuild) {
 				if (args.BUILD_FOR_WINDOWS == '1') {
 					stage('Build: Windows') {
-						callUnity "unity-build '${project}' '${reports}/build-windows' windows 1>'${reports}/build-windows.xml'"
-						junit(testResults: 'build-windows.xml')
-						zip(zipFile: 'build-windows.zip', dir: 'build-windows', archive: true)
+						callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-windows' windows 1>'${reports}/${args.BUILD_NAME}-windows.xml'"
+						junit(testResults: "${args.BUILD_NAME}-windows.xml")
+						zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
 					}
 				}
 
 				if (args.BUILD_FOR_LINUX == '1') {
 					stage('Build: Linux') {
-						callUnity "unity-build '${project}' '${reports}/build-linux' linux 1>'${reports}/build-linux.xml'"
-						junit(testResults: 'build-linux.xml')
-						zip(zipFile: 'build-linux.zip', dir: 'build-linux', archive: true)
+						callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-linux' linux 1>'${reports}/${args.BUILD_NAME}-linux.xml'"
+						junit(testResults: "${args.BUILD_NAME}-linux.xml")
+						zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
 					}
 				}
 
 				if (args.BUILD_FOR_MAC == '1') {
 					stage('Build: MacOS') {
-						callUnity "unity-build '${project}' '${reports}/build-mac' mac 1>'${reports}/build-mac.xml'"
-						junit(testResults: 'build-mac.xml')
-						zip(zipFile: 'build-mac.zip', dir: 'build-mac', archive: true)
+						callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-mac' mac 1>'${reports}/${args.BUILD_NAME}-mac.xml'"
+						junit(testResults: "${args.BUILD_NAME}-mac.xml")
+						zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
 					}
 				}
 
@@ -198,14 +203,14 @@ def call(body) {
 					stage('Build: WebGL') {
 						callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
 						junit(testResults: 'install-webgl.xml')
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/build-webgl' 1>'${reports}/build-webgl.xml'"
-						junit(testResults: 'build-webgl.xml')
-						zip(zipFile: 'build-webgl.zip', dir: 'build-webgl', archive: true)
+						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL '${reports}/${args.BUILD_NAME}-webgl' 1>'${reports}/${args.BUILD_NAME}-webgl.xml'"
+						junit(testResults: "${args.BUILD_NAME}-webgl.xml")
+						zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
 						publishHTML([
 							allowMissing: false,
 							alwaysLinkToLastBuild: false,
 							keepAll: false,
-							reportDir: 'build-webgl',
+							reportDir: "${args.BUILD_NAME}-webgl",
 							reportFiles: 'index.html',
 							reportName: 'WebGL Build',
 							reportTitles: '',
@@ -218,9 +223,9 @@ def call(body) {
 					stage('Build: Android') {
 						callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
 						junit(testResults: 'install-android.xml')
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/build-android.apk' 1>'${reports}/build-android.xml'"
-						junit(testResults: 'build-android.xml')
-						archiveArtifacts(artifacts: 'build-android.apk')
+						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android '${reports}/${args.BUILD_NAME}-android.apk' 1>'${reports}/${args.BUILD_NAME}-android.xml'"
+						junit(testResults: "${args.BUILD_NAME}-android.xml")
+						archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
 					}
 				}
 
@@ -233,13 +238,13 @@ def call(body) {
 
 							def depots = '';
 							if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
-								depots += "${args.STEAM_DEPOT_WINDOWS}=build-windows "
+								depots += "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows "
 							}
 							if (args.BUILD_FOR_LINUX == '1' && args.STEAM_DEPOT_LINUX != '') {
-								depots += "${args.STEAM_DEPOT_LINUX}=build-linux "
+								depots += "${args.STEAM_DEPOT_LINUX}=${args.BUILD_NAME}-linux "
 							}
 							if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
-								depots += "${args.STEAM_DEPOT_MAC}=build-mac "
+								depots += "${args.STEAM_DEPOT_MAC}=${args.BUILD_NAME}-mac "
 							}
 
 							if (depots == '') {
@@ -265,19 +270,19 @@ def call(body) {
 								string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
 							]) {
 								if (args.BUILD_FOR_WINDOWS == '1') {
-									callShell "butler push --if-changed build-windows ${args.ITCH_ID}:windows-x64"
+									callShell "butler push --if-changed ${args.BUILD_NAME}-windows ${args.ITCH_ID}:windows-x64"
 								}
 								if (args.BUILD_FOR_LINUX == '1') {
-									callShell "butler push --if-changed build-linux ${args.ITCH_ID}:linux-x64"
+									callShell "butler push --if-changed ${args.BUILD_NAME}-linux ${args.ITCH_ID}:linux-x64"
 								}
 								if (args.BUILD_FOR_MAC == '1') {
-									callShell "butler push --if-changed build-mac ${args.ITCH_ID}:mac-x64"
+									callShell "butler push --if-changed ${args.BUILD_NAME}-mac ${args.ITCH_ID}:mac-x64"
 								}
 								if (args.BUILD_FOR_WEBGL == '1') {
-									callShell "butler push --if-changed build-webgl ${args.ITCH_ID}:html"
+									callShell "butler push --if-changed ${args.BUILD_NAME}-webgl ${args.ITCH_ID}:html"
 								}
 								if (args.BUILD_FOR_ANDROID == '1') {
-									callShell "butler push --if-changed build-android.apk ${args.ITCH_ID}:android"
+									callShell "butler push --if-changed ${args.BUILD_NAME}-android.apk ${args.ITCH_ID}:android"
 								}
 							}
 						}
