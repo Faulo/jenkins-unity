@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.5.0] - 2023-11-06
+
+### Added
+- Add BUILD_NAME option for specifying the names of the created .zip and .apk files.
+
+
 ## [2.4.2] - 2023-08-15
 
 ### Added
