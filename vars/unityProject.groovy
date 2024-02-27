@@ -304,7 +304,7 @@ def call(body) {
 				
 					if (args.DEPLOY_TO_DISCORD == '1') {
 						stage('Deploy to: Discord') {
-							discordSend description: "${id} v{bundleVersion}", footer: "${currentBuild.currentResult}", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+							discordSend description: "${id} v${version}", footer: "${currentBuild.currentResult}", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 						}
 					}
 				}
