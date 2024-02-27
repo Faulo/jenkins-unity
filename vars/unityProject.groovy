@@ -73,8 +73,6 @@ def call(body) {
 	def reports = "$WORKSPACE_TMP/${args.LOCATION}/reports"
 	def docs = "${project}/.Documentation"
 
-	def setVersion = args.AUTOVERSION != ''
-
 	def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
 	def createBuild = [
 		args.BUILD_FOR_WINDOWS,
@@ -82,9 +80,12 @@ def call(body) {
 		args.BUILD_FOR_MAC,
 		args.BUILD_FOR_WEBGL,
 		args.BUILD_FOR_ANDROID
-	].contains('1');
+	].contains('1')
 
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+
+	def setVersion = args.AUTOVERSION != ''
+	def getVersion = setVersion || deployAny
 
 	def id = 'Unknown'
 
@@ -95,20 +96,21 @@ def call(body) {
 	
 	def version = '?'
 	
-	try {
-		if (setVersion) {
-			version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
-			if (args.AUTOVERSION_REVISION == '1') {
-				version += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
+	if (getVersion) {
+		try {
+			if (setVersion) {
+				version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
+				if (args.AUTOVERSION_REVISION == '1') {
+					version += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
+				}
+			} else {
+				version = callUnity "unity-project-setting '${project}' 'bundleVersion'"
 			}
-		} else {
-			version = callUnity "unity-project-setting '${project}' 'bundleVersion'"
+		} catch(e) {
 		}
-	} catch(e) {
 	}
 
 	stage("Project: ${id}") {
-
 		if (setVersion) {
 			stage("Set: Project version") {
 				callUnity "unity-project-version '${project}' set '${version}'"
@@ -248,7 +250,7 @@ def call(body) {
 								error "Current result is '${currentBuild.currentResult}', skipping deployment."
 							}
 
-							def depots = '';
+							def depots = ''
 							if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
 								depots += "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows "
 							}
