@@ -306,7 +306,11 @@ def call(body) {
 				}
 			}
 		} catch(e) {
-			currentBuild.currentResult = 'ERROR';
+			if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) {
+				currentBuild.result = e.result
+			} else {
+				currentBuild.result = "?"
+			}
 		} finally {
 			if (args.DEPLOY_TO_DISCORD == '1') {
 				stage('Deploy to: Discord') {
@@ -316,7 +320,7 @@ def call(body) {
 							commitMessage += entry.msg + "\n"
 						}
 					}
-					discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+					discordSend description: "${currentBuild.result}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.result, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 				}
 			}
 		}
