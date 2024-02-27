@@ -314,7 +314,7 @@ def call(body) {
 							commitMessage += entry.msg + "\n"
 						}
 					}
-					discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+					discordSend description: "${currentBuild.result}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.result, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 				}
 			}
 		}
