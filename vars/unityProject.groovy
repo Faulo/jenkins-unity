@@ -36,6 +36,9 @@ def call(body) {
 		DEPLOY_TO_ITCH : '0',
 		ITCH_CREDENTIALS : '',
 		ITCH_ID : '',
+		
+		DEPLOY_TO_DISCORD : '0',
+		DISCORD_WEBHOOK : '',
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
 	]
@@ -89,19 +92,28 @@ def call(body) {
 		id = callUnity "unity-project-setting '${project}' 'productName'"
 	} catch(e) {
 	}
+	
+	def version = '?'
+	
+	try {
+		if (setVersion) {
+			version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
+			if (args.AUTOVERSION_REVISION == '1') {
+				version += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
+			}
+		} else {
+			version = callUnity "unity-project-setting '${project}' 'bundleVersion'"
+		}
+	} catch(e) {
+	}
 
 	stage("Project: ${id}") {
 
 		if (setVersion) {
 			stage("Set: Project version") {
-				def version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
-				if (args.AUTOVERSION_REVISION == '1') {
-					version += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
-				}
 				callUnity "unity-project-version '${project}' set '${version}'"
 			}
 		}
-
 
 		dir(reports) {
 			deleteDir()
@@ -285,6 +297,12 @@ def call(body) {
 									callShell "butler push --if-changed ${args.BUILD_NAME}-android.apk ${args.ITCH_ID}:android"
 								}
 							}
+						}
+					}
+				
+					if (args.DEPLOY_TO_DISCORD == '1') {
+						stage('Deploy to: Discord') {
+							discordSend description: "${id} v{bundleVersion}", footer: "${currentBuild.currentResult}", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 						}
 					}
 				}
