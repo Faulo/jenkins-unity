@@ -304,7 +304,13 @@ def call(body) {
 				
 					if (args.DEPLOY_TO_DISCORD == '1') {
 						stage('Deploy to: Discord') {
-							discordSend description: "${id} v${version}", footer: "${currentBuild.currentResult}", link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+							commitMessage = ""
+							for ( changeLogSet in currentBuild.changeSets){
+								for (entry in changeLogSet.getItems()){
+									commitMessage += entry.msg + "\n"
+								}
+							}
+							discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 						}
 					}
 				}
