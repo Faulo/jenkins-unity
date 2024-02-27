@@ -307,9 +307,9 @@ def call(body) {
 			}
 		} catch(e) {
 			if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) {
-				currentBuild.currentResult = e.result
+				currentBuild.result = e.result
 			} else {
-				currentBuild.currentResult = "UNKNOWN"
+				currentBuild.result = "UNKNOWN"
 			}
 		} finally {
 			if (args.DEPLOY_TO_DISCORD == '1') {
