@@ -306,17 +306,18 @@ def call(body) {
 				}
 			}
 		} catch(e) {
-		}
-		
-		if (args.DEPLOY_TO_DISCORD == '1') {
-			stage('Deploy to: Discord') {
-				commitMessage = ""
-				for ( changeLogSet in currentBuild.changeSets){
-					for (entry in changeLogSet.getItems()){
-						commitMessage += entry.msg + "\n"
+			currentBuild.currentResult = 'ERROR';
+		} finally {
+			if (args.DEPLOY_TO_DISCORD == '1') {
+				stage('Deploy to: Discord') {
+					commitMessage = ""
+					for ( changeLogSet in currentBuild.changeSets){
+						for (entry in changeLogSet.getItems()){
+							commitMessage += entry.msg + "\n"
+						}
 					}
+					discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 				}
-				discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 			}
 		}
 	}
