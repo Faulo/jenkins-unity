@@ -309,7 +309,7 @@ def call(body) {
 			if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) {
 				currentBuild.result = e.result
 			} else {
-				currentBuild.result = "?"
+				currentBuild.result = "UNKNOWN"
 			}
 		} finally {
 			if (args.DEPLOY_TO_DISCORD == '1') {
