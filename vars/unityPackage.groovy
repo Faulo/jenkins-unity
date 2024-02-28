@@ -249,7 +249,7 @@ def call(body) {
 				def footer = ""
 				for (changeLogSet in currentBuild.changeSets) {
 					for (entry in changeLogSet.getItems()) {
-						footer += entry.msg + "\n"
+						footer += "- ${entry.msg}\r\n"
 					}
 				}
 
