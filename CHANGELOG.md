@@ -8,10 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.7.0] - 2024-02-28
+
+### Added
+- Added REPORT_TO_OFFICE_365, OFFICE_365_WEBHOOK.
+
+### Changed
+- Renamed DEPLOY_TO_DISCORD to REPORT_TO_DISCORD.
+
+
 ## [2.6.0] - 2024-02-27
 
 ### Added
-- Added DEPLOY_TO_DISCORD.
+- Added DEPLOY_TO_DISCORD, DISCORD_WEBHOOK.
 
 
 ## [2.5.0] - 2023-11-06
