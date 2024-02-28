@@ -328,15 +328,11 @@ def call(body) {
 				}
 
 				if (args.REPORT_TO_DISCORD == '1') {
-					stage('Report to: Discord') {
-						discordSend description: header, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
-					}
+					discordSend description: header, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 				}
 
 				if (args.REPORT_TO_OFFICE_365 == '1') {
-					stage('Report to: Office 365') {
-						office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
-					}
+					office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
 				}
 			}
 		}
