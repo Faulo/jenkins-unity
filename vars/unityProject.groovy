@@ -36,10 +36,10 @@ def call(body) {
 		DEPLOY_TO_ITCH : '0',
 		ITCH_CREDENTIALS : '',
 		ITCH_ID : '',
-		
+
 		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
-		
+
 		REPORT_TO_OFFICE_365 : '0',
 		OFFICE_365_WEBHOOK : '',
 
@@ -86,7 +86,7 @@ def call(body) {
 	].contains('1')
 
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
-	
+
 	def reportAny = [
 		args.REPORT_TO_DISCORD,
 		args.REPORT_TO_OFFICE_365,
@@ -101,9 +101,9 @@ def call(body) {
 		id = callUnity "unity-project-setting '${project}' 'productName'"
 	} catch(e) {
 	}
-	
+
 	def version = '?'
-	
+
 	if (getVersion) {
 		try {
 			if (setVersion) {
@@ -326,13 +326,13 @@ def call(body) {
 						footer += entry.msg + "\n"
 					}
 				}
-				
+
 				if (args.REPORT_TO_DISCORD == '1') {
 					stage('Report to: Discord') {
 						discordSend description: header, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
 					}
 				}
-				
+
 				if (args.REPORT_TO_OFFICE_365 == '1') {
 					stage('Report to: Office 365') {
 						office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
