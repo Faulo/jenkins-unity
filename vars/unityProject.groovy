@@ -102,17 +102,17 @@ def call(body) {
 	} catch(e) {
 	}
 
-	def version = '?'
+	def localVersion = '?'
 
 	if (getVersion) {
 		try {
 			if (setVersion) {
-				version = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
+				localVersion = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
 				if (args.AUTOVERSION_REVISION == '1') {
-					version += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
+					localVersion += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
 				}
 			} else {
-				version = callUnity "unity-project-setting '${project}' 'bundleVersion'"
+				localVersion = callUnity "unity-project-setting '${project}' 'bundleVersion'"
 			}
 		} catch(e) {
 		}
@@ -122,7 +122,7 @@ def call(body) {
 		try {
 			if (setVersion) {
 				stage("Set: Project version") {
-					callUnity "unity-project-version '${project}' set '${version}'"
+					callUnity "unity-project-version '${project}' set '${localVersion}'"
 				}
 			}
 
@@ -319,7 +319,7 @@ def call(body) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def header = "${currentBuild.currentResult}: ${id} v${version}";
+				def header = "${currentBuild.currentResult}: ${id} v${localVersion}";
 				def footer = ""
 				for (changeLogSet in currentBuild.changeSets) {
 					for (entry in changeLogSet.getItems()) {
