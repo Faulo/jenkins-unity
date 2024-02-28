@@ -37,8 +37,11 @@ def call(body) {
 		ITCH_CREDENTIALS : '',
 		ITCH_ID : '',
 		
-		DEPLOY_TO_DISCORD : '0',
+		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
+		
+		REPORT_TO_OFFICE_365 : '0',
+		OFFICE_365_WEBHOOK : '',
 
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
 	]
@@ -83,9 +86,14 @@ def call(body) {
 	].contains('1')
 
 	def deployAny = args.DEPLOYMENT_BRANCHES.contains(env.BRANCH_NAME)
+	
+	def reportAny = [
+		args.REPORT_TO_DISCORD,
+		args.REPORT_TO_OFFICE_365,
+	].contains('1')
 
 	def setVersion = args.AUTOVERSION != ''
-	def getVersion = setVersion || args.DEPLOY_TO_DISCORD == '1'
+	def getVersion = setVersion || reportAny
 
 	def id = 'Unknown'
 
@@ -305,22 +313,30 @@ def call(body) {
 					}
 				}
 			}
+		} catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+			currentBuild.result = e.result
 		} catch(e) {
-			if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) {
-				currentBuild.result = e.result
-			} else {
-				currentBuild.result = "UNKNOWN"
-			}
+			currentBuild.result = "UNKNOWN"
 		} finally {
-			if (args.DEPLOY_TO_DISCORD == '1') {
-				stage('Deploy to: Discord') {
-					commitMessage = ""
-					for ( changeLogSet in currentBuild.changeSets){
-						for (entry in changeLogSet.getItems()){
-							commitMessage += entry.msg + "\n"
-						}
+			if (reportAny) {
+				def header = "${currentBuild.currentResult}: ${id} v${version}";
+				def footer = ""
+				for (changeLogSet in currentBuild.changeSets) {
+					for (entry in changeLogSet.getItems()) {
+						footer += entry.msg + "\n"
 					}
-					discordSend description: "${currentBuild.currentResult}: ${id} v${version}", footer: commitMessage, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+				}
+				
+				if (args.REPORT_TO_DISCORD == '1') {
+					stage('Report to: Discord') {
+						discordSend description: header, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+					}
+				}
+				
+				if (args.REPORT_TO_OFFICE_365 == '1') {
+					stage('Report to: Office 365') {
+						office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
+					}
 				}
 			}
 		}
