@@ -12,7 +12,7 @@ class CallUnityInitializer {
 
 def String call(String body) {
 	if (CallUnityInitializer.initialize()) {
-		callComposer('update --no-interaction --no-dev');
+		callComposer('install --no-interaction --no-dev');
 	}
 	return callComposer("exec ${body}");
 }
