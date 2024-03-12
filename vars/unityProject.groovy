@@ -2,22 +2,29 @@ def call(body) {
 	assert env.BRANCH_NAME != null
 
 	def args = [
+		// Relative path to the Unity project inside the repository.
 		LOCATION : '',
 
+		// Automatically set the version of the Unity project based on the tags and commits of the VCS. Can be '' (disabled), 'git' or 'plastic'.
 		AUTOVERSION : '',
+		// Automatically append the build number to the version of the project.
 		AUTOVERSION_REVISION : '0',
 		AUTOVERSION_REVISION_PREFIX : '',
 		AUTOVERSION_REVISION_SUFFIX : '',
 
-		BUILD_DOCUMENTATION : '0',
-
-		TEST_UNITY : '0',
-		TEST_MODES : 'EditMode PlayMode',
-
+		// Assert that the C# code of the package matches the .editorconfig.
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
 		FORMATTING_EXCLUDE : '',
 
+		// Assert Unity's Test Runner tests.
+		TEST_UNITY : '0',
+		TEST_MODES : 'EditMode PlayMode',
+
+		// Automatically create C# docs using DocFX
+		BUILD_DOCUMENTATION : '0',
+
+		// Which executables to create. Note that WebGL can only be built if the project contains the "Slothsoft's UnityExtensions" package.
 		BUILD_FOR_WINDOWS : '0',
 		BUILD_FOR_LINUX : '0',
 		BUILD_FOR_MAC : '0',
@@ -25,25 +32,38 @@ def call(body) {
 		BUILD_FOR_ANDROID : '0',
 		BUILD_NAME : '',
 
+		// Deploy the executables to the Steam server.
 		DEPLOY_TO_STEAM : '0',
+		// The Jenkins credentials to use for Steam deployment. These will be fed to `steamcmd` and should consist of user name and password.
 		STEAM_CREDENTIALS : '',
+		// The Steam App ID to deploy to.
 		STEAM_ID : '',
+		// The Steam Depot ID to deploy the Windows executable to.
 		STEAM_DEPOT_WINDOWS : '',
+		// The Steam Depot ID to deploy the Linux executable to.
 		STEAM_DEPOT_LINUX : '',
+		// The Steam Depot ID to deploy the MacOS executable to.
 		STEAM_DEPOT_MAC : '',
+		// The Steam branch to deploy to. Defaults to the current VCS branch with all slashes replaced with dashes ('/main/feature' becomes 'main-feature').
 		STEAM_BRANCH : '',
 
+		// Deploy the executables to the itch.io server.
 		DEPLOY_TO_ITCH : '0',
+		// The Jenkins credentials to use for itch.io deployment. These will be fed to `butler` and should consist of an authentification token.
 		ITCH_CREDENTIALS : '',
+		// The ID of the itch.io page (usually consists of '${author}/${game}').
 		ITCH_ID : '',
 
+		// Only attempt to deploy if the current VCS branch is among the branches listed. Note that Plastic's branches start with a slash.
+		DEPLOYMENT_BRANCHES : ["main", "/main"],
+
+		// Report the build status to a Discord Webhook.
 		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
 
+		// Report the build status to a Microsoft Office 365 Webhook.
 		REPORT_TO_OFFICE_365 : '0',
 		OFFICE_365_WEBHOOK : '',
-
-		DEPLOYMENT_BRANCHES : ["main", "/main"],
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST

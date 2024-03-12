@@ -2,34 +2,44 @@ def call(body) {
 	assert env.BRANCH_NAME != null
 
 	def args = [
+		// Define Unity package location relative to repository.
 		LOCATION : '',
 
-		TEST_UNITY : '1',
-		TEST_MODES : 'EditMode PlayMode',
+		// If given, use this package information instead of reading from the package's package.json.
+		VERSION : '',
+		ID : '',
 
+		// Assert that CHANGELOG.md has been updated.
 		TEST_CHANGELOG : '1',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
 
+		// Assert that the C# code of the package matches the .editorconfig.
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
 		FORMATTING_EXCLUDE : '',
 
+		// Assert Unity's Test Runner tests.
+		TEST_UNITY : '1',
+		TEST_MODES : 'EditMode PlayMode',
+
+		// Automatically create C# docs using DocFX.
 		BUILD_DOCUMENTATION : '0',
 
+		// Deploy the package to a Verdaccio server.
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
 		VERDACCIO_STORAGE : '/var/verdaccio',
 
+		// Only attempt to deploy if the current VCS branch is among the branches listed. Note that Plastic's branches start with a slash.
+		DEPLOYMENT_BRANCHES : ["main", "/main"],
+
+		// Report the build status to a Discord Webhook.
 		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
 
+		// Report the build status to a Microsoft Office 365 Webhook.
 		REPORT_TO_OFFICE_365 : '0',
 		OFFICE_365_WEBHOOK : '',
-
-		DEPLOYMENT_BRANCHES : ["main", "/main"],
-
-		VERSION : '',
-		ID : ''
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
