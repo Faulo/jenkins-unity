@@ -179,6 +179,8 @@ def call(body) {
 									reportTitles: '',
 									useWrapperFileDirectly: true
 								])
+
+								deleteDir()
 							}
 						}
 					}
@@ -354,6 +356,10 @@ def call(body) {
 				if (args.REPORT_TO_OFFICE_365 == '1') {
 					office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
 				}
+			}
+
+			dir(reports) {
+				deleteDir()
 			}
 		}
 	}

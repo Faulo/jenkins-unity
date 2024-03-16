@@ -150,6 +150,8 @@ def call(body) {
 										reportTitles: '',
 										useWrapperFileDirectly: true
 									])
+
+									deleteDir()
 								}
 							}
 						}
@@ -184,10 +186,6 @@ def call(body) {
 							junit(testResults: 'tests.xml', allowEmptyResults: true)
 						}
 					}
-				}
-
-				dir(project) {
-					deleteDir()
 				}
 			}
 
@@ -270,6 +268,14 @@ def call(body) {
 				if (args.REPORT_TO_OFFICE_365 == '1') {
 					office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
 				}
+			}
+
+			dir(project) {
+				deleteDir()
+			}
+
+			dir(reports) {
+				deleteDir()
 			}
 		}
 	}
