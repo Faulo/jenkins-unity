@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.7.2] - 2024-03-16
+
+### Fixed
+- Discard docs and reports directories after run.
+
+
 ## [2.7.1] - 2024-03-12
 
 ### Fixed
