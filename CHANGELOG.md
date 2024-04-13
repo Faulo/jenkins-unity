@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.8.0] - 2024-04-13
+
+### Fixed
+- Use bat instead of powershell on Windows.
+
+
 ## [2.7.2] - 2024-03-16
 
 ### Fixed
