@@ -10,9 +10,13 @@ class CallUnityInitializer {
 	}
 }
 
-def String call(String body) {
+def String call(String body, String file = "") {
 	if (CallUnityInitializer.initialize()) {
 		callComposer('install --no-interaction --no-dev');
 	}
-	return callComposer("exec ${body}");
+	def result = callComposer("exec ${body}");
+	
+	if (file !="") {
+		writeFile   (file:file, text:result);
+	}
 }

@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.8.1] - 2024-04-14
+
+### Fixed
+- Use writeFile instead of pipes.
+
+
 ## [2.8.0] - 2024-04-13
 
 ### Fixed
