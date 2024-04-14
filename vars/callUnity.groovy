@@ -6,7 +6,7 @@ def String call(String body, String file = "") {
 	def result = callComposer("exec ${body}");
 
 	if (file != "") {
-		writeFile(file, result);
+		writeFile(file: file, text: result);
 	}
 
 	return result;
