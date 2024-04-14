@@ -15,7 +15,7 @@ def call(body) {
 		// Assert that the C# code of the package matches the .editorconfig.
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
-		FORMATTING_EXCLUDE : '',
+		FORMATTING_EXCLUDE : 'Library',
 
 		// Assert Unity's Test Runner tests.
 		TEST_UNITY : '0',
@@ -195,7 +195,7 @@ def call(body) {
 								unstable "Editor Config at '${editorconfigSource}' is missing."
 							}
 							def editorconfigContent = readFile(file: editorconfigSource)
-							writeFile(file: "${editorconfigTarget}", text: editorconfigContent)
+							writeFile(file: editorconfigTarget, text: editorconfigContent)
 						}
 						dir(project) {
 							def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
