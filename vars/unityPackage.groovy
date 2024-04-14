@@ -116,13 +116,13 @@ def call(body) {
 					deleteDir()
 
 					stage("Build: Empty project with package") {
-						callUnity "unity-package-install '${pack}' '${project}' 1>'${reports}/package-install.xml'"
+						callUnity "unity-package-install '${pack}' '${project}'", "${reports}/package-install.xml"
 						junit(testResults: 'package-install.xml')
 					}
 
 					if (createSolution) {
 						stage("Build: C# solution") {
-							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
 							junit(testResults: 'build-solution.xml')
 						}
 					}
@@ -182,7 +182,7 @@ def call(body) {
 							if (args.TEST_MODES == '') {
 								unstable "Parameter TEST_MODES is missing."
 							}
-							callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+							callUnity "unity-tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
 							junit(testResults: 'tests.xml', allowEmptyResults: true)
 						}
 					}
