@@ -151,7 +151,7 @@ def call(body) {
 
 				if (createSolution) {
 					stage("Build: C# solution") {
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution 1>'${reports}/build-solution.xml'"
+						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
 						junit(testResults: 'build-solution.xml')
 					}
 				}
@@ -214,7 +214,7 @@ def call(body) {
 						if (args.TEST_MODES == '') {
 							unstable "Parameter TEST_MODES is missing."
 						}
-						callUnity "unity-tests '${project}' ${args.TEST_MODES} 1>'${reports}/tests.xml'"
+						callUnity "unity-tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
 						junit(testResults: 'tests.xml', allowEmptyResults: true)
 					}
 				}
@@ -222,7 +222,7 @@ def call(body) {
 				if (createBuild) {
 					if (args.BUILD_FOR_WINDOWS == '1') {
 						stage('Build: Windows') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-windows' windows 1>'${reports}/${args.BUILD_NAME}-windows.xml'"
+							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-windows' windows", "${reports}/${args.BUILD_NAME}-windows.xml"
 							junit(testResults: "${args.BUILD_NAME}-windows.xml")
 							zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
 						}
@@ -230,7 +230,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_LINUX == '1') {
 						stage('Build: Linux') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-linux' linux 1>'${reports}/${args.BUILD_NAME}-linux.xml'"
+							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-linux' linux", "${reports}/${args.BUILD_NAME}-linux.xml"
 							junit(testResults: "${args.BUILD_NAME}-linux.xml")
 							zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
 						}
@@ -238,7 +238,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_MAC == '1') {
 						stage('Build: MacOS') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-mac' mac 1>'${reports}/${args.BUILD_NAME}-mac.xml'"
+							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-mac' mac", "${reports}/${args.BUILD_NAME}-mac.xml"
 							junit(testResults: "${args.BUILD_NAME}-mac.xml")
 							zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
 						}
@@ -246,9 +246,9 @@ def call(body) {
 
 					if (args.BUILD_FOR_WEBGL == '1') {
 						stage('Build: WebGL') {
-							callUnity "unity-module-install '${project}' webgl 1>'${reports}/install-webgl.xml'"
+							callUnity "unity-module-install '${project}' webgl", "${reports}/install-webgl.xml"
 							junit(testResults: 'install-webgl.xml')
-							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl' 1>'${reports}/${args.BUILD_NAME}-webgl.xml'"
+							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl'", "${reports}/${args.BUILD_NAME}-webgl.xml"
 							junit(testResults: "${args.BUILD_NAME}-webgl.xml")
 							zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
 							publishHTML([
@@ -266,9 +266,9 @@ def call(body) {
 
 					if (args.BUILD_FOR_ANDROID == '1') {
 						stage('Build: Android') {
-							callUnity "unity-module-install '${project}' android 1>'${reports}/install-android.xml'"
+							callUnity "unity-module-install '${project}' android", "${reports}/install-android.xml"
 							junit(testResults: 'install-android.xml')
-							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk' 1>'${reports}/${args.BUILD_NAME}-android.xml'"
+							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk'", "${reports}/${args.BUILD_NAME}-android.xml"
 							junit(testResults: "${args.BUILD_NAME}-android.xml")
 							archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
 						}
@@ -296,7 +296,7 @@ def call(body) {
 									error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
 								}
 
-								callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH} 1>'${reports}/deploy-steam.vdf'"
+								callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 								withCredentials([
 									usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
 								]) {
