@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.9.0] - 2024-04-25
+
+### Added
+- Added DEPLOY_ON_FAILURE option (default is '0').
+
+
 ## [2.8.3] - 2024-04-14
 
 ### Added

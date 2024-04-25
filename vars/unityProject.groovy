@@ -31,6 +31,9 @@ def call(body) {
 		BUILD_FOR_WEBGL : '0',
 		BUILD_FOR_ANDROID : '0',
 		BUILD_NAME : '',
+		
+		// Deploy, even if previous steps reported errors or warnings.
+		DEPLOY_ON_FAILURE : '0',
 
 		// Deploy the executables to the Steam server.
 		DEPLOY_TO_STEAM : '0',
@@ -277,7 +280,7 @@ def call(body) {
 					if (deployAny) {
 						if (args.DEPLOY_TO_STEAM == '1') {
 							stage('Deploy to: Steam') {
-								if (currentBuild.currentResult != "SUCCESS") {
+								if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
 									error "Current result is '${currentBuild.currentResult}', skipping deployment."
 								}
 
@@ -307,7 +310,7 @@ def call(body) {
 
 						if (args.DEPLOY_TO_ITCH == '1') {
 							stage('Deploy to: itch.io') {
-								if (currentBuild.currentResult != "SUCCESS") {
+								if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
 									error "Current result is '${currentBuild.currentResult}', skipping deployment."
 								}
 
