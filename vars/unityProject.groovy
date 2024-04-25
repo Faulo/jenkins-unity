@@ -31,7 +31,7 @@ def call(body) {
 		BUILD_FOR_WEBGL : '0',
 		BUILD_FOR_ANDROID : '0',
 		BUILD_NAME : '',
-		
+
 		// Deploy, even if previous steps reported errors or warnings.
 		DEPLOY_ON_FAILURE : '0',
 
