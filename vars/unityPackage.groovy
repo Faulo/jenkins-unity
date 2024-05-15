@@ -25,6 +25,15 @@ def call(body) {
 		// Automatically create C# docs using DocFX.
 		BUILD_DOCUMENTATION : '0',
 
+		// Deploy, even if previous steps reported errors or warnings.
+		DEPLOY_ON_FAILURE : '0',
+
+		// Deploy when the package version is a standard release (according to SemVer)
+		DEPLOY_IF_RELEASE : '1',
+
+		// Deploy when the package version is a pre-release (according to SemVer)
+		DEPLOY_IF_PRERELEASE : '1',
+
 		// Deploy the package to a Verdaccio server.
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
@@ -80,6 +89,7 @@ def call(body) {
 		}
 	}
 	def localVersion = args.VERSION
+	def isRelease = !localVersion.contains("-")
 
 	if (args.ID == '') {
 		dir(pack) {
@@ -196,50 +206,64 @@ def call(body) {
 
 						stage('Deploy to: Verdaccio') {
 							if (localVersion != publishedVersion) {
-								if (currentBuild.currentResult != "SUCCESS") {
-									error "Current result is '${currentBuild.currentResult}', aborting deployment of version ${localVersion}."
+								def doDeploy = true
+
+								if (isRelease && args.DEPLOY_IF_RELEASE == '0') {
+									echo "Deployment of standard releases is disabled via DEPLOY_IF_RELEASE, skipping deployment of version ${localVersion}."
+									doDeploy = false
 								}
 
-								echo "Deploying update: ${publishedVersion} => ${localVersion}"
-								try {
-									callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
-								} catch(e) {
-									echo "Deployment via NPM failed, switching to manual mode..."
+								if (!isRelease && args.DEPLOY_IF_PRERELEASE == '0') {
+									echo "Deployment of pre-releases is disabled via DEPLOY_IF_PRERELEASE, skipping deployment of version ${localVersion}."
+									doDeploy = false
+								}
 
-									dir(pack + "/..") {
-										callShell "mv '${id}' package"
-										callShell "tar -zcvf package.tgz package"
-										callShell "mv package '${id}'"
-										callShell "chmod 0777 package.tgz"
+								if (doDeploy) {
+									if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
+										error "Current result is '${currentBuild.currentResult}', aborting deployment of version ${localVersion}."
+									}
 
-										def file = "${id}-${localVersion}.tgz"
-										def hash = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
-										def timestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+									echo "Deploying update: ${publishedVersion} => ${localVersion}"
+									try {
+										callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
+									} catch(e) {
+										echo "Deployment via NPM failed, switching to manual mode..."
 
-										def packageData = readJSON(file: "${id}/package.json")
-										packageData.readmeFilename = "README.md"
-										packageData.description = ""
-										packageData._id = "${id}@${localVersion}".toString()
-										packageData._nodeVersion = "18.16.1"
-										packageData._npmVersion = "9.5.1-ulisses.1"
-										packageData.dist = [
-											shasum: hash,
-											tarball: "${args.VERDACCIO_URL}/${id}/-/${file}".toString()
-										]
+										dir(pack + "/..") {
+											callShell "mv '${id}' package"
+											callShell "tar -zcvf package.tgz package"
+											callShell "mv package '${id}'"
+											callShell "chmod 0777 package.tgz"
 
-										callShell "mv package.tgz '${args.VERDACCIO_STORAGE}/${id}/${file}'"
+											def file = "${id}-${localVersion}.tgz"
+											def hash = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
+											def timestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 
-										def storageData = readJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json")
-										storageData.versions[localVersion] = packageData
-										storageData.time["modified"] = timestamp
-										storageData.time[localVersion] = timestamp
-										storageData["dist-tags"]["latest"] = localVersion
-										storageData._attachments[file] = [
-											shasum: hash,
-											version: localVersion
-										]
+											def packageData = readJSON(file: "${id}/package.json")
+											packageData.readmeFilename = "README.md"
+											packageData.description = ""
+											packageData._id = "${id}@${localVersion}".toString()
+											packageData._nodeVersion = "18.16.1"
+											packageData._npmVersion = "9.5.1-ulisses.1"
+											packageData.dist = [
+												shasum: hash,
+												tarball: "${args.VERDACCIO_URL}/${id}/-/${file}".toString()
+											]
 
-										writeJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json", json: storageData, pretty: 2)
+											callShell "mv package.tgz '${args.VERDACCIO_STORAGE}/${id}/${file}'"
+
+											def storageData = readJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json")
+											storageData.versions[localVersion] = packageData
+											storageData.time["modified"] = timestamp
+											storageData.time[localVersion] = timestamp
+											storageData["dist-tags"]["latest"] = localVersion
+											storageData._attachments[file] = [
+												shasum: hash,
+												version: localVersion
+											]
+
+											writeJSON(file: "${args.VERDACCIO_STORAGE}/${id}/package.json", json: storageData, pretty: 2)
+										}
 									}
 								}
 							}
