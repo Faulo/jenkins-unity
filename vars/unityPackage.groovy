@@ -90,6 +90,9 @@ def call(body) {
 	}
 	def localVersion = args.VERSION
 	def isRelease = !localVersion.contains("-")
+	def stableVersion = isRelease
+			? localVersion
+			: localVersion.substring(0, localVersion.indexOf("-"))
 
 	if (args.ID == '') {
 		dir(pack) {
@@ -110,8 +113,15 @@ def call(body) {
 
 						def changelogContent = readFile(args.CHANGELOG_LOCATION)
 						def expectedChangelogLine = "## \\[$localVersion\\] - \\d{4}-\\d{2}-\\d{2}"
-						if (!changelogContent.find(expectedChangelogLine)) {
-							unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
+						if (isRelease) {
+							if (!changelogContent.find(expectedChangelogLine)) {
+								unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
+							}
+						} else {
+							def expectedStableChangelogLine = "## \\[$stableVersion\\] - \\d{4}-\\d{2}-\\d{2}"
+							if (!(changelogContent.find(expectedChangelogLine) || changelogContent.find(expectedStableChangelogLine))) {
+								unstable "${args.CHANGELOG_LOCATION} does not contain an entry '## [${stableVersion}] - YYYY-MM-DD' or '## [${localVersion}] - YYYY-MM-DD'.\nCurrent changelog is:\n${changelogContent}"
+							}
 						}
 					}
 				}
