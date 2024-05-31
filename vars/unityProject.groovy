@@ -213,7 +213,7 @@ def call(body) {
 								}
 
 								callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-								if (!fileExists(File)) {
+								if (!fileExists(xmlFile)) {
 									error "transform-dotnet-format failed to create '${xmlFile}'."
 								}
 
