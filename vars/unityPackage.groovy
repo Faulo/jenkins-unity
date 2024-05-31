@@ -307,10 +307,6 @@ def call(body) {
 			dir(project) {
 				deleteDir()
 			}
-
-			dir(reports) {
-				deleteDir()
-			}
 		}
 	}
 }
