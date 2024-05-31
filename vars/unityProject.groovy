@@ -202,10 +202,23 @@ def call(body) {
 						}
 						dir(project) {
 							def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
+							def jsonFile = "${reports}/format-report.json";
+							def xmlFile = "${reports}/format-report.xml";
+
 							def files = findFiles(glob: '*.sln')
 							for (file in files) {
-								warnError("Code needs formatting!") {
-									callShell "dotnet format --verify-no-changes ${file.name}${exclude}"
+								callShellStatus "dotnet format ${file.name} --verify-no-changes --verbosity normal --report ${reports}${exclude}"
+								if (!fileExists(jsonFile)) {
+									error "dotnet format failed to create '${jsonFile}'."
+								}
+
+								callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
+								if (!fileExists(File)) {
+									error "transform-dotnet-format failed to create '${xmlFile}'."
+								}
+
+								dir(reports) {
+									junit(testResults: 'format-report.xml', allowEmptyResults: true)
 								}
 							}
 						}
