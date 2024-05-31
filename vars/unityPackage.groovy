@@ -192,7 +192,7 @@ def call(body) {
 								def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
 								callShellStatus "dotnet format --verify-no-changes --report ${reports} project.sln${exclude}"
 								callUnity "transform-dotnet-format '${reports}/format-report.json'", "${reports}/format-report.xml";
-								junit(testResults: 'format-report.xml', allowEmptyResults: true)
+								junit(testResults: "${reports}/format-report.xml", allowEmptyResults: true)
 							}
 						}
 					}
