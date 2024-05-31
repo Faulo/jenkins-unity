@@ -190,9 +190,9 @@ def call(body) {
 							}
 							dir(project) {
 								def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-								warnError("Code needs formatting!") {
-									callShell "dotnet format --verify-no-changes project.sln${exclude}"
-								}
+								callShellStatus "dotnet format --verify-no-changes --report ${reports} project.sln${exclude}"
+								callUnity "transform-dotnet-format '${reports}/format-report.json'", "${reports}/format-report.xml";
+								junit(testResults: 'format-report.xml', allowEmptyResults: true)
 							}
 						}
 					}

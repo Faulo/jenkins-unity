@@ -1,6 +1,6 @@
 def String call(String body, String file = "") {
 	if (CallUnityInitializer.initialize()) {
-		callComposer('install --no-interaction --no-dev');
+		callComposer('update --no-interaction --no-dev');
 	}
 
 	def result = callComposer("exec ${body}");
