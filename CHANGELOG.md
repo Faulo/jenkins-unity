@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.12.0] - 2024-05-31
+
+### Added
+- Formatting errors reported by TEST_FORMATTING are now converted to junit test failures.
+
+
 ## [2.11.0] - 2024-05-21
 
 ### Changed
