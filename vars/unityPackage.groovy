@@ -166,7 +166,7 @@ def call(body) {
 										keepAll: false,
 										reportDir: 'html',
 										reportFiles: 'index.html',
-										reportName: 'Documentation',
+										reportName: id,
 										reportTitles: '',
 										useWrapperFileDirectly: true
 									])
