@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.14.0] - 2024-09-17
+
+### Added
+- Added UNITY_NODE property to unityPackage call.
+
+
+## [2.13.0] - 2024-08-15
+
+### Changed
+- Changed path for package documentations to match the package id.
+
+
 ## [2.12.0] - 2024-05-31
 
 ### Added
