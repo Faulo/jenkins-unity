@@ -74,25 +74,6 @@ def call(body) {
 		error "Package folder '${pack}' does not exist!"
 	}
 
-	def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
-	def createProject = createSolution || args.TEST_UNITY == '1'
-
-	def reportAny = [
-		args.REPORT_TO_DISCORD,
-		args.REPORT_TO_OFFICE_365,
-	].contains('1')
-
-	if (args.VERSION == '') {
-		dir(pack) {
-			args.VERSION = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
-		}
-	}
-	def localVersion = args.VERSION
-	def isRelease = !localVersion.contains("-")
-	def stableVersion = isRelease
-			? localVersion
-			: localVersion.substring(0, localVersion.indexOf("-"))
-
 	if (args.ID == '') {
 		dir(pack) {
 			args.ID = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').name)\""
@@ -100,11 +81,32 @@ def call(body) {
 	}
 	def id = args.ID
 
-	def editorconfigContent = args.TEST_FORMATTING == '1'
-			? readFile(file: args.EDITORCONFIG_LOCATION)
-			: ""
 
 	stage("Package: ${id}") {
+		
+		def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
+		def createProject = createSolution || args.TEST_UNITY == '1'
+
+		def reportAny = [
+			args.REPORT_TO_DISCORD,
+			args.REPORT_TO_OFFICE_365,
+		].contains('1')
+
+		if (args.VERSION == '') {
+			dir(pack) {
+				args.VERSION = callShellStdout "node --eval=\"process.stdout.write(require('./package.json').version)\""
+			}
+		}
+		def localVersion = args.VERSION
+		def isRelease = !localVersion.contains("-")
+		def stableVersion = isRelease
+				? localVersion
+				: localVersion.substring(0, localVersion.indexOf("-"))
+
+		def editorconfigContent = args.TEST_FORMATTING == '1'
+				? readFile(file: args.EDITORCONFIG_LOCATION)
+				: ""
+
 		try {
 
 			if (args.TEST_CHANGELOG == '1') {
