@@ -6,7 +6,7 @@ def call(body) {
         LOCATION : '',
         
         // specify Jenkins node to process calls to Unity
-        UNITY_NODE : '',
+        UNITY_NODE : 'unity',
 
         // If given, use this package information instead of reading from the package's package.json.
         VERSION : '',
@@ -66,10 +66,6 @@ def call(body) {
     // we want a path-compatible location
     if (args.LOCATION == '') {
         args.LOCATION = '.'
-    }
-    
-    if (args.UNITY_NODE == '') {
-        args.UNITY_NODE = env.NODE_NAME
     }
 
     def pack = "$WORKSPACE/${args.LOCATION}"
@@ -135,90 +131,92 @@ def call(body) {
             }
 
             if (createProject) {
-                dir(pack) {
-                    stash name: 'package', includes: "**"
-                }
-                
-                node(args.UNITY_NODE) {
-                    deleteDir()
-                    
-                    dir('package') {
-                        unstash 'package'
+                stage("Switch to Unity node") {
+                    dir(pack) {
+                        stash name: 'package', includes: "**"
                     }
-
-                    dir('reports') {
-                        stage("Build: Empty project with package") {
-                            callUnity "unity-package-install '$WORKSPACE/package' '$WORKSPACE/project'", "package-install.xml"
-                            junit(testResults: 'package-install.xml')
+                    
+                    node(args.UNITY_NODE) {
+                        deleteDir()
+                        
+                        dir('package') {
+                            unstash 'package'
                         }
-
-                        if (createSolution) {
-                            stage("Build: C# solution") {
-                                callUnity "unity-method '$WORKSPACE/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
-                                junit(testResults: 'build-solution.xml')
+    
+                        dir('reports') {
+                            stage("Build: Empty project with package") {
+                                callUnity "unity-package-install '$WORKSPACE/package' '$WORKSPACE/project'", "package-install.xml"
+                                junit(testResults: 'package-install.xml')
+                            }
+    
+                            if (createSolution) {
+                                stage("Build: C# solution") {
+                                    callUnity "unity-method '$WORKSPACE/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
+                                    junit(testResults: 'build-solution.xml')
+                                }
                             }
                         }
-                    }
-                    
-                    if (args.BUILD_DOCUMENTATION == '1') {
-                        stage("Build: DocFX documentation") {
-                            catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
-                                dir('project/.Documentation') {
-                                    deleteDir()
+                        
+                        if (args.BUILD_DOCUMENTATION == '1') {
+                            stage("Build: DocFX documentation") {
+                                catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+                                    dir('project/.Documentation') {
+                                        deleteDir()
+                                        
+                                        callUnity "unity-documentation '$WORKSPACE/project'"
                                     
-                                    callUnity "unity-documentation '$WORKSPACE/project'"
-                                
-                                    callShell "dotnet tool restore"
-                                    callShell "dotnet tool run docfx"
-
-                                    publishHTML([
-                                        allowMissing: false,
-                                        alwaysLinkToLastBuild: false,
-                                        keepAll: false,
-                                        reportDir: 'html',
-                                        reportFiles: 'index.html',
-                                        reportName: id,
-                                        reportTitles: '',
-                                        useWrapperFileDirectly: true
-                                    ])
+                                        callShell "dotnet tool restore"
+                                        callShell "dotnet tool run docfx"
+    
+                                        publishHTML([
+                                            allowMissing: false,
+                                            alwaysLinkToLastBuild: false,
+                                            keepAll: false,
+                                            reportDir: 'html',
+                                            reportFiles: 'index.html',
+                                            reportName: id,
+                                            reportTitles: '',
+                                            useWrapperFileDirectly: true
+                                        ])
+                                    }
                                 }
                             }
                         }
-                    }
-
-                    if (args.TEST_FORMATTING == '1') {
-                        stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-                            dir('reports') {
-                                writeFile(file: "$WORKSPACE/project/.editorconfig", text: editorconfigContent)
-                            
-                                def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-                                def jsonFile = "$WORKSPACE/reports/format-report.json";
-                                def xmlFile = "$WORKSPACE/reports/format-report.xml";
-
-                                callShellStatus "dotnet format '$WORKSPACE/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE/reports' ${exclude}"
-                                if (!fileExists(jsonFile)) {
-                                    error "dotnet format failed to create '${jsonFile}'."
-                                }
-
-                                callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-                                if (!fileExists(xmlFile)) {
-                                    error "transform-dotnet-format failed to create '${xmlFile}'."
-                                }
+    
+                        if (args.TEST_FORMATTING == '1') {
+                            stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+                                dir('reports') {
+                                    writeFile(file: "$WORKSPACE/project/.editorconfig", text: editorconfigContent)
                                 
-                                junit(testResults: 'format-report.xml', allowEmptyResults: true)
+                                    def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
+                                    def jsonFile = "$WORKSPACE/reports/format-report.json";
+                                    def xmlFile = "$WORKSPACE/reports/format-report.xml";
+    
+                                    callShellStatus "dotnet format '$WORKSPACE/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE/reports' ${exclude}"
+                                    if (!fileExists(jsonFile)) {
+                                        error "dotnet format failed to create '${jsonFile}'."
+                                    }
+    
+                                    callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
+                                    if (!fileExists(xmlFile)) {
+                                        error "transform-dotnet-format failed to create '${xmlFile}'."
+                                    }
+                                    
+                                    junit(testResults: 'format-report.xml', allowEmptyResults: true)
+                                }
                             }
                         }
-                    }
-
-                    if (args.TEST_UNITY == '1') {
-                        stage("Test: ${args.TEST_MODES}") {
-                            dir('reports') {
-                                if (args.TEST_MODES == '') {
-                                    unstable "Parameter TEST_MODES is missing."
+    
+                        if (args.TEST_UNITY == '1') {
+                            stage("Test: ${args.TEST_MODES}") {
+                                dir('reports') {
+                                    if (args.TEST_MODES == '') {
+                                        unstable "Parameter TEST_MODES is missing."
+                                    }
+                                    callUnity "unity-tests '$WORKSPACE/project' ${args.TEST_MODES}", "tests.xml"
+                                    
+                                    junit(testResults: 'tests.xml', allowEmptyResults: true)
                                 }
-                                callUnity "unity-tests '$WORKSPACE/project' ${args.TEST_MODES}", "tests.xml"
-                                
-                                junit(testResults: 'tests.xml', allowEmptyResults: true)
                             }
                         }
                     }
