@@ -83,7 +83,7 @@ def call(body) {
 
 
 	stage("Package: ${id}") {
-		
+
 		def createSolution = args.TEST_FORMATTING == '1' || args.BUILD_DOCUMENTATION == '1'
 		def createProject = createSolution || args.TEST_UNITY == '1'
 
