@@ -148,13 +148,13 @@ def call(body) {
 
 							dir('reports') {
 								stage("Build: Empty project with package") {
-									callUnity "unity-package-install '$WORKSPACE/package' '$WORKSPACE/project'", "package-install.xml"
+									callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
 									junit(testResults: 'package-install.xml')
 								}
 
 								if (createSolution) {
 									stage("Build: C# solution") {
-										callUnity "unity-method '$WORKSPACE/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
+										callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
 										junit(testResults: 'build-solution.xml')
 									}
 								}
@@ -166,7 +166,7 @@ def call(body) {
 										dir('project/.Documentation') {
 											deleteDir()
 
-											callUnity "unity-documentation '$WORKSPACE/project'"
+											callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
 											callShell "dotnet tool restore"
 											callShell "dotnet tool run docfx"
@@ -189,13 +189,13 @@ def call(body) {
 							if (args.TEST_FORMATTING == '1') {
 								stage("Test: ${args.EDITORCONFIG_LOCATION}") {
 									dir('reports') {
-										writeFile(file: "$WORKSPACE/project/.editorconfig", text: editorconfigContent)
+										writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
 
 										def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-										def jsonFile = "$WORKSPACE/reports/format-report.json";
-										def xmlFile = "$WORKSPACE/reports/format-report.xml";
+										def jsonFile = "$WORKSPACE_TMP/reports/format-report.json";
+										def xmlFile = "$WORKSPACE_TMP/reports/format-report.xml";
 
-										callShellStatus "dotnet format '$WORKSPACE/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE/reports' ${exclude}"
+										callShellStatus "dotnet format '$WORKSPACE_TMP/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE_TMP/reports' ${exclude}"
 										if (!fileExists(jsonFile)) {
 											error "dotnet format failed to create '${jsonFile}'."
 										}
@@ -216,7 +216,7 @@ def call(body) {
 										if (args.TEST_MODES == '') {
 											unstable "Parameter TEST_MODES is missing."
 										}
-										callUnity "unity-tests '$WORKSPACE/project' ${args.TEST_MODES}", "tests.xml"
+										callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
 
 										junit(testResults: 'tests.xml', allowEmptyResults: true)
 									}
