@@ -140,6 +140,8 @@ def call(body) {
 
 					node(args.UNITY_NODE) {
 						dir("$WORKSPACE_TMP") {
+							echo "Running on '$NODE_NAME' in ${pwd()}"
+
 							deleteDir()
 
 							dir('package') {
