@@ -233,9 +233,12 @@ def call(body) {
 				if (args.DEPLOY_TO_VERDACCIO == '1') {
 					dir(pack) {
 						def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
+						def isPublished = publishedVersion == '0'
+								? false
+								: callShellStdout("npm show ${id}@${localVersion} --registry '${args.VERDACCIO_URL}' version || echo '-'") != '-'
 
 						stage('Deploy to: Verdaccio') {
-							if (localVersion != publishedVersion) {
+							if (!isPublished) {
 								def doDeploy = true
 
 								if (isRelease && args.DEPLOY_IF_RELEASE == '0') {
