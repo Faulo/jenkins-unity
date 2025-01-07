@@ -33,15 +33,18 @@ def call(body) {
 		BUILD_NAME : '',
 
 		BUILD_WINDOWS_CALL : {project, build, report ->
-			callUnity "unity-build '${project}' '${result}' windows", "${report}"
+			echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
+			callUnity "unity-build '${project}' '${build}' windows", "${report}"
 		},
 
 		BUILD_LINUX_CALL : {project, build, report ->
-			callUnity "unity-build '${project}' '${result}' linux", "${report}"
+			echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
+			callUnity "unity-build '${project}' '${build}' linux", "${report}"
 		},
 
 		BUILD_MAC_CALL : {project, build, report ->
-			callUnity "unity-build '${project}' '${result}' mac", "${report}"
+			echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
+			callUnity "unity-build '${project}' '${build}' mac", "${report}"
 		},
 
 		// Deploy, even if previous steps reported errors or warnings.
