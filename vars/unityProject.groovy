@@ -250,7 +250,7 @@ def call(body) {
 				if (createBuild) {
 					if (args.BUILD_FOR_WINDOWS == '1') {
 						stage('Build: Windows') {
-							arg.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
+							args.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
 							junit(testResults: "${args.BUILD_NAME}-windows.xml")
 							zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
 						}
@@ -258,7 +258,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_LINUX == '1') {
 						stage('Build: Linux') {
-							arg.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
+							args.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
 							junit(testResults: "${args.BUILD_NAME}-linux.xml")
 							zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
 						}
@@ -266,7 +266,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_MAC == '1') {
 						stage('Build: MacOS') {
-							arg.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
+							args.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
 							junit(testResults: "${args.BUILD_NAME}-mac.xml")
 							zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
 						}
