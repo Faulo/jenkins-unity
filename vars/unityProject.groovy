@@ -32,6 +32,18 @@ def call(body) {
 		BUILD_FOR_ANDROID : '0',
 		BUILD_NAME : '',
 
+		BUILD_WINDOWS_CALL : {project, build, report ->
+			callUnity "unity-build '${project}' '${result}' windows", "${report}"
+		},
+
+		BUILD_LINUX_CALL : {project, build, report ->
+			callUnity "unity-build '${project}' '${result}' linux", "${report}"
+		},
+
+		BUILD_MAC_CALL : {project, build, report ->
+			callUnity "unity-build '${project}' '${result}' mac", "${report}"
+		},
+
 		// Deploy, even if previous steps reported errors or warnings.
 		DEPLOY_ON_FAILURE : '0',
 
@@ -238,7 +250,7 @@ def call(body) {
 				if (createBuild) {
 					if (args.BUILD_FOR_WINDOWS == '1') {
 						stage('Build: Windows') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-windows' windows", "${reports}/${args.BUILD_NAME}-windows.xml"
+							arg.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
 							junit(testResults: "${args.BUILD_NAME}-windows.xml")
 							zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
 						}
@@ -246,7 +258,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_LINUX == '1') {
 						stage('Build: Linux') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-linux' linux", "${reports}/${args.BUILD_NAME}-linux.xml"
+							arg.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
 							junit(testResults: "${args.BUILD_NAME}-linux.xml")
 							zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
 						}
@@ -254,7 +266,7 @@ def call(body) {
 
 					if (args.BUILD_FOR_MAC == '1') {
 						stage('Build: MacOS') {
-							callUnity "unity-build '${project}' '${reports}/${args.BUILD_NAME}-mac' mac", "${reports}/${args.BUILD_NAME}-mac.xml"
+							arg.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
 							junit(testResults: "${args.BUILD_NAME}-mac.xml")
 							zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
 						}
