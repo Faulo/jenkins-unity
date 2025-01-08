@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.15.0] - 2025-01-08
+
+### Added
+- Added unityProject arg BUILD_WINDOWS_CALL.
+- Added unityProject arg BUILD_LINUX_CALL.
+- Added unityProject arg BUILD_MAC_CALL.
+
+
 ## [2.14.1] - 2024-10-31
 
 ### Fixed
