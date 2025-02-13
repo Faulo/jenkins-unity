@@ -1,4 +1,4 @@
-def String call(String webhookUrl, Object currentBuild) {
+def void call(String webhookUrl, def currentBuild) {
 	def jobName = env.JOB_NAME.split("/")[-1]
 	def buildNumber = env.BUILD_NUMBER
 	def buildUrl = env.BUILD_URL
@@ -16,6 +16,34 @@ def String call(String webhookUrl, Object currentBuild) {
 		"weight": "Bolder",
 		"text": statusText
 	]
+
+
+	def mentionEntities = []
+
+	if (currentBuild.rawBuild.culprits.size() > 0) {
+		body << [
+			"type": "TextBlock",
+			"weight": "Bolder",
+			"text": "Culprits:"
+		]
+
+		def culprits = ""
+
+		for (culprit in currentBuild.rawBuild.culprits) {
+			culprits += "- <at>${culprit.displayName}</at>\r"
+
+			mentionEntities << [
+				"type": "mention",
+				"text": "<at>${culprit.displayName}</at>",
+				"mentioned": ["id": culprit.displayName, "name": culprit.displayName]
+			]
+		}
+
+		body << [
+			"type": "TextBlock",
+			"text": culprits
+		]
+	}
 
 	def error = currentBuild.rawBuild.execution.causeOfFailure
 	if (error) {
@@ -53,33 +81,6 @@ def String call(String webhookUrl, Object currentBuild) {
 		]
 	}
 
-	def mentionEntities = []
-
-	if (currentBuild.rawBuild.culprits.size() > 0) {
-		body << [
-			"type": "TextBlock",
-			"weight": "Bolder",
-			"text": "Culprits:"
-		]
-
-		def culprits = ""
-
-		for (culprit in currentBuild.rawBuild.culprits) {
-			culprits += "- <at>${culprit.email}</at>\r"
-
-			mentionEntities << [
-				"type": "mention",
-				"text": "<at>${culprit.email}</at>",
-				"mentioned": ["id": culprit.email, "name": culprit.displayName]
-			]
-		}
-
-		body << [
-			"type": "TextBlock",
-			"text": culprits
-		]
-	}
-
 	def jsonPayload = [
 		"type": "message",
 		"attachments": [
@@ -98,7 +99,7 @@ def String call(String webhookUrl, Object currentBuild) {
 		]
 	]
 
-	def jsonMessage = groovy.json.JsonOutput.toJson(jsonPayload)
+	def jsonMessage = writeJSON returnText: true, json: jsonPayload
 
 	def response = httpRequest(
 			httpMode: 'POST',
