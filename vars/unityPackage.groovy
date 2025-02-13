@@ -97,6 +97,7 @@ def call(body) {
 		def reportAny = [
 			args.REPORT_TO_DISCORD,
 			args.REPORT_TO_OFFICE_365,
+			args.REPORT_TO_ADAPTIVE_CARDS,
 		].contains('1')
 
 		if (args.VERSION == '') {
