@@ -1,6 +1,4 @@
-import hudson.model.Run
-
-def String call(String webhookUrl, Run currentBuild) {
+def String call(String webhookUrl, Object currentBuild) {
 	def jobName = env.JOB_NAME.split("/")[-1]
 	def buildNumber = env.BUILD_NUMBER
 	def buildUrl = env.BUILD_URL
