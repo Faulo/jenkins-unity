@@ -48,10 +48,17 @@ def call(body) {
 		// Report the build status to a Discord Webhook.
 		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
+		DISCORD_PING_IF : '',
 
 		// Report the build status to a Microsoft Office 365 Webhook.
 		REPORT_TO_OFFICE_365 : '0',
 		OFFICE_365_WEBHOOK : '',
+		OFFICE_365_PING_IF : '',
+
+		// Report the build status to a Microsoft Office 365 Webhook.
+		REPORT_TO_ADAPTIVE_CARDS : '0',
+		ADAPTIVE_CARDS_WEBHOOK : '',
+		ADAPTIVE_CARDS_PING_IF : '',
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -324,6 +331,12 @@ def call(body) {
 
 				if (args.REPORT_TO_OFFICE_365 == '1') {
 					office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
+				}
+
+				if (args.REPORT_TO_ADAPTIVE_CARDS == '1') {
+					if (arg.ADAPTIVE_CARDS_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.ADAPTIVE_CARDS_PING_IF)) {
+						sendAdaptiveCard(args.ADAPTIVE_CARDS_WEBHOOK, currentBuild)
+					}
 				}
 			}
 		}
