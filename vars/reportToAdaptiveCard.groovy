@@ -1,12 +1,11 @@
-def void call(String webhookUrl, def currentBuild) {
-	def jobName = env.JOB_NAME.split("/")[-1]
+def void call(String webhookUrl, def currentBuild, String name) {
 	def buildNumber = env.BUILD_NUMBER
 	def buildUrl = env.BUILD_URL
 	def jobUrl = buildUrl.replace("/${buildNumber}/", "/")
 
 	def body = []
 
-	def jobLink = "[${jobName}](${jobUrl})"
+	def jobLink = "[${name}](${jobUrl})"
 	def buildLink = "[#${buildNumber}](${buildUrl})"
 	def statusText = "${jobLink} ${buildLink}: ${currentBuild.currentResult}"
 

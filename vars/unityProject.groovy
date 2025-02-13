@@ -78,10 +78,17 @@ def call(body) {
 		// Report the build status to a Discord Webhook.
 		REPORT_TO_DISCORD : '0',
 		DISCORD_WEBHOOK : '',
+		DISCORD_PING_IF : '',
 
 		// Report the build status to a Microsoft Office 365 Webhook.
 		REPORT_TO_OFFICE_365 : '0',
 		OFFICE_365_WEBHOOK : '',
+		OFFICE_365_PING_IF : '',
+
+		// Report the build status to a Microsoft Office 365 Webhook.
+		REPORT_TO_ADAPTIVE_CARDS : '0',
+		ADAPTIVE_CARDS_WEBHOOK : '',
+		ADAPTIVE_CARDS_PING_IF : '',
 	]
 
 	body.resolveStrategy = Closure.DELEGATE_FIRST
@@ -128,6 +135,7 @@ def call(body) {
 	def reportAny = [
 		args.REPORT_TO_DISCORD,
 		args.REPORT_TO_OFFICE_365,
+		args.REPORT_TO_ADAPTIVE_CARDS,
 	].contains('1')
 
 	def setVersion = args.AUTOVERSION != ''
@@ -372,20 +380,24 @@ def call(body) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def header = "${currentBuild.currentResult}: ${id} v${localVersion}";
-				def footer = ""
-				for (changeLogSet in currentBuild.changeSets) {
-					for (entry in changeLogSet.getItems()) {
-						footer += "- ${entry.msg}\r\n"
+				def name = "${id} v${localVersion}";
+
+				if (args.REPORT_TO_DISCORD == '1') {
+					if (arg.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.DISCORD_PING_IF)) {
+						reportToDiscord(args.DISCORD_WEBHOOK, currentBuild, name)
 					}
 				}
 
-				if (args.REPORT_TO_DISCORD == '1') {
-					discordSend description: header, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: JOB_NAME, webhookURL: args.DISCORD_WEBHOOK
+				if (args.REPORT_TO_OFFICE_365 == '1') {
+					if (arg.OFFICE_365_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.OFFICE_365_PING_IF)) {
+						reportToOffice365(args.OFFICE_365_WEBHOOK, currentBuild, name)
+					}
 				}
 
-				if (args.REPORT_TO_OFFICE_365 == '1') {
-					office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: footer, status: header
+				if (args.REPORT_TO_ADAPTIVE_CARDS == '1') {
+					if (arg.ADAPTIVE_CARDS_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.ADAPTIVE_CARDS_PING_IF)) {
+						reportToAdaptiveCard(args.ADAPTIVE_CARDS_WEBHOOK, currentBuild, name)
+					}
 				}
 			}
 

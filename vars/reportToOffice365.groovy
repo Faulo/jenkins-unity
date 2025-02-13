@@ -1,0 +1,12 @@
+def void call(String webhookUrl, def currentBuild, String name) {
+	def status = "${currentBuild.currentResult}: ${name}"
+
+	def message = ""
+	for (changeLogSet in currentBuild.changeSets) {
+		for (entry in changeLogSet.getItems()) {
+			message += "- ${entry.msg}\r\n"
+		}
+	}
+
+	office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: message, status: status
+}
