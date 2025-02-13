@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.16.0] - 2025-02-13
+
+### Added
+- Added unityProject/unityPackage arg REPORT_TO_ADAPTIVE_CARDS, ADAPTIVE_CARDS_WEBHOOK.
+- Added unityProject/unityPackage arg DISCORD_PING_IF, OFFICE_365_PING_IF, ADAPTIVE_CARDS_PING_IF.
+
+
 ## [2.15.0] - 2025-01-08
 
 ### Added

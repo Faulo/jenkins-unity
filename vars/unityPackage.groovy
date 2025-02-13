@@ -321,19 +321,19 @@ def call(body) {
 				def name = "${id} v${localVersion}";
 
 				if (args.REPORT_TO_DISCORD == '1') {
-					if (arg.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.DISCORD_PING_IF)) {
+					if (args.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.DISCORD_PING_IF)) {
 						reportToDiscord(args.DISCORD_WEBHOOK, currentBuild, name)
 					}
 				}
 
 				if (args.REPORT_TO_OFFICE_365 == '1') {
-					if (arg.OFFICE_365_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.OFFICE_365_PING_IF)) {
+					if (args.OFFICE_365_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.OFFICE_365_PING_IF)) {
 						reportToOffice365(args.OFFICE_365_WEBHOOK, currentBuild, name)
 					}
 				}
 
 				if (args.REPORT_TO_ADAPTIVE_CARDS == '1') {
-					if (arg.ADAPTIVE_CARDS_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(arg.ADAPTIVE_CARDS_PING_IF)) {
+					if (args.ADAPTIVE_CARDS_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.ADAPTIVE_CARDS_PING_IF)) {
 						reportToAdaptiveCard(args.ADAPTIVE_CARDS_WEBHOOK, currentBuild, name)
 					}
 				}
