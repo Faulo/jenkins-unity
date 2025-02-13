@@ -6,14 +6,19 @@ def void call(String webhookUrl, def currentBuild, String name) {
 	def body = []
 
 	def jobLink = "[${name}](${jobUrl})"
-	def buildLink = "[#${buildNumber}](${buildUrl})"
-	def statusText = "${jobLink} ${buildLink}: ${currentBuild.currentResult}"
 
 	body << [
 		"type": "TextBlock",
-		"size": "Large",
-		"weight": "Bolder",
-		"text": statusText
+		"size": "small",
+		"text": jobLink
+	]
+
+	def buildLink = "[#${buildNumber}](${buildUrl})"
+
+	body << [
+		"type": "TextBlock",
+		"size": "large",
+		"text": "${buildLink}: **${currentBuild.currentResult}**"
 	]
 
 
