@@ -8,5 +8,5 @@ def void call(String webhookUrl, def currentBuild, String name) {
 		}
 	}
 
-	office365ConnectorSend webhookUrl: args.OFFICE_365_WEBHOOK, message: message, status: status
+	office365ConnectorSend webhookUrl: webhookUrl, message: message, status: status
 }
