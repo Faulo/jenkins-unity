@@ -1,4 +1,13 @@
 def void call(String webhookUrl, def currentBuild, String name) {
+
+	def statusEmojiMap = [
+		"SUCCESS"  : "✔️",
+		"UNSTABLE" : "⚠️",
+		"FAILURE"  : "⛔",
+		"ABORTED"  : "♻️"
+	]
+	def statusEmoji = statusEmojiMap[currentBuild.currentResult] ?: "⁉️"
+
 	def buildNumber = env.BUILD_NUMBER
 	def buildUrl = env.BUILD_URL
 	def jobUrl = buildUrl.replace("/${buildNumber}/", "/")
@@ -18,7 +27,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 	body << [
 		"type": "TextBlock",
 		"size": "large",
-		"text": "${buildLink}: **${currentBuild.currentResult}**"
+		"text": "${statusEmoji} ${buildLink}: **${currentBuild.currentResult}**"
 	]
 
 
@@ -87,6 +96,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 
 	def jsonPayload = [
 		"type": "message",
+		"summary": "${statusEmoji} ${currentBuild.currentResult}: ${name}",
 		"attachments": [
 			[
 				"contentType": "application/vnd.microsoft.card.adaptive",
