@@ -118,7 +118,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 	def response = httpRequest(
 			httpMode: 'POST',
 			requestBody: jsonMessage,
-			contentType: 'APPLICATION_JSON; charset=UTF-8',
+			contentType: 'APPLICATION_JSON',
 			url: webhookUrl
 			)
 
