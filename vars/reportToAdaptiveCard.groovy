@@ -113,7 +113,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 		]
 	]
 
-	def jsonMessage = new String(writeJSON(returnText: true, json: jsonPayload).getBytes("UTF-8"), "UTF-8")
+	def jsonMessage = writeJSON(returnText: true, json: jsonPayload)
 
 	def response = httpRequest(
 			httpMode: 'POST',
