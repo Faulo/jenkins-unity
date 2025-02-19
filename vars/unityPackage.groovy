@@ -117,9 +117,9 @@ def call(body) {
 				: ""
 
 		def editorStashed = false
-		if (args.TEST_FORMATTING == '1' && fileExists(args.EDITORCONFIG_LOCATION)) {
+		if (args.TEST_FORMATTING == '1' && fileExists(args.EDITOR_LOCATION)) {
 			editorStashed = true
-			stash name: 'editor', allowEmpty: true, includes: args.EDITORCONFIG_LOCATION + '/**'
+			stash name: 'editor', allowEmpty: true, includes: args.EDITOR_LOCATION + '/**'
 		}
 
 		try {
