@@ -119,7 +119,7 @@ def call(body) {
 		def editorStashed = false
 		if (args.TEST_FORMATTING == '1' && args.EDITORCONFIG_ADDONS != '') {
 			editorStashed = true
-			stash name: 'editor', allowEmpty: true, includes: args.EDITORCONFIG_ADDONS
+			stash name: 'editorconfig', allowEmpty: true, includes: args.EDITORCONFIG_ADDONS
 		}
 
 		try {
@@ -161,9 +161,6 @@ def call(body) {
 
 							dir('package') {
 								unstash 'package'
-								if (editorStashed) {
-									unstash 'editor'
-								}
 							}
 
 							dir('reports') {
@@ -171,7 +168,15 @@ def call(body) {
 									callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
 									junit(testResults: 'package-install.xml')
 								}
+							}
 
+							if (editorStashed) {
+								dir('project') {
+									unstash 'editorconfig'
+								}
+							}
+
+							dir('reports') {
 								if (createSolution) {
 									stage("Build: C# solution") {
 										callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
