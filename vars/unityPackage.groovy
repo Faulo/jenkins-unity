@@ -19,6 +19,7 @@ def call(body) {
 		// Assert that the C# code of the package matches the .editorconfig.
 		TEST_FORMATTING : '0',
 		EDITORCONFIG_LOCATION : '.editorconfig',
+		EDITOR_LOCATION : '.editor',
 		FORMATTING_EXCLUDE : '',
 
 		// Assert Unity's Test Runner tests.
@@ -115,6 +116,12 @@ def call(body) {
 				? readFile(file: args.EDITORCONFIG_LOCATION)
 				: ""
 
+		def editorStashed = false
+		if (args.TEST_FORMATTING == '1' && fileExists(args.EDITORCONFIG_LOCATION)) {
+			editorStashed = true
+			stash name: 'editor', allowEmpty: true, includes: args.EDITORCONFIG_LOCATION + '/**'
+		}
+
 		try {
 
 			if (args.TEST_CHANGELOG == '1') {
@@ -154,6 +161,9 @@ def call(body) {
 
 							dir('package') {
 								unstash 'package'
+								if (editorStashed) {
+									unstash 'editor'
+								}
 							}
 
 							dir('reports') {
