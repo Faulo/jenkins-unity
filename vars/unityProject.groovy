@@ -1,7 +1,17 @@
-def call(body) {
+def call(Closure body) {
+	def args = [:]
+
+	body.resolveStrategy = Closure.DELEGATE_FIRST
+	body.delegate = args
+	body()
+
+	unityProject(args)
+}
+
+def call(Map args) {
 	assert env.BRANCH_NAME != null
 
-	def args = [
+	def defaultArgs = [
 		// Relative path to the Unity project inside the repository.
 		LOCATION : '',
 
@@ -91,9 +101,7 @@ def call(body) {
 		ADAPTIVE_CARDS_PING_IF : '',
 	]
 
-	body.resolveStrategy = Closure.DELEGATE_FIRST
-	body.delegate = args
-	body()
+	args = defaultArgs + args
 
 	// backwards compatibility
 	if (args.containsKey('PROJECT_LOCATION')) {
