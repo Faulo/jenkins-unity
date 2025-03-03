@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.17.0] - 2025-03-03
+
+### Added
+- Added Map syntax to unityProject and unityPackage calls.
+
+
 ## [2.16.0] - 2025-02-13
 
 ### Added
