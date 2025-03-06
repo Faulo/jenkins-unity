@@ -300,17 +300,19 @@ def call(Map args) {
 											callShell "chmod 0777 package.tgz"
 
 											def file = "${id}-${localVersion}.tgz"
-											def hash = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
+											def integrity = callShellStdout("openssl dgst -sha512 -binary package.tgz | openssl base64 | tr -d '\n' | awk '{print \"sha512-\" \$0}'")
+											def shasum = callShellStdout("sha1sum package.tgz | awk '{ print \$1 }'")
 											def timestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
 
 											def packageData = readJSON(file: "${id}/package.json")
 											packageData.readmeFilename = "README.md"
 											packageData.description = ""
 											packageData._id = "${id}@${localVersion}".toString()
-											packageData._nodeVersion = "18.16.1"
-											packageData._npmVersion = "9.5.1-ulisses.1"
+											packageData._nodeVersion = callShellStdout("node -v").trim().replaceAll("^v", "")
+											packageData._npmVersion = callShellStdout("npm -v").trim()
 											packageData.dist = [
-												shasum: hash,
+												integrity: integrity,
+												shasum: shasum,
 												tarball: "${args.VERDACCIO_URL}/${id}/-/${file}".toString()
 											]
 
@@ -322,7 +324,7 @@ def call(Map args) {
 											storageData.time[localVersion] = timestamp
 											storageData["dist-tags"]["latest"] = localVersion
 											storageData._attachments[file] = [
-												shasum: hash,
+												shasum: shasum,
 												version: localVersion
 											]
 
