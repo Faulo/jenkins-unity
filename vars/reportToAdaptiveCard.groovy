@@ -17,6 +17,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 	def body = []
 
 	def jobLink = "[${name}](${jobUrl})"
+	def testLink = "[tests](${testUrl})"
 
 	body << [
 		"type": "TextBlock",
@@ -34,19 +35,20 @@ def void call(String webhookUrl, def currentBuild, String name) {
 
 	def testResultAction = currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction)
 	if (testResultAction) {
+		def totalTests = testResultAction.totalCount
 		def failedTests = testResultAction.failCount
 
 		if (failedTests == 0) {
 			body << [
 				"type": "TextBlock",
 				"color": "good",
-				"text": "🎉 [All tests passed.](${testUrl})"
+				"text": "🎉 All ${totalTests} ${testLink} passed."
 			]
 		} else {
 			body << [
 				"type": "TextBlock",
 				"color": "warning",
-				"text": "☠️ [Failed tests: **${failedTests}**](${testUrl})"
+				"text": "☠️ Failed ${testLink}: **${failedTests}**"
 			]
 		}
 	}
