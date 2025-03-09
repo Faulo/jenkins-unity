@@ -9,8 +9,10 @@ def void call(String webhookUrl, def currentBuild, String name) {
 	def statusEmoji = statusEmojiMap[currentBuild.currentResult] ?: "⁉️"
 
 	def buildNumber = env.BUILD_NUMBER
+	def buildName = env.JOB_BASE_NAME
 	def buildUrl = env.BUILD_URL
 	def jobUrl = buildUrl.replace("/${buildNumber}/", "/")
+	def testUrl = buildUrl + "testReport/"
 
 	def body = []
 
@@ -22,13 +24,32 @@ def void call(String webhookUrl, def currentBuild, String name) {
 		"text": jobLink
 	]
 
-	def buildLink = "[#${buildNumber}](${buildUrl})"
+	def buildLink = "[${buildName} #${buildNumber}](${buildUrl})"
 
 	body << [
 		"type": "TextBlock",
 		"size": "large",
 		"text": "${statusEmoji} ${buildLink}: **${currentBuild.currentResult}**"
 	]
+
+	def testResultAction = currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction)
+	if (testResultAction) {
+		def failedTests = testResultAction.failCount
+
+		if (failedTests == 0) {
+			body << [
+				"type": "TextBlock",
+				"color": "good",
+				"text": "🎉 [All tests passed.](${testUrl})"
+			]
+		} else {
+			body << [
+				"type": "TextBlock",
+				"color": "warning",
+				"text": "☠️ [Failed tests: **${failedTests}**](${testUrl})"
+			]
+		}
+	}
 
 
 	def mentionEntities = []
@@ -96,7 +117,7 @@ def void call(String webhookUrl, def currentBuild, String name) {
 
 	def jsonPayload = [
 		"type": "message",
-		"summary": "${statusEmoji} ${currentBuild.currentResult}: ${name}",
+		"summary": "${statusEmoji} ${name}: ${currentBuild.currentResult}",
 		"attachments": [
 			[
 				"contentType": "application/vnd.microsoft.card.adaptive",
@@ -104,8 +125,9 @@ def void call(String webhookUrl, def currentBuild, String name) {
 					"type": "AdaptiveCard",
 					"body": body,
 					"\$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-					"version": "1.0",
+					"version": "1.2",
 					"msteams": [
+						"width": "Full",
 						"entities": mentionEntities
 					]
 				]
