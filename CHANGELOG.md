@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.17.2] - 2025-03-09
+
+### Fixed
+- Added test report to REPORT_TO_ADAPTIVE_CARDS.
+
+
 ## [2.17.1] - 2025-03-06
 
 ### Fixed
