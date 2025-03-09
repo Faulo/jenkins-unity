@@ -46,12 +46,12 @@ def void call(String webhookUrl, def currentBuild, String name) {
 				"text": "🎉 All ${testLink} tests passed."
 			]
 		} else {
-			def testLink = "[${failedTests}](${testUrl})"
+			def testLink = "[**${failedTests}**](${testUrl})"
 
 			body << [
 				"type": "TextBlock",
 				"color": "warning",
-				"text": "☠️ Failed tests: **${testLink}**"
+				"text": "☠️ Failed tests: ${testLink}"
 			]
 		}
 	}
