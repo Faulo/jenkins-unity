@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [2.18.0] - 2025-05-06
+
+### Added
+- Added unityPackage arg UNITY_CREDENTIALS.
+- Added unityPackage arg EMAIL_CREDENTIALS.
+
+
 ## [2.17.2] - 2025-03-09
 
 ### Fixed
