@@ -22,6 +22,10 @@ def call(Map args) {
 		VERSION : '',
 		ID : '',
 
+		// If given, automatically use these credentials to license a free Unity version.
+		UNITY_CREDENTIALS : '',
+		EMAIL_CREDENTIALS : '',
+
 		// Assert that CHANGELOG.md has been updated.
 		TEST_CHANGELOG : '1',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
@@ -171,87 +175,97 @@ def call(Map args) {
 								unstash 'package'
 							}
 
-							dir('reports') {
-								stage("Build: Empty project with package") {
-									callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
-									junit(testResults: 'package-install.xml')
-								}
+							def bindings = []
+							if (args.UNITY_CREDENTIALS != '') {
+								bindings << usernamePassword(credentialsId: args.UNITY_CREDENTIALS, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
+							}
+							if (args.EMAIL_CREDENTIALS != '') {
+								bindings << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
 							}
 
-							if (editorStashed) {
-								dir('project') {
-									unstash 'editorconfig'
-								}
-							}
-
-							dir('reports') {
-								if (createSolution) {
-									stage("Build: C# solution") {
-										callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
-										junit(testResults: 'build-solution.xml')
+							withCredentials(bindings) {
+								dir('reports') {
+									stage("Build: Empty project with package") {
+										callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
+										junit(testResults: 'package-install.xml')
 									}
 								}
-							}
 
-							if (args.BUILD_DOCUMENTATION == '1') {
-								stage("Build: DocFX documentation") {
-									catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
-										dir('project/.Documentation') {
-											deleteDir()
+								if (editorStashed) {
+									dir('project') {
+										unstash 'editorconfig'
+									}
+								}
 
-											callUnity "unity-documentation '$WORKSPACE_TMP/project'"
-
-											callShell "dotnet tool restore"
-											callShell "dotnet tool run docfx"
-
-											publishHTML([
-												allowMissing: false,
-												alwaysLinkToLastBuild: false,
-												keepAll: false,
-												reportDir: 'html',
-												reportFiles: 'index.html',
-												reportName: id,
-												reportTitles: '',
-												useWrapperFileDirectly: true
-											])
+								dir('reports') {
+									if (createSolution) {
+										stage("Build: C# solution") {
+											callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
+											junit(testResults: 'build-solution.xml')
 										}
 									}
 								}
-							}
 
-							if (args.TEST_FORMATTING == '1') {
-								stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-									dir('reports') {
-										writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
+								if (args.BUILD_DOCUMENTATION == '1') {
+									stage("Build: DocFX documentation") {
+										catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+											dir('project/.Documentation') {
+												deleteDir()
 
-										def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-										def jsonFile = "$WORKSPACE_TMP/reports/format-report.json";
-										def xmlFile = "$WORKSPACE_TMP/reports/format-report.xml";
+												callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
-										callShellStatus "dotnet format '$WORKSPACE_TMP/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE_TMP/reports' ${exclude}"
-										if (!fileExists(jsonFile)) {
-											error "dotnet format failed to create '${jsonFile}'."
+												callShell "dotnet tool restore"
+												callShell "dotnet tool run docfx"
+
+												publishHTML([
+													allowMissing: false,
+													alwaysLinkToLastBuild: false,
+													keepAll: false,
+													reportDir: 'html',
+													reportFiles: 'index.html',
+													reportName: id,
+													reportTitles: '',
+													useWrapperFileDirectly: true
+												])
+											}
 										}
-
-										callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-										if (!fileExists(xmlFile)) {
-											error "transform-dotnet-format failed to create '${xmlFile}'."
-										}
-
-										junit(testResults: 'format-report.xml', allowEmptyResults: true)
 									}
 								}
-							}
 
-							if (args.TEST_UNITY == '1') {
-								stage("Test: ${args.TEST_MODES}") {
-									dir('reports') {
-										if (args.TEST_MODES == '') {
-											unstable "Parameter TEST_MODES is missing."
+								if (args.TEST_FORMATTING == '1') {
+									stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+										dir('reports') {
+											writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
+
+											def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
+											def jsonFile = "$WORKSPACE_TMP/reports/format-report.json";
+											def xmlFile = "$WORKSPACE_TMP/reports/format-report.xml";
+
+											callShellStatus "dotnet format '$WORKSPACE_TMP/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE_TMP/reports' ${exclude}"
+											if (!fileExists(jsonFile)) {
+												error "dotnet format failed to create '${jsonFile}'."
+											}
+
+											callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
+											if (!fileExists(xmlFile)) {
+												error "transform-dotnet-format failed to create '${xmlFile}'."
+											}
+
+											junit(testResults: 'format-report.xml', allowEmptyResults: true)
 										}
-										callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
+									}
+								}
 
-										junit(testResults: 'tests.xml', allowEmptyResults: true)
+								if (args.TEST_UNITY == '1') {
+									stage("Test: ${args.TEST_MODES}") {
+										dir('reports') {
+											if (args.TEST_MODES == '') {
+												unstable "Parameter TEST_MODES is missing."
+											}
+											callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
+
+											junit(testResults: 'tests.xml', allowEmptyResults: true)
+										}
 									}
 								}
 							}
