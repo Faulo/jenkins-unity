@@ -15,6 +15,10 @@ def call(Map args) {
 		// Relative path to the Unity project inside the repository.
 		LOCATION : '',
 
+		// If given, automatically use these credentials to license a free Unity version.
+		UNITY_CREDENTIALS : '',
+		EMAIL_CREDENTIALS : '',
+
 		// Automatically set the version of the Unity project based on the tags and commits of the VCS. Can be '' (disabled), 'git' or 'plastic'.
 		AUTOVERSION : '',
 		// Automatically append the build number to the version of the project.
@@ -183,184 +187,194 @@ def call(Map args) {
 			dir(reports) {
 				deleteDir()
 
-				if (createSolution) {
-					stage("Build: C# solution") {
-						callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
-						junit(testResults: 'build-solution.xml')
-					}
+				def credentials = []
+				if (args.UNITY_CREDENTIALS != '') {
+					credentials << usernamePassword(credentialsId: args.UNITY_CREDENTIALS, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
+				}
+				if (args.EMAIL_CREDENTIALS != '') {
+					credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
+				}
+				if (args.STEAM_CREDENTIALS != '') {
+					credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
+				}
+				if (args.ITCH_CREDENTIALS != '') {
+					credentials << string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
 				}
 
-				if (args.BUILD_DOCUMENTATION == '1') {
-					stage("Build: DocFX documentation") {
-						catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
-							dir(docs) {
-								deleteDir()
+				withCredentials(credentials) {
+
+					if (createSolution) {
+						stage("Build: C# solution") {
+							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
+							junit(testResults: 'build-solution.xml')
+						}
+					}
+
+					if (args.BUILD_DOCUMENTATION == '1') {
+						stage("Build: DocFX documentation") {
+							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+								dir(docs) {
+									deleteDir()
+								}
+
+								callUnity "unity-documentation '${project}'"
+
+								dir(docs) {
+									callShell "dotnet tool restore"
+									callShell "dotnet tool run docfx"
+
+									publishHTML([
+										allowMissing: false,
+										alwaysLinkToLastBuild: false,
+										keepAll: false,
+										reportDir: 'html',
+										reportFiles: 'index.html',
+										reportName: 'Documentation',
+										reportTitles: '',
+										useWrapperFileDirectly: true
+									])
+
+									deleteDir()
+								}
 							}
+						}
+					}
 
-							callUnity "unity-documentation '${project}'"
+					if (args.TEST_FORMATTING == '1') {
+						stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+							def editorconfigTarget = "${project}/.editorconfig"
+							dir(env.WORKSPACE) {
+								def editorconfigSource = args.EDITORCONFIG_LOCATION
+								if (!fileExists(editorconfigSource)) {
+									unstable "Editor Config at '${editorconfigSource}' is missing."
+								}
+								def editorconfigContent = readFile(file: editorconfigSource)
+								writeFile(file: editorconfigTarget, text: editorconfigContent)
+							}
+							dir(project) {
+								def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
+								def jsonFile = "${reports}/format-report.json";
+								def xmlFile = "${reports}/format-report.xml";
 
-							dir(docs) {
-								callShell "dotnet tool restore"
-								callShell "dotnet tool run docfx"
+								def files = findFiles(glob: '*.sln')
+								for (file in files) {
+									callShellStatus "dotnet format ${file.name} --verify-no-changes --verbosity normal --report ${reports}${exclude}"
+									if (!fileExists(jsonFile)) {
+										error "dotnet format failed to create '${jsonFile}'."
+									}
 
+									callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
+									if (!fileExists(xmlFile)) {
+										error "transform-dotnet-format failed to create '${xmlFile}'."
+									}
+
+									dir(reports) {
+										junit(testResults: 'format-report.xml', allowEmptyResults: true)
+									}
+								}
+							}
+						}
+					}
+
+					if (args.TEST_UNITY == '1') {
+						stage("Test: ${args.TEST_MODES}") {
+							if (args.TEST_MODES == '') {
+								unstable "Parameter TEST_MODES is missing."
+							}
+							callUnity "unity-tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
+							junit(testResults: 'tests.xml', allowEmptyResults: true)
+						}
+					}
+
+					if (createBuild) {
+						if (args.BUILD_FOR_WINDOWS == '1') {
+							stage('Build: Windows') {
+								args.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
+								junit(testResults: "${args.BUILD_NAME}-windows.xml")
+								zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
+							}
+						}
+
+						if (args.BUILD_FOR_LINUX == '1') {
+							stage('Build: Linux') {
+								args.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
+								junit(testResults: "${args.BUILD_NAME}-linux.xml")
+								zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
+							}
+						}
+
+						if (args.BUILD_FOR_MAC == '1') {
+							stage('Build: MacOS') {
+								args.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
+								junit(testResults: "${args.BUILD_NAME}-mac.xml")
+								zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
+							}
+						}
+
+						if (args.BUILD_FOR_WEBGL == '1') {
+							stage('Build: WebGL') {
+								callUnity "unity-module-install '${project}' webgl", "${reports}/install-webgl.xml"
+								junit(testResults: 'install-webgl.xml')
+								callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl'", "${reports}/${args.BUILD_NAME}-webgl.xml"
+								junit(testResults: "${args.BUILD_NAME}-webgl.xml")
+								zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
 								publishHTML([
 									allowMissing: false,
 									alwaysLinkToLastBuild: false,
 									keepAll: false,
-									reportDir: 'html',
+									reportDir: "${args.BUILD_NAME}-webgl",
 									reportFiles: 'index.html',
-									reportName: 'Documentation',
+									reportName: 'WebGL Build',
 									reportTitles: '',
 									useWrapperFileDirectly: true
 								])
-
-								deleteDir()
 							}
 						}
-					}
-				}
 
-				if (args.TEST_FORMATTING == '1') {
-					stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-						def editorconfigTarget = "${project}/.editorconfig"
-						dir(env.WORKSPACE) {
-							def editorconfigSource = args.EDITORCONFIG_LOCATION
-							if (!fileExists(editorconfigSource)) {
-								unstable "Editor Config at '${editorconfigSource}' is missing."
-							}
-							def editorconfigContent = readFile(file: editorconfigSource)
-							writeFile(file: editorconfigTarget, text: editorconfigContent)
-						}
-						dir(project) {
-							def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-							def jsonFile = "${reports}/format-report.json";
-							def xmlFile = "${reports}/format-report.xml";
-
-							def files = findFiles(glob: '*.sln')
-							for (file in files) {
-								callShellStatus "dotnet format ${file.name} --verify-no-changes --verbosity normal --report ${reports}${exclude}"
-								if (!fileExists(jsonFile)) {
-									error "dotnet format failed to create '${jsonFile}'."
-								}
-
-								callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-								if (!fileExists(xmlFile)) {
-									error "transform-dotnet-format failed to create '${xmlFile}'."
-								}
-
-								dir(reports) {
-									junit(testResults: 'format-report.xml', allowEmptyResults: true)
-								}
+						if (args.BUILD_FOR_ANDROID == '1') {
+							stage('Build: Android') {
+								callUnity "unity-module-install '${project}' android", "${reports}/install-android.xml"
+								junit(testResults: 'install-android.xml')
+								callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk'", "${reports}/${args.BUILD_NAME}-android.xml"
+								junit(testResults: "${args.BUILD_NAME}-android.xml")
+								archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
 							}
 						}
-					}
-				}
 
-				if (args.TEST_UNITY == '1') {
-					stage("Test: ${args.TEST_MODES}") {
-						if (args.TEST_MODES == '') {
-							unstable "Parameter TEST_MODES is missing."
-						}
-						callUnity "unity-tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
-						junit(testResults: 'tests.xml', allowEmptyResults: true)
-					}
-				}
+						if (deployAny) {
+							if (args.DEPLOY_TO_STEAM == '1') {
+								stage('Deploy to: Steam') {
+									if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
+										error "Current result is '${currentBuild.currentResult}', skipping deployment."
+									}
 
-				if (createBuild) {
-					if (args.BUILD_FOR_WINDOWS == '1') {
-						stage('Build: Windows') {
-							args.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
-							junit(testResults: "${args.BUILD_NAME}-windows.xml")
-							zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
-						}
-					}
+									def depots = ''
+									if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
+										depots += "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows "
+									}
+									if (args.BUILD_FOR_LINUX == '1' && args.STEAM_DEPOT_LINUX != '') {
+										depots += "${args.STEAM_DEPOT_LINUX}=${args.BUILD_NAME}-linux "
+									}
+									if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
+										depots += "${args.STEAM_DEPOT_MAC}=${args.BUILD_NAME}-mac "
+									}
 
-					if (args.BUILD_FOR_LINUX == '1') {
-						stage('Build: Linux') {
-							args.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
-							junit(testResults: "${args.BUILD_NAME}-linux.xml")
-							zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
-						}
-					}
+									if (depots == '') {
+										error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
+									}
 
-					if (args.BUILD_FOR_MAC == '1') {
-						stage('Build: MacOS') {
-							args.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
-							junit(testResults: "${args.BUILD_NAME}-mac.xml")
-							zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
-						}
-					}
+									callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
-					if (args.BUILD_FOR_WEBGL == '1') {
-						stage('Build: WebGL') {
-							callUnity "unity-module-install '${project}' webgl", "${reports}/install-webgl.xml"
-							junit(testResults: 'install-webgl.xml')
-							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl'", "${reports}/${args.BUILD_NAME}-webgl.xml"
-							junit(testResults: "${args.BUILD_NAME}-webgl.xml")
-							zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
-							publishHTML([
-								allowMissing: false,
-								alwaysLinkToLastBuild: false,
-								keepAll: false,
-								reportDir: "${args.BUILD_NAME}-webgl",
-								reportFiles: 'index.html',
-								reportName: 'WebGL Build',
-								reportTitles: '',
-								useWrapperFileDirectly: true
-							])
-						}
-					}
-
-					if (args.BUILD_FOR_ANDROID == '1') {
-						stage('Build: Android') {
-							callUnity "unity-module-install '${project}' android", "${reports}/install-android.xml"
-							junit(testResults: 'install-android.xml')
-							callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk'", "${reports}/${args.BUILD_NAME}-android.xml"
-							junit(testResults: "${args.BUILD_NAME}-android.xml")
-							archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
-						}
-					}
-
-					if (deployAny) {
-						if (args.DEPLOY_TO_STEAM == '1') {
-							stage('Deploy to: Steam') {
-								if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
-									error "Current result is '${currentBuild.currentResult}', skipping deployment."
-								}
-
-								def depots = ''
-								if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
-									depots += "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows "
-								}
-								if (args.BUILD_FOR_LINUX == '1' && args.STEAM_DEPOT_LINUX != '') {
-									depots += "${args.STEAM_DEPOT_LINUX}=${args.BUILD_NAME}-linux "
-								}
-								if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
-									depots += "${args.STEAM_DEPOT_MAC}=${args.BUILD_NAME}-mac "
-								}
-
-								if (depots == '') {
-									error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
-								}
-
-								callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
-								withCredentials([
-									usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
-								]) {
 									callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 								}
 							}
-						}
 
-						if (args.DEPLOY_TO_ITCH == '1') {
-							stage('Deploy to: itch.io') {
-								if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
-									error "Current result is '${currentBuild.currentResult}', skipping deployment."
-								}
+							if (args.DEPLOY_TO_ITCH == '1') {
+								stage('Deploy to: itch.io') {
+									if (args.DEPLOY_ON_FAILURE != '1' && currentBuild.currentResult != "SUCCESS") {
+										error "Current result is '${currentBuild.currentResult}', skipping deployment."
+									}
 
-								withCredentials([
-									string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
-								]) {
 									if (args.BUILD_FOR_WINDOWS == '1') {
 										callShell "butler push --if-changed ${args.BUILD_NAME}-windows ${args.ITCH_ID}:windows-x64"
 									}

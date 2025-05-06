@@ -175,15 +175,15 @@ def call(Map args) {
 								unstash 'package'
 							}
 
-							def bindings = []
+							def credentials = []
 							if (args.UNITY_CREDENTIALS != '') {
-								bindings << usernamePassword(credentialsId: args.UNITY_CREDENTIALS, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
+								credentials << usernamePassword(credentialsId: args.UNITY_CREDENTIALS, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
 							}
 							if (args.EMAIL_CREDENTIALS != '') {
-								bindings << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
+								credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
 							}
 
-							withCredentials(bindings) {
+							withCredentials(credentials) {
 								dir('reports') {
 									stage("Build: Empty project with package") {
 										callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
