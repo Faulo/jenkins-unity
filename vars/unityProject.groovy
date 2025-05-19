@@ -221,9 +221,7 @@ def call(Map args) {
 
 								dir(docs) {
 									def isInstalled = callShellStdout("dotnet tool list -g").contains("docfx")
-									if (isInstalled) {
-										callShell "dotnet tool update -g docfx"
-									} else {
+									if (!isInstalled) {
 										callShell "dotnet tool install -g docfx"
 									}
 

@@ -215,9 +215,7 @@ def call(Map args) {
 												callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
 												def isInstalled = callShellStdout("dotnet tool list -g").contains("docfx")
-												if (isInstalled) {
-													callShell "dotnet tool update -g docfx"
-												} else {
+												if (!isInstalled) {
 													callShell "dotnet tool install -g docfx"
 												}
 
