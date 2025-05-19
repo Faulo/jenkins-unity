@@ -26,6 +26,8 @@ def call(Map args) {
 		UNITY_CREDENTIALS : '',
 		EMAIL_CREDENTIALS : '',
 
+		UNITY_MANIFEST : '',
+
 		// Assert that CHANGELOG.md has been updated.
 		TEST_CHANGELOG : '1',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
@@ -181,6 +183,9 @@ def call(Map args) {
 							}
 							if (args.EMAIL_CREDENTIALS != '') {
 								credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
+							}
+							if (args.UNITY_MANIFEST != '') {
+								credentials << file(credentialsId: 'Unity-Manifest', variable: 'UNITY_EMPTY_MANIFEST')
 							}
 
 							withCredentials(credentials) {
