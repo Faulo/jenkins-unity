@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [2.20.0] - 2025-05-19
+
+### Added
+- Added callDotnetFormat.
+
+
 ## [2.19.0] - 2025-05-06
 
 ### Added
