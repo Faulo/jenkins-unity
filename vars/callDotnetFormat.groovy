@@ -4,19 +4,7 @@ def String call(String solutionFile, String reportsDirectory, String exclude = '
 			exclude = " --exclude ${exclude}"
 		}
 
-		if (isUnix()) {
-			// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
-			callShellStatus "dotnet format '${solutionFile}' --verify-no-changes --verbosity normal --report '${reportsDirectory}'${exclude}"
-		} else {
-			def isInstalled = callShellStdout("dotnet tool list -g").contains("dotnet-format")
-			if (isInstalled) {
-				callShell "dotnet tool update -g dotnet-format"
-			} else {
-				callShell "dotnet tool install -g dotnet-format"
-			}
-
-			callShellStatus "dotnet-format '${solutionFile}' --verify-no-changes --verbosity normal --report '${reportsDirectory}'${exclude}"
-		}
+		callShellStatus "dotnet format '${solutionFile}' --verify-no-changes --verbosity normal --report '${reportsDirectory}'${exclude}"
 
 		def jsonFile = "${reportsDirectory}/format-report.json";
 		def xmlFile = "${reportsDirectory}/format-report.xml";
