@@ -219,7 +219,7 @@ def call(Map args) {
 
 												callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
-												callDocFX()
+												callDocFX(id)
 											}
 										}
 									}

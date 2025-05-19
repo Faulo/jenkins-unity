@@ -218,7 +218,7 @@ def call(Map args) {
 
 									callUnity "unity-documentation '${project}'"
 
-									callDocFX()
+									callDocFX('Documentation')
 								}
 							}
 						}
