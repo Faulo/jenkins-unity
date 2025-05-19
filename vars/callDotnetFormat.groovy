@@ -1,7 +1,6 @@
 def String call(String solutionFile, String reportsDirectory, String exclude = '') {
 	if (isUnix()) {
 		// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
-		callShell "dotnet tool restore"
 	} else {
 		def isInstalled = callShellStdout("dotnet tool list -g").contains("dotnet-format")
 		if (isInstalled) {
