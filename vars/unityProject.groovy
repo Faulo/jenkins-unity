@@ -215,25 +215,10 @@ def call(Map args) {
 							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
 								dir(docs) {
 									deleteDir()
-								}
 
-								callUnity "unity-documentation '${project}'"
+									callUnity "unity-documentation '${project}'"
 
-								dir(docs) {
-									callDoxFX()
-
-									publishHTML([
-										allowMissing: false,
-										alwaysLinkToLastBuild: false,
-										keepAll: false,
-										reportDir: 'html',
-										reportFiles: 'index.html',
-										reportName: 'Documentation',
-										reportTitles: '',
-										useWrapperFileDirectly: true
-									])
-
-									deleteDir()
+									callDocFX()
 								}
 							}
 						}
@@ -251,25 +236,8 @@ def call(Map args) {
 								writeFile(file: editorconfigTarget, text: editorconfigContent)
 							}
 							dir(project) {
-								def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-								def jsonFile = "${reports}/format-report.json";
-								def xmlFile = "${reports}/format-report.xml";
-
-								def files = findFiles(glob: '*.sln')
-								for (file in files) {
-									callShellStatus "dotnet format ${file.name} --verify-no-changes --verbosity normal --report ${reports}${exclude}"
-									if (!fileExists(jsonFile)) {
-										error "dotnet format failed to create '${jsonFile}'."
-									}
-
-									callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-									if (!fileExists(xmlFile)) {
-										error "transform-dotnet-format failed to create '${xmlFile}'."
-									}
-
-									dir(reports) {
-										junit(testResults: 'format-report.xml', allowEmptyResults: true)
-									}
+								for (file in findFiles(glob: '*.sln')) {
+									callDotnetFormat(file.path, reports, args.FORMATTING_EXCLUDE)
 								}
 							}
 						}

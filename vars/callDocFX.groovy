@@ -1,6 +1,6 @@
 def String call() {
 	if (isUnix()) {
-		// docker overlay magic prevents updating docfx, so we have to assume it's there.
+		// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
 		callShell "dotnet tool restore"
 		callShell "dotnet tool run docfx"
 	} else {
@@ -13,4 +13,15 @@ def String call() {
 
 		callShell "docfx"
 	}
+
+	publishHTML([
+		allowMissing: false,
+		alwaysLinkToLastBuild: false,
+		keepAll: false,
+		reportDir: 'html',
+		reportFiles: 'index.html',
+		reportName: id,
+		reportTitles: '',
+		useWrapperFileDirectly: true
+	])
 }

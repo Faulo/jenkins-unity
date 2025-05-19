@@ -219,18 +219,7 @@ def call(Map args) {
 
 												callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
-												callDoxFX()
-
-												publishHTML([
-													allowMissing: false,
-													alwaysLinkToLastBuild: false,
-													keepAll: false,
-													reportDir: 'html',
-													reportFiles: 'index.html',
-													reportName: id,
-													reportTitles: '',
-													useWrapperFileDirectly: true
-												])
+												callDocFX()
 											}
 										}
 									}
@@ -238,25 +227,9 @@ def call(Map args) {
 
 								if (args.TEST_FORMATTING == '1') {
 									stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-										dir('reports') {
-											writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
+										writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
 
-											def exclude = args.FORMATTING_EXCLUDE == '' ? '' : " --exclude ${args.FORMATTING_EXCLUDE}"
-											def jsonFile = "$WORKSPACE_TMP/reports/format-report.json";
-											def xmlFile = "$WORKSPACE_TMP/reports/format-report.xml";
-
-											callShellStatus "dotnet format '$WORKSPACE_TMP/project/project.sln' --verify-no-changes --verbosity normal --report '$WORKSPACE_TMP/reports' ${exclude}"
-											if (!fileExists(jsonFile)) {
-												error "dotnet format failed to create '${jsonFile}'."
-											}
-
-											callUnity "transform-dotnet-format '${jsonFile}'", xmlFile;
-											if (!fileExists(xmlFile)) {
-												error "transform-dotnet-format failed to create '${xmlFile}'."
-											}
-
-											junit(testResults: 'format-report.xml', allowEmptyResults: true)
-										}
+										callDotnetFormat("$WORKSPACE_TMP/project/project.sln", "$WORKSPACE_TMP/reports", args.FORMATTING_EXCLUDE)
 									}
 								}
 
