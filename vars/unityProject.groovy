@@ -220,8 +220,14 @@ def call(Map args) {
 								callUnity "unity-documentation '${project}'"
 
 								dir(docs) {
-									callShell "dotnet tool restore"
-									callShell "dotnet tool run docfx"
+									def isInstalled = callShellStdout("dotnet tool list -g").contains("docfx")
+									if (isInstalled) {
+										callShell "dotnet tool update -g docfx"
+									} else {
+										callShell "dotnet tool install -g docfx"
+									}
+
+									callShell "docfx"
 
 									publishHTML([
 										allowMissing: false,
