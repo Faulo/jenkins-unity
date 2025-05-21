@@ -5,9 +5,7 @@ def String call(String reportName) {
 		callShell "dotnet tool run docfx"
 	} else {
 		def isInstalled = callShellStdout("dotnet tool list -g").contains("docfx")
-		if (isInstalled) {
-			callShell "dotnet tool update -g docfx"
-		} else {
+		if (!isInstalled) {
 			callShell "dotnet tool install -g docfx"
 		}
 
