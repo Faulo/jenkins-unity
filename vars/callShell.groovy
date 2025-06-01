@@ -11,6 +11,6 @@ def void call(String script) {
 		    $DebugPreference = 'Continue'
 		    $InformationPreference = 'Continue'
 
-		''' + script);
+		''' + script + ' 2>&1');
 	}
 }
