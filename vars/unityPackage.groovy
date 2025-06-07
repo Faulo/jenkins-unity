@@ -195,7 +195,12 @@ def call(Map args) {
 								def envOverrides = []
 
 								if (env.UNITY_EMPTY_MANIFEST) {
-									def file = new File(pwd(), env.UNITY_EMPTY_MANIFEST)
+									// try absolute path
+									def file = new File(env.UNITY_EMPTY_MANIFEST)
+									if (!file.exists()) {
+										// try relative path
+										file = new File(pwd() + "/package", env.UNITY_EMPTY_MANIFEST)
+									}
 									if (file.exists()) {
 										def resolved = file.canonicalPath
 										envOverrides << "UNITY_EMPTY_MANIFEST=${resolved}"
