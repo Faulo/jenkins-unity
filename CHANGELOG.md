@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
-## [2.20.0] - 2025-05-19
+## [2.20.0] - 2025-06-07
 
 ### Added
 - Added callDotnetFormat.
+- Added support for env UNITY_EMPTY_MANIFEST.
+- Added unityPackage arg UNITY_MANIFEST (reads Jenkins file credential, stores in UNITY_EMPTY_MANIFEST).
 
 
 ## [2.19.0] - 2025-05-06
