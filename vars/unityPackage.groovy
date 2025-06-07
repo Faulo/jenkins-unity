@@ -195,7 +195,7 @@ def call(Map args) {
 								def envOverrides = []
 
 								if (env.UNITY_EMPTY_MANIFEST) {
-									def resolved = new File(env.UNITY_EMPTY_MANIFEST).absolutePath
+									def resolved = new File(pwd(), env.UNITY_EMPTY_MANIFEST).canonicalPath
 									envOverrides << "UNITY_EMPTY_MANIFEST=${resolved}"
 									echo "Setting 'UNITY_EMPTY_MANIFEST' to '${resolved}'"
 								}
