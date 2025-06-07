@@ -178,70 +178,83 @@ def call(Map args) {
 							}
 
 							def credentials = []
+
 							if (args.UNITY_CREDENTIALS != '') {
 								credentials << usernamePassword(credentialsId: args.UNITY_CREDENTIALS, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
 							}
+
 							if (args.EMAIL_CREDENTIALS != '') {
 								credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
 							}
+
 							if (args.UNITY_MANIFEST != '') {
 								credentials << file(credentialsId: 'Unity-Manifest', variable: 'UNITY_EMPTY_MANIFEST')
 							}
 
 							withCredentials(credentials) {
-								dir('reports') {
-									stage("Build: Empty project with package") {
-										callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
-										junit(testResults: 'package-install.xml')
-									}
+								def envOverrides = []
+
+								if (env.UNITY_EMPTY_MANIFEST) {
+									def resolved = new File(env.UNITY_EMPTY_MANIFEST).canonicalPath
+									envOverrides << "UNITY_EMPTY_MANIFEST=${resolved}"
+									echo "Setting 'UNITY_EMPTY_MANIFEST' to '${resolved}'"
 								}
 
-								if (editorStashed) {
-									dir('project') {
-										unstash 'editorconfig'
-									}
-								}
-
-								dir('reports') {
-									if (createSolution) {
-										stage("Build: C# solution") {
-											callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
-											junit(testResults: 'build-solution.xml')
+								withEnv(envOverrides) {
+									dir('reports') {
+										stage("Build: Empty project with package") {
+											callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
+											junit(testResults: 'package-install.xml')
 										}
 									}
-								}
 
-								if (args.BUILD_DOCUMENTATION == '1') {
-									stage("Build: DocFX documentation") {
-										catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
-											dir('project/.Documentation') {
-												deleteDir()
+									if (editorStashed) {
+										dir('project') {
+											unstash 'editorconfig'
+										}
+									}
 
-												callUnity "unity-documentation '$WORKSPACE_TMP/project'"
-
-												callDocFX(id)
+									dir('reports') {
+										if (createSolution) {
+											stage("Build: C# solution") {
+												callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
+												junit(testResults: 'build-solution.xml')
 											}
 										}
 									}
-								}
 
-								if (args.TEST_FORMATTING == '1') {
-									stage("Test: ${args.EDITORCONFIG_LOCATION}") {
-										writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
+									if (args.BUILD_DOCUMENTATION == '1') {
+										stage("Build: DocFX documentation") {
+											catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+												dir('project/.Documentation') {
+													deleteDir()
 
-										callDotnetFormat("$WORKSPACE_TMP/project/project.sln", "$WORKSPACE_TMP/reports", args.FORMATTING_EXCLUDE)
-									}
-								}
+													callUnity "unity-documentation '$WORKSPACE_TMP/project'"
 
-								if (args.TEST_UNITY == '1') {
-									stage("Test: ${args.TEST_MODES}") {
-										dir('reports') {
-											if (args.TEST_MODES == '') {
-												unstable "Parameter TEST_MODES is missing."
+													callDocFX(id)
+												}
 											}
-											callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
+										}
+									}
 
-											junit(testResults: 'tests.xml', allowEmptyResults: true)
+									if (args.TEST_FORMATTING == '1') {
+										stage("Test: ${args.EDITORCONFIG_LOCATION}") {
+											writeFile(file: "$WORKSPACE_TMP/project/.editorconfig", text: editorconfigContent)
+
+											callDotnetFormat("$WORKSPACE_TMP/project/project.sln", "$WORKSPACE_TMP/reports", args.FORMATTING_EXCLUDE)
+										}
+									}
+
+									if (args.TEST_UNITY == '1') {
+										stage("Test: ${args.TEST_MODES}") {
+											dir('reports') {
+												if (args.TEST_MODES == '') {
+													unstable "Parameter TEST_MODES is missing."
+												}
+												callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
+
+												junit(testResults: 'tests.xml', allowEmptyResults: true)
+											}
 										}
 									}
 								}
