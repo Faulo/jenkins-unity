@@ -11,6 +11,6 @@ def int call(String script) {
 	        $DebugPreference = 'Continue'
 	        $InformationPreference = 'Continue'
 
-	    ''' + script) as int;
+	    ''' + script + ' 2>&1') as int;
 	}
 }
