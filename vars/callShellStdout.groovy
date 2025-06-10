@@ -11,6 +11,6 @@ def String call(String script) {
 	        $DebugPreference = 'Continue'
 	        $InformationPreference = 'Continue'
 
-	    ''' + script + ' 2>&null').trim();
+	    ''' + script + ' 2>$null').trim();
 	}
 }
