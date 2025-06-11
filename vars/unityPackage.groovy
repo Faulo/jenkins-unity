@@ -58,6 +58,7 @@ def call(Map args) {
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
 		VERDACCIO_STORAGE : '/var/verdaccio',
+		VERDACCIO_CREDENTIALS : '',
 
 		// Only attempt to deploy if the current VCS branch is among the branches listed. Note that Plastic's branches start with a slash.
 		DEPLOYMENT_BRANCHES : ["main", "/main"],
@@ -303,8 +304,20 @@ def call(Map args) {
 
 									echo "Deploying update: ${publishedVersion} => ${localVersion}"
 									try {
-										callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
+										def credentials = []
+
+										if (args.VERDACCIO_CREDENTIALS != '') {
+											credentials << string(credentialsId: args.VERDACCIO_CREDENTIALS, variable: 'NPM_TOKEN')
+										}
+
+										withCredentials(credentials) {
+											callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
+										}
 									} catch(e) {
+										if (!fileExists(args.VERDACCIO_STORAGE)) {
+											throw e
+										}
+
 										echo "Deployment via NPM failed, switching to manual mode..."
 
 										dir(pack + "/..") {
