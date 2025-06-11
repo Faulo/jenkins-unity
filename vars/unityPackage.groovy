@@ -304,15 +304,15 @@ def call(Map args) {
 
 									echo "Deploying update: ${publishedVersion} => ${localVersion}"
 									try {
-										def credentials = []
-
 										if (args.VERDACCIO_CREDENTIALS != '') {
+											def credentials = []
 											credentials << string(credentialsId: args.VERDACCIO_CREDENTIALS, variable: 'NPM_TOKEN')
+											withCredentials(credentials) {
+												callShell "npm set _auth $NPM_TOKEN"
+											}
 										}
 
-										withCredentials(credentials) {
-											callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
-										}
+										callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 									} catch(e) {
 										if (!fileExists(args.VERDACCIO_STORAGE)) {
 											throw e
