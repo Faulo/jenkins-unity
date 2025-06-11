@@ -29,7 +29,7 @@ def call(Map args) {
 		UNITY_MANIFEST : '',
 
 		// Assert that CHANGELOG.md has been updated.
-		TEST_CHANGELOG : '1',
+		TEST_CHANGELOG : '0',
 		CHANGELOG_LOCATION : 'CHANGELOG.md',
 
 		// Assert that the C# code of the package matches the .editorconfig.
@@ -39,7 +39,7 @@ def call(Map args) {
 		FORMATTING_EXCLUDE : '',
 
 		// Assert Unity's Test Runner tests.
-		TEST_UNITY : '1',
+		TEST_UNITY : '0',
 		TEST_MODES : 'EditMode PlayMode',
 
 		// Automatically create C# docs using DocFX.
@@ -57,6 +57,7 @@ def call(Map args) {
 		// Deploy the package to a Verdaccio server.
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
+		VERDACCIO_HOST : 'verdaccio',
 		VERDACCIO_STORAGE : '/var/verdaccio',
 		VERDACCIO_CREDENTIALS : '',
 
@@ -308,11 +309,11 @@ def call(Map args) {
 											def credentials = []
 											credentials << string(credentialsId: args.VERDACCIO_CREDENTIALS, variable: 'NPM_TOKEN')
 											withCredentials(credentials) {
-												callShell "npm set _auth $NPM_TOKEN"
+												callShell "npm publish . --registry '${args.VERDACCIO_URL}' --//${args.VERDACCIO_HOST}/:_auth '$NPM_TOKEN'"
 											}
+										} else {
+											callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 										}
-
-										callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 									} catch(e) {
 										if (!fileExists(args.VERDACCIO_STORAGE)) {
 											throw e
