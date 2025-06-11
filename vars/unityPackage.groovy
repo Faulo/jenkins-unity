@@ -208,7 +208,9 @@ def call(Map args) {
 										envOverrides << "UNITY_EMPTY_MANIFEST=${resolved}"
 										echo "Setting 'UNITY_EMPTY_MANIFEST' to '${resolved}'"
 									} else {
-										echo "WARNING: Failed to find 'UNITY_EMPTY_MANIFEST' file '${file}'"
+										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE') {
+											error "Failed to find 'UNITY_EMPTY_MANIFEST' file '${file}'"
+										}
 									}
 								}
 
