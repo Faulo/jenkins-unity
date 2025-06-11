@@ -201,7 +201,7 @@ def call(Map args) {
 									def file = new File(env.UNITY_EMPTY_MANIFEST)
 									if (!file.exists()) {
 										// try relative path
-										file = new File(new File(pwd(), "package"), env.UNITY_EMPTY_MANIFEST)
+										file = new File(pwd() + File.separator + "package", env.UNITY_EMPTY_MANIFEST)
 									}
 									if (file.exists()) {
 										def resolved = file.canonicalPath
