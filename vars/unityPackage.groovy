@@ -198,15 +198,14 @@ def call(Map args) {
 
 								if (env.UNITY_EMPTY_MANIFEST) {
 									// try absolute path
-									def file = new File(env.UNITY_EMPTY_MANIFEST)
-									if (!file.exists()) {
+									def file = env.UNITY_EMPTY_MANIFEST
+									if (!fileExists(file)) {
 										// try relative path
-										file = new File(pwd() + File.separator + "package", env.UNITY_EMPTY_MANIFEST)
+										file = pwd() + "/package/" + env.UNITY_EMPTY_MANIFEST
 									}
-									if (file.exists()) {
-										def resolved = file.canonicalPath
-										envOverrides << "UNITY_EMPTY_MANIFEST=${resolved}"
-										echo "Setting 'UNITY_EMPTY_MANIFEST' to '${resolved}'"
+									if (fileExists(file)) {
+										envOverrides << "UNITY_EMPTY_MANIFEST=${file}"
+										echo "Setting 'UNITY_EMPTY_MANIFEST' to '${file}'"
 									} else {
 										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE') {
 											error "Failed to find 'UNITY_EMPTY_MANIFEST' file '${file}'"
