@@ -1,8 +1,4 @@
-def call(Closure<Boolean> predicate, Closure<Void> payload) {
-	executeOnAll(predicate, false, payload)
-}
-
-def call(Closure<Boolean> predicate, Boolean parallel, Closure<Void> payload) {
+def call(Closure<Boolean> predicate, Closure<Void> payload, Boolean parallel = false) {
 	def nodes = []
 	Jenkins.instance.getNodes().each { node ->
 		if (node.getComputer()?.isOnline() && predicate(node)) {
