@@ -310,7 +310,7 @@ def call(Map args) {
 											def credentials = []
 											credentials << string(credentialsId: args.VERDACCIO_CREDENTIALS, variable: 'NPM_TOKEN')
 											withCredentials(credentials) {
-												callShell "npm set --location project '//${args.VERDACCIO_HOST}/:_authToken' '\$NPM_TOKEN'"
+												callShell "npm set --location project '//${args.VERDACCIO_HOST}/:_authToken' '$NPM_TOKEN'"
 												callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
 											}
 										} else {
