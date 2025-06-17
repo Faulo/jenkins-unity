@@ -1,4 +1,4 @@
-def String call(String script) {
+def call(String script) {
 	echo "> ${script}";
 	if (isUnix()) {
 		return sh(script: script + ' || true', encoding: 'UTF-8', returnStdout: true).trim();

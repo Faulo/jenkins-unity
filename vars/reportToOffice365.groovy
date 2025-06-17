@@ -1,4 +1,4 @@
-def void call(String webhookUrl, def currentBuild, String name) {
+def call(String webhookUrl, def currentBuild, String name) {
 	def status = "${currentBuild.currentResult}: ${name}"
 
 	def message = ""

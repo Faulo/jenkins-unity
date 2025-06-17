@@ -1,4 +1,4 @@
-def String call(String body, String file = "") {
+def call(String body, String file = "") {
 	if (CallUnityInitializer.initialize()) {
 		callComposer('update --no-interaction --no-dev --optimize-autoloader --classmap-authoritative');
 	}

@@ -1,4 +1,4 @@
-def String call(String reportName) {
+def call(String reportName) {
 	if (isUnix()) {
 		// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
 		callShell "dotnet tool restore"
