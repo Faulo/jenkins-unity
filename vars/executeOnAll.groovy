@@ -1,4 +1,8 @@
-def call(Closure<Boolean> predicate, Closure<Void> payload, Boolean parallel = false) {
+def call(Closure<Boolean> predicate, Closure<Void> payload) {
+	executeOnAll(predicate, false, payload)
+}
+
+def call(Closure<Boolean> predicate, Boolean runParallel, Closure<Void> payload) {
 	def nodes = []
 	Jenkins.instance.getNodes().each { node ->
 		if (node.getComputer()?.isOnline() && predicate(node)) {
@@ -6,7 +10,7 @@ def call(Closure<Boolean> predicate, Closure<Void> payload, Boolean parallel = f
 		}
 	}
 
-	if (parallel) {
+	if (runParallel) {
 		def parallelStages = [:]
 		for (String nodeName in nodes) {
 			parallelStages[nodeName] = {
