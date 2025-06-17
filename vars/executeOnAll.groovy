@@ -31,7 +31,7 @@ def call(Closure<Boolean> predicate, Boolean parallel, Closure<Void> payload) {
 			echo "Next free node will be selected from: ${nodeExpression}"
 
 			stage("Switching to: ${nodeExpression}") {
-				node("${nodeExpression}") {
+				node("\"${nodeExpression}\"") {
 					nodes.remove(env.NODE_NAME)
 
 					stage(env.NODE_NAME) {
