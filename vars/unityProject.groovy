@@ -237,7 +237,8 @@ def call(Map args) {
 							}
 							dir(project) {
 								for (file in findFiles(glob: '*.sln')) {
-									callDotnetFormat(file.path, reports, args.FORMATTING_EXCLUDE)
+									def path = realpath(file.path)
+									callDotnetFormat(path, reports, args.FORMATTING_EXCLUDE)
 								}
 							}
 						}
