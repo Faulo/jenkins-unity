@@ -57,7 +57,7 @@ def call(Map args) {
 		// Deploy the package to a Verdaccio server.
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
-		VERDACCIO_HOST : 'verdaccio',
+		VERDACCIO_HOST : 'verdaccio:4873',
 		VERDACCIO_STORAGE : '/var/verdaccio',
 		VERDACCIO_CREDENTIALS : '',
 
