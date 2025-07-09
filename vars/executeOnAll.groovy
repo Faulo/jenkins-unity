@@ -1,12 +1,22 @@
+import jenkins.model.Jenkins
+
 def call(Closure<Boolean> predicate, Closure<Void> payload) {
 	executeOnAll(predicate, false, payload)
 }
 
 def call(Closure<Boolean> predicate, Boolean runParallel, Closure<Void> payload) {
 	def nodes = []
-	Jenkins.instance.getNodes().each { node ->
-		if (node.getComputer()?.isOnline() && predicate(node)) {
-			nodes.add(node.getNodeName())
+
+	def jenkins = Jenkins.getInstanceOrNull()
+
+	if (jenkins) {
+		if (jenkins.getNumExecutors() > 0 && predicate(jenkins)) {
+			nodes.add(jenkins)
+		}
+		jenkins.getNodes().each { node ->
+			if (node.getComputer()?.isOnline() && predicate(node)) {
+				nodes.add(node.getNodeName())
+			}
 		}
 	}
 
