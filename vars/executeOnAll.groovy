@@ -11,7 +11,7 @@ def call(Closure<Boolean> predicate, Boolean runParallel, Closure<Void> payload)
 
 	if (jenkins) {
 		if (jenkins.getNumExecutors() > 0 && predicate(jenkins)) {
-			nodes.add(jenkins)
+			nodes.add('built-in')
 		}
 		jenkins.getNodes().each { node ->
 			if (node.getComputer()?.isOnline() && predicate(node)) {
