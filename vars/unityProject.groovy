@@ -212,7 +212,7 @@ def call(Map args) {
 
 					if (args.BUILD_DOCUMENTATION == '1') {
 						stage("Build: DocFX documentation") {
-							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 								dir(docs) {
 									deleteDir()
 

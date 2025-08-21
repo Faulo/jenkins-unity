@@ -207,7 +207,7 @@ def call(Map args) {
 										envOverrides << "UNITY_EMPTY_MANIFEST=${file}"
 										echo "Setting 'UNITY_EMPTY_MANIFEST' to '${file}'"
 									} else {
-										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE') {
+										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 											error "Failed to find 'UNITY_EMPTY_MANIFEST' file '${file}'"
 										}
 									}
@@ -238,7 +238,7 @@ def call(Map args) {
 
 									if (args.BUILD_DOCUMENTATION == '1') {
 										stage("Build: DocFX documentation") {
-											catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+											catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 												dir('project/.Documentation') {
 													deleteDir()
 
