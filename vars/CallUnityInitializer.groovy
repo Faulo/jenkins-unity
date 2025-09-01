@@ -1,11 +1,14 @@
-class CallUnityInitializer {
-	static boolean isInitialized = false;
+import java.util.HashSet
+import java.util.Collections
 
-	static boolean initialize() {
-		if (!isInitialized) {
-			isInitialized = true;
-			return true;
+class CallUnityInitializer {
+	private static final Set<String> initializedAgents = Collections.synchronizedSet(new HashSet<String>())
+
+	static boolean initialize(String agentName) {
+		if (!agentName) {
+			agentName = System.getenv('NODE_NAME') ?: 'UNKNOWN'
 		}
-		return false;
+
+		return initializedAgents.add(agentName)
 	}
 }
