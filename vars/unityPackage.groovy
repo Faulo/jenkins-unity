@@ -9,6 +9,10 @@ def call(Closure body) {
 }
 
 def call(Map args) {
+	if (!env.BRANCH_NAME && env.PLASTICSCM_BRANCH) {
+		env.BRANCH_NAME = env.PLASTICSCM_BRANCH
+	}
+
 	assert env.BRANCH_NAME != null
 
 	def defaultArgs = [
