@@ -335,6 +335,8 @@ def call(Map args) {
 										error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
 									}
 
+									callUnity "steam-login"
+
 									callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
 									callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
@@ -374,7 +376,7 @@ def call(Map args) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def name = "${id} v${localVersion}";
+				def name = "${id} v${localVersion}"
 
 				if (args.REPORT_TO_DISCORD == '1') {
 					if (args.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.DISCORD_PING_IF)) {
