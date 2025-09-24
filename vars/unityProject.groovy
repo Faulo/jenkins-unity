@@ -199,7 +199,7 @@ def call(Map args) {
 					credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
 				}
 				if (args.STEAM_CREDENTIALS != '') {
-					credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
+					credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')
 				}
 				if (args.ITCH_CREDENTIALS != '') {
 					credentials << string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
@@ -339,7 +339,7 @@ def call(Map args) {
 
 									callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
-									callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+									callShell "steamcmd +login $STEAM_CREDENTIALS_USR $STEAM_CREDENTIALS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 								}
 							}
 
