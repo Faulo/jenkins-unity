@@ -377,7 +377,7 @@ def call(Map args) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def name = "${id} v${localVersion}";
+				def name = "${id} v${localVersion}"
 
 				if (args.REPORT_TO_DISCORD == '1') {
 					if (args.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.DISCORD_PING_IF)) {
