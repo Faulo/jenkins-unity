@@ -8,7 +8,7 @@ def call(String webhookUrl, def currentBuild, String name) {
 		}
 	}
 
-	warnError('Discord notification failed or timed out', true) {
+	catchError(message: 'Discord notification failed or timed out', buildResult: 'SUCCESS', stageResult: 'SUCCESS', catchInterruptions: true) {
 		timeout(time: 30, unit: 'SECONDS') {
 			discordSend description: description, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: name, webhookURL: webhookUrl
 		}
