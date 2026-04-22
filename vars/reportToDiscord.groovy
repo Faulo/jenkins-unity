@@ -46,7 +46,9 @@ def call(String webhookUrl, def currentBuild, String name) {
 String buildChangeLogFooter(def currentBuild) {
 	String footer = ""
 
-	for (changeLogSet in currentBuild.changeSets ?: []) {
+	def changeSets = currentBuild.changeSets ?: []
+
+	for (changeLogSet in changeSets) {
 		for (entry in changeLogSet.getItems()) {
 			footer += "- ${entry.msg}\n"
 		}
