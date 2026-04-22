@@ -1,16 +1,85 @@
+import groovy.json.JsonOutput
+
 def call(String webhookUrl, def currentBuild, String name) {
-	def description = "${currentBuild.currentResult}: ${name}"
+	String result = currentBuild.currentResult ?: currentBuild.result ?: 'UNKNOWN'
+	String description = "${result}: ${name}"
+	String footer = buildChangeLogFooter(currentBuild)
 
-	def footer = ""
-	for (changeLogSet in currentBuild.changeSets) {
+	def embed = [
+		title      : truncateDiscord(name, 256),
+		description: truncateDiscord(description, 4096),
+		url        : env.BUILD_URL,
+		color      : discordColorForResult(result)
+	]
+
+	if (footer?.trim()) {
+		embed.footer = [
+			text: truncateDiscord(footer.trim(), 2048)
+		]
+	}
+
+	def payload = [
+		embeds: [embed]
+	]
+
+	try {
+		httpRequest(
+				httpMode              : 'POST',
+				url                   : webhookUrl,
+				contentType           : 'APPLICATION_JSON',
+				acceptType            : 'APPLICATION_JSON',
+				requestBody           : JsonOutput.toJson(payload),
+				validResponseCodes    : '200:299',
+				timeout               : 30,
+				quiet                 : true,
+				consoleLogResponseBody: false
+				)
+	} catch (Throwable e) {
+		if (e instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException) {
+			throw e
+		}
+
+		echo "Discord notification failed: ${e.class.simpleName}: ${e.message}"
+	}
+}
+
+String buildChangeLogFooter(def currentBuild) {
+	String footer = ""
+
+	for (changeLogSet in currentBuild.changeSets ?: []) {
 		for (entry in changeLogSet.getItems()) {
-			footer += "- ${entry.msg}\r\n"
+			footer += "- ${entry.msg}\n"
 		}
 	}
 
-	catchError(message: 'Discord notification failed or timed out', buildResult: 'SUCCESS', stageResult: 'SUCCESS', catchInterruptions: true) {
-		timeout(time: 30, unit: 'SECONDS') {
-			discordSend description: description, footer: footer, link: env.BUILD_URL, result: currentBuild.currentResult, title: name, webhookURL: webhookUrl
-		}
+	return footer
+}
+
+Integer discordColorForResult(String result) {
+	switch (result) {
+		case 'SUCCESS':
+			return 0x2ECC71 // green
+		case 'UNSTABLE':
+			return 0xF1C40F // yellow
+		case 'FAILURE':
+			return 0xE74C3C // red
+		case 'ABORTED':
+			return 0x95A5A6 // gray
+		case 'NOT_BUILT':
+			return 0x95A5A6 // gray
+		default:
+			return 0x3498DB // blue
 	}
+}
+
+String truncateDiscord(String value, int maxLength) {
+	if (value == null) {
+		return ""
+	}
+
+	if (value.length() <= maxLength) {
+		return value
+	}
+
+	return value.substring(0, maxLength - 1) + "…"
 }
