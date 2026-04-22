@@ -2,21 +2,19 @@ import groovy.json.JsonOutput
 
 def call(String webhookUrl, def currentBuild, String name) {
 	String result = currentBuild.currentResult ?: currentBuild.result ?: 'UNKNOWN'
-	String description = "${result}: ${name}"
+	String title = "${result}: ${name}"
+	String description = buildChangeLogDescription(currentBuild)
 	String footer = buildChangeLogFooter(currentBuild)
 
 	def embed = [
-		title      : truncateDiscord(name, 256),
-		description: truncateDiscord(description, 4096),
-		url        : env.BUILD_URL,
-		color      : discordColorForResult(result)
-	]
-
-	if (footer?.trim()) {
-		embed.footer = [
+		title       : truncateDiscord(title, 256),
+		description : truncateDiscord(description, 4096),
+		url         : env.BUILD_URL,
+		color       : discordColorForResult(result),
+		footer 		: [
 			text: truncateDiscord(footer.trim(), 2048)
 		]
-	}
+	]
 
 	def payload = [
 		embeds: [embed]
@@ -43,18 +41,63 @@ def call(String webhookUrl, def currentBuild, String name) {
 	}
 }
 
+String buildChangeLogDescription(def currentBuild) {
+	String description = ""
+
+	def error = currentBuild.rawBuild?.execution?.causeOfFailure
+	if (error) {
+		description += "Cause of failure:\r\n"
+		description += "${error}\r\n"
+	}
+
+	if (buildShouldPing(currentBuild)) {
+		description += "Help!\r\n"
+		if (env.DISCORD_PING_USER) {
+			description += "<@${env.DISCORD_PING_USER}>\r\n"
+		}
+	}
+
+	return description
+}
+
 String buildChangeLogFooter(def currentBuild) {
 	String footer = ""
 
-	def changeSets = currentBuild.changeSets ?: []
+	footer += "Changes:\r\n"
+	def hasChanges = false
+	for (changeLogSet in currentBuild.changeSets) {
+		for (entry in changeLogSet.items) {
+			footer += "- ${entry.msg}\r\n"
+			hasChanges = true
+		}
+	}
 
-	for (changeLogSet in changeSets) {
-		for (entry in changeLogSet.getItems()) {
-			footer += "- ${entry.msg}\n"
+	if (!hasChanges) {
+		footer += "No changes detected.\r\n"
+	}
+
+	def culprits = currentBuild.rawBuild.culprits ?: []
+
+	if (culprits) {
+		footer += "\r\n"
+		footer += "Culprits:\r\n"
+		for (culprit in culprits) {
+			footer += "- ${culprit.displayName}\r\n"
 		}
 	}
 
 	return footer
+}
+
+boolean buildShouldPing(def currentBuild) {
+	String threshold = env.DISCORD_PING_IF ?: 'FAILURE'
+
+	try {
+		return currentBuild.resultIsWorseOrEqualTo(threshold)
+	} catch (Throwable e) {
+		echo "Invalid DISCORD_PING_IF='${threshold}': ${e.class.simpleName}: ${e.message}"
+		return true
+	}
 }
 
 Integer discordColorForResult(String result) {
