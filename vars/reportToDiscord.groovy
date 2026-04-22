@@ -1,9 +1,20 @@
 import groovy.json.JsonOutput
 
 def call(String webhookUrl, def currentBuild, String name) {
+	call(webhookUrl, currentBuild, name, env.DISCORD_PING_IF, env.DISCORD_PING_USER)
+}
+
+def call(String webhookUrl, def currentBuild, String name, String discordPingIf) {
+	call(webhookUrl, currentBuild, name, discordPingIf, env.DISCORD_PING_USER)
+}
+
+def call(String webhookUrl, def currentBuild, String name, String discordPingIf, String discordPingUser) {
+	discordPingIf = discordPingIf ?: 'FAILURE'
+	discordPingUser = discordPingUser ?: ''
+
 	String result = currentBuild.currentResult ?: currentBuild.result ?: 'UNKNOWN'
 	String title = "${result}: ${name}"
-	String description = buildChangeLogDescription(currentBuild)
+	String description = buildChangeLogDescription(currentBuild, discordPingIf, discordPingUser)
 	String footer = buildChangeLogFooter(currentBuild)
 
 	def embed = [
@@ -41,7 +52,7 @@ def call(String webhookUrl, def currentBuild, String name) {
 	}
 }
 
-String buildChangeLogDescription(def currentBuild) {
+String buildChangeLogDescription(def currentBuild, String discordPingIf, String discordPingUser) {
 	String description = ""
 
 	def error = currentBuild.rawBuild?.execution?.causeOfFailure
@@ -50,10 +61,10 @@ String buildChangeLogDescription(def currentBuild) {
 		description += "${error}\r\n"
 	}
 
-	if (buildShouldPing(currentBuild)) {
+	if (buildShouldPing(currentBuild, discordPingIf)) {
 		description += "Help!\r\n"
-		if (env.DISCORD_PING_USER) {
-			description += "<@${env.DISCORD_PING_USER}>\r\n"
+		if (discordPingUser) {
+			description += "<@${discordPingUser}>\r\n"
 		}
 	}
 
@@ -89,11 +100,9 @@ String buildChangeLogFooter(def currentBuild) {
 	return footer
 }
 
-boolean buildShouldPing(def currentBuild) {
-	String threshold = env.DISCORD_PING_IF ?: 'FAILURE'
-
+boolean buildShouldPing(def currentBuild, String discordPingIf) {
 	try {
-		return currentBuild.resultIsWorseOrEqualTo(threshold)
+		return currentBuild.resultIsWorseOrEqualTo(discordPingIf)
 	} catch (Throwable e) {
 		echo "Invalid DISCORD_PING_IF='${threshold}': ${e.class.simpleName}: ${e.message}"
 		return true
@@ -103,7 +112,7 @@ boolean buildShouldPing(def currentBuild) {
 Integer discordColorForResult(String result) {
 	switch (result) {
 		case 'SUCCESS':
-			return 0x2ECC71 // green
+			return 0x19a719 // green
 		case 'UNSTABLE':
 			return 0xF1C40F // yellow
 		case 'FAILURE':
