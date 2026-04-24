@@ -25,9 +25,9 @@ def call(Closure<Boolean> predicate, Boolean runParallel, Closure<Void> payload)
 		for (String n in nodes) {
 			def nodeName = n
 			parallelStages[nodeName] = {
-				stage(env.NODE_NAME) {
+				stage(nodeName) {
 					node(nodeName) {
-						payload.call(env.NODE_NAME)
+						payload.call(nodeName)
 					}
 				}
 			}
