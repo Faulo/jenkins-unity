@@ -1,55 +1,53 @@
 import jenkins.model.Jenkins
 
 def call(Closure<Boolean> predicate, Closure<Void> payload) {
-    executeOnAll(predicate, false, payload)
+	executeOnAll(predicate, false, payload)
 }
 
 def call(Closure<Boolean> predicate, Boolean runParallel, Closure<Void> payload) {
-    def nodes = []
+	def nodes = []
 
-    def jenkins = Jenkins.getInstanceOrNull()
+	def jenkins = Jenkins.getInstanceOrNull()
 
-    if (jenkins) {
-        if (jenkins.getNumExecutors() > 0 && predicate(jenkins)) {
-            nodes.add('built-in')
-        }
-        jenkins.getNodes().each { node ->
-            if (node.getComputer()?.isOnline() && predicate(node)) {
-                nodes.add(node.getNodeName())
-            }
-        }
-    }
+	if (jenkins) {
+		if (jenkins.getNumExecutors() > 0 && predicate(jenkins)) {
+			nodes.add('built-in')
+		}
+		jenkins.getNodes().each { node ->
+			if (node.getComputer()?.isOnline() && predicate(node)) {
+				nodes.add(node.getNodeName())
+			}
+		}
+	}
 
-    if (runParallel) {
-        def parallelStages = [:]
-        for (String n in nodes) {
-            def nodeName = n
-            parallelStages[nodeName] = {
-                stage("Switching to: ${nodeName}") {
-                    node(nodeName) {
-                        stage(env.NODE_NAME) {
-                            payload.call(env.NODE_NAME)
-                        }
-                    }
-                }
-            }
-        }
+	if (runParallel) {
+		def parallelStages = [:]
+		for (String n in nodes) {
+			def nodeName = n
+			parallelStages[nodeName] = {
+				stage(env.NODE_NAME) {
+					node(nodeName) {
+						payload.call(env.NODE_NAME)
+					}
+				}
+			}
+		}
 
-        parallel parallelStages
-    } else {
-        while (!nodes.isEmpty()) {
-            def nodeExpression = nodes.collect { name -> "\"${name}\"" }.join(' || ')
-            echo "Next free node will be selected from: ${nodeExpression}"
+		parallel parallelStages
+	} else {
+		while (!nodes.isEmpty()) {
+			def nodeExpression = nodes.collect { name -> "\"${name}\"" }.join(' || ')
+			echo "Next free node will be selected from: ${nodeExpression}"
 
-            stage("Switching to: ${nodeExpression}") {
-                node("\"${nodeExpression}\"") {
-                    nodes.remove(env.NODE_NAME)
+			stage("Switching to: ${nodeExpression}") {
+				node("\"${nodeExpression}\"") {
+					nodes.remove(env.NODE_NAME)
 
-                    stage(env.NODE_NAME) {
-                        payload.call(env.NODE_NAME)
-                    }
-                }
-            }
-        }
-    }
+					stage(env.NODE_NAME) {
+						payload.call(env.NODE_NAME)
+					}
+				}
+			}
+		}
+	}
 }
