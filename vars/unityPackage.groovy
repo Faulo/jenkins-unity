@@ -9,6 +9,10 @@ def call(Closure body) {
 }
 
 def call(Map args) {
+	if (!env.BRANCH_NAME && env.PLASTICSCM_BRANCH) {
+		env.BRANCH_NAME = env.PLASTICSCM_BRANCH
+	}
+
 	assert env.BRANCH_NAME != null
 
 	def defaultArgs = [
@@ -57,7 +61,7 @@ def call(Map args) {
 		// Deploy the package to a Verdaccio server.
 		DEPLOY_TO_VERDACCIO : '0',
 		VERDACCIO_URL : 'http://verdaccio:4873',
-		VERDACCIO_HOST : 'verdaccio',
+		VERDACCIO_HOST : 'verdaccio:4873',
 		VERDACCIO_STORAGE : '/var/verdaccio',
 		VERDACCIO_CREDENTIALS : '',
 
@@ -207,7 +211,7 @@ def call(Map args) {
 										envOverrides << "UNITY_EMPTY_MANIFEST=${file}"
 										echo "Setting 'UNITY_EMPTY_MANIFEST' to '${file}'"
 									} else {
-										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE') {
+										catchError(stageResult: 'UNSTABLE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 											error "Failed to find 'UNITY_EMPTY_MANIFEST' file '${file}'"
 										}
 									}
@@ -238,7 +242,7 @@ def call(Map args) {
 
 									if (args.BUILD_DOCUMENTATION == '1') {
 										stage("Build: DocFX documentation") {
-											catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+											catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 												dir('project/.Documentation') {
 													deleteDir()
 
@@ -373,7 +377,7 @@ def call(Map args) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def name = "${id} v${localVersion}";
+				def name = "${id} v${localVersion}"
 
 				if (args.REPORT_TO_DISCORD == '1') {
 					if (args.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.DISCORD_PING_IF)) {

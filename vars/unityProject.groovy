@@ -9,6 +9,10 @@ def call(Closure body) {
 }
 
 def call(Map args) {
+	if (!env.BRANCH_NAME && env.PLASTICSCM_BRANCH) {
+		env.BRANCH_NAME = env.PLASTICSCM_BRANCH
+	}
+
 	assert env.BRANCH_NAME != null
 
 	def defaultArgs = [
@@ -195,7 +199,7 @@ def call(Map args) {
 					credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
 				}
 				if (args.STEAM_CREDENTIALS != '') {
-					credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDS_USR', passwordVariable: 'STEAM_CREDS_PSW')
+					credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')
 				}
 				if (args.ITCH_CREDENTIALS != '') {
 					credentials << string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
@@ -212,7 +216,7 @@ def call(Map args) {
 
 					if (args.BUILD_DOCUMENTATION == '1') {
 						stage("Build: DocFX documentation") {
-							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE') {
+							catchError(stageResult: 'FAILURE', buildResult: 'UNSTABLE', catchInterruptions: false) {
 								dir(docs) {
 									deleteDir()
 
@@ -237,7 +241,8 @@ def call(Map args) {
 							}
 							dir(project) {
 								for (file in findFiles(glob: '*.sln')) {
-									callDotnetFormat(file.path, reports, args.FORMATTING_EXCLUDE)
+									def path = realpath(file.path)
+									callDotnetFormat(path, reports, args.FORMATTING_EXCLUDE)
 								}
 							}
 						}
@@ -330,9 +335,11 @@ def call(Map args) {
 										error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
 									}
 
+									callUnity "steam-login"
+
 									callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
-									callShell "steamcmd +login $STEAM_CREDS_USR $STEAM_CREDS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+									callShell "steamcmd +login $STEAM_CREDENTIALS_USR $STEAM_CREDENTIALS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
 								}
 							}
 
@@ -369,7 +376,7 @@ def call(Map args) {
 			currentBuild.result = "UNKNOWN"
 		} finally {
 			if (reportAny) {
-				def name = "${id} v${localVersion}";
+				def name = "${id} v${localVersion}"
 
 				if (args.REPORT_TO_DISCORD == '1') {
 					if (args.DISCORD_PING_IF == '' || currentBuild.resultIsWorseOrEqualTo(args.DISCORD_PING_IF)) {

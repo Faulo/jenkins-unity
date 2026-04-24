@@ -1,4 +1,4 @@
-def String call(String solutionFile, String reportsDirectory, String exclude = '') {
+def call(String solutionFile, String reportsDirectory, String exclude = '') {
 	dir(reportsDirectory) {
 		if (exclude != '') {
 			exclude = " --exclude ${exclude}"

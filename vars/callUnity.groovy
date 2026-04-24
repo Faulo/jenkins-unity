@@ -1,5 +1,5 @@
-def String call(String body, String file = "") {
-	if (CallUnityInitializer.initialize()) {
+def call(String body, String file = "") {
+	if (CallUnityInitializer.initialize(env.NODE_NAME)) {
 		callComposer('update --no-interaction --no-dev --optimize-autoloader --classmap-authoritative');
 	}
 
