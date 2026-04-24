@@ -1,15 +1,15 @@
-def String call(String reportName) {
-	if (isUnix()) {
-		// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
-		callShell "dotnet tool restore"
-		callShell "dotnet tool run docfx"
-	} else {
+def call(String reportName) {
+	if (isWindows()) {
 		def isInstalled = callShellStdout("dotnet tool list -g").contains("docfx")
 		if (!isInstalled) {
 			callShell "dotnet tool install -g docfx"
 		}
 
 		callShell "docfx"
+	} else {
+		// docker overlay magic prevents updating dotnet tools, so we have to assume it's there.
+		callShell "dotnet tool restore"
+		callShell "dotnet tool run docfx"
 	}
 
 	publishHTML([
