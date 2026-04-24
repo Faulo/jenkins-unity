@@ -5,7 +5,7 @@ def call(String script, Boolean echoScript = false) {
 
 	if (isWindows()) {
 		// https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
-		powershell(encoding: 'UTF-8', script: '''
+		powershell(encoding: 'UTF-8', label: script, script: '''
 		    $ErrorActionPreference = 'Continue'
 		    $WarningPreference = 'Continue'
 		    $VerbosePreference = 'Continue'
