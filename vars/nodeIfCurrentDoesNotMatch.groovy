@@ -4,10 +4,11 @@ import jenkins.model.Jenkins
 
 def call(String labelExpression, Closure body) {
     def nodeName = env.NODE_NAME
+    def jenkins = Jenkins.get()
 
-    if (nodeMatchesLabel(nodeName, labelExpression)) {
-        def computer = Jenkins.get().getComputer(nodeName)
-        def hyperlink = computer ? HyperlinkNote.encodeTo(computer.getUrl(), nodeName) : nodeName
+    if (jenkins && nodeMatchesLabel(nodeName, labelExpression, jenkins)) {
+        def computer = jenkins.getComputer(nodeName)
+        def hyperlink = computer ? HyperlinkNote.encodeTo(jenkins.getRootUrl() + computer.getUrl(), nodeName) : nodeName
         echo "Continuing on ${hyperlink} as it matches '${labelExpression}' in ${pwd()}"
 
         body()
@@ -18,7 +19,7 @@ def call(String labelExpression, Closure body) {
     }
 }
 
-private boolean nodeMatchesLabel(String nodeName, String labelExpression) {
+private boolean nodeMatchesLabel(String nodeName, String labelExpression, Jenkins jenkins) {
     if (!nodeName) {
         return false
     }
@@ -27,7 +28,6 @@ private boolean nodeMatchesLabel(String nodeName, String labelExpression) {
         return true
     }
 
-    def jenkins = Jenkins.get()
     def node = jenkins.getNode(nodeName)
     def label = Label.parseExpression(labelExpression)
 
