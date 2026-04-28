@@ -3,6 +3,8 @@ import jenkins.model.Jenkins
 
 def call(String labelExpression, Closure body) {
     if (env.NODE_NAME && nodeMatchesLabel(env.NODE_NAME, labelExpression)) {
+        echo "Continuing on ${env.NODE_NAME} as it maches '${labelExpression}'"
+
         body()
     } else {
         node(labelExpression) {
