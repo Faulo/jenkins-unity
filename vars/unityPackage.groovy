@@ -169,7 +169,7 @@ def call(Map args) {
                         stash name: 'package', includes: "**"
                     }
 
-                    node(args.UNITY_NODE) {
+                    nodeIfCurrentDoesNotMatch(args.UNITY_NODE) {
                         dir("$WORKSPACE_TMP") {
                             echo "Running on '$NODE_NAME' in ${pwd()}"
 
