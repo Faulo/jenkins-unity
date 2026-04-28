@@ -1,9 +1,14 @@
 import hudson.model.Label
+import hudson.console.HyperlinkNote
 import jenkins.model.Jenkins
 
 def call(String labelExpression, Closure body) {
-    if (env.NODE_NAME && nodeMatchesLabel(env.NODE_NAME, labelExpression)) {
-        echo "Continuing on ${env.NODE_NAME} as it maches '${labelExpression}'"
+    def nodeName = env.NODE_NAME
+
+    if (nodeMatchesLabel(nodeName, labelExpression)) {
+        def computer = Jenkins.get().getComputer(nodeName)
+        def hyperlink = computer ? HyperlinkNote.encodeTo(computer.getUrl(), nodeName) : nodeName
+        echo "Continuing on ${hyperlink} as it matches '${labelExpression}' in ${pwd()}"
 
         body()
     } else {
@@ -14,6 +19,10 @@ def call(String labelExpression, Closure body) {
 }
 
 private boolean nodeMatchesLabel(String nodeName, String labelExpression) {
+    if (!nodeName) {
+        return false
+    }
+
     if (nodeName == labelExpression) {
         return true
     }
