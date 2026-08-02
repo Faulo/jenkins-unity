@@ -125,9 +125,26 @@ private String buildDockerCommand(String containerId, String containerOs, String
 }
 
 private List<String> environmentNames() {
-    def names = env.getEnvironment().keySet().collect { it.toString() }.findAll { name ->
-        name ==~ /[A-Za-z_][A-Za-z0-9_]*/
+    def output
+    if (isWindows()) {
+        output = powershell(
+            returnStdout: true,
+            encoding: 'UTF-8',
+            label: 'collect environment names',
+            script: '[Environment]::GetEnvironmentVariables().Keys | Sort-Object'
+        )
+    } else {
+        output = sh(
+            returnStdout: true,
+            encoding: 'UTF-8',
+            label: 'collect environment names',
+            script: "set +x\nenv -0 | cut -z -d= -f1 | tr '\\0' '\\n'"
+        )
     }
+
+    def names = output.readLines().collect { it.trim() }.findAll { name ->
+        name ==~ /[A-Za-z_][A-Za-z0-9_]*/
+    }.unique()
     names.sort()
     return names
 }
