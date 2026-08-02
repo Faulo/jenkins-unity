@@ -79,7 +79,7 @@ Set `JENKINS_UNITY_ENV` to a colon-separated allowlist when a Pipeline-scoped va
 
 The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh`, `setsid`, and `pkill`; Windows containers must provide PowerShell and `taskkill.exe` for interruption cleanup.
 
-`WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. `withUnity` validates the current directory and `WORKSPACE_TMP` before entering the scope. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
+`WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
 
 `unityPackage` is not yet adapted for `withUnity`; it changes Jenkins nodes internally and mixes Unity commands with Node.js, NPM, and Verdaccio work.
 

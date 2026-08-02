@@ -1,42 +1,24 @@
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 def call(Closure body) {
-    call(env.JENKINS_UNITY_CONTAINER, body)
+    call(env.JENKINS_UNITY_CONTAINER?.toString(), body)
 }
 
 def call(String containerName, Closure body) {
-    if (!containerName || !(containerName ==~ /[A-Za-z0-9][A-Za-z0-9_.-]*/)) {
+    if (!containerName) {
         error "Invalid Unity container name '${containerName}'."
     }
 
-    def inspection
-    try {
-        inspection = inspectContainer(containerName)
-    } catch (FlowInterruptedException e) {
-        throw e
-    } catch (Throwable e) {
-        error "Unity container '${containerName}' is absent or inaccessible: ${e.message}"
-    }
-
-    def inspectionParts = inspection.split('\\|', -1)
-    if (inspectionParts.size() != 3) {
-        error "Docker returned invalid inspection data for Unity container '${containerName}'."
-    }
-
-    def containerId = inspectionParts[0]
-    def isRunning = inspectionParts[1] == 'true'
-    def containerOs = inspectionParts[2].toLowerCase()
+    def inspection = inspectContainer(containerName)
+    String containerId = inspection.id
+    Boolean isRunning = inspection.isRunning
+    String containerOs = inspection.os
 
     if (!isRunning) {
         error "Unity container '${containerName}' is stopped."
     }
     if (!(containerOs in ['linux', 'windows'])) {
         error "Unity container '${containerName}' uses unsupported OS '${containerOs}'."
-    }
-
-    validateContainerPath(containerName, containerId, containerOs, pwd())
-    if (env.WORKSPACE_TMP) {
-        validateContainerPath(containerName, containerId, containerOs, env.WORKSPACE_TMP)
     }
 
     withEnv([
@@ -60,18 +42,18 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
         error "Unsupported Unity shell result mode '${resultMode}'."
     }
 
-    def containerId = env.JENKINS_UNITY_CONTAINER_ID
-    def containerOs = env.JENKINS_UNITY_CONTAINER_OS
-    def currentDirectory = pwd()
-    def temporaryDirectory = pwd(tmp: true)
-    def token = UUID.randomUUID().toString()
-    def extension = containerOs == 'windows' ? 'ps1' : 'sh'
-    def scriptName = "with-unity-${token}.${extension}"
-    def scriptFile = "${temporaryDirectory}/${scriptName}"
-    def markerFile = "${scriptFile}.pid"
-    def resultName = "${scriptName}.exit"
-    def resultFile = "${temporaryDirectory}/${resultName}"
-    def wrappedScript = containerOs == 'windows'
+    String containerId = env.JENKINS_UNITY_CONTAINER_ID
+    String containerOs = env.JENKINS_UNITY_CONTAINER_OS
+    String currentDirectory = pwd()
+    String temporaryDirectory = pwd(tmp: true)
+    String token = UUID.randomUUID().toString()
+    String extension = containerOs == 'windows' ? 'ps1' : 'sh'
+    String scriptName = "with-unity-${token}.${extension}"
+    String scriptFile = "${temporaryDirectory}/${scriptName}"
+    String markerFile = "${scriptFile}.pid"
+    String resultName = "${scriptName}.exit"
+    String resultFile = "${temporaryDirectory}/${resultName}"
+    String wrappedScript = containerOs == 'windows'
         ? wrapPowerShell(script, markerFile, resultFile, resultMode)
         : wrapPosixShell(script, markerFile, resultFile, resultMode)
 
@@ -86,7 +68,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
             writeFile(file: scriptName, text: wrappedScript, encoding: 'UTF-8')
         }
 
-        def dockerCommand = buildDockerCommand(containerId, containerOs, currentDirectory, scriptFile)
+        String dockerCommand = buildDockerCommand(containerId, containerOs, currentDirectory, scriptFile)
         return runAgentCommand(dockerCommand, resultMode, temporaryDirectory, resultName)
     } catch (FlowInterruptedException e) {
         stopSidecarProcess(containerId, containerOs, markerFile)
@@ -99,27 +81,20 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
     }
 }
 
-private String inspectContainer(String containerName) {
+private Map inspectContainer(String containerName) {
     def command = "docker container inspect --format '{{.Id}}|{{.State.Running}}|{{.Platform}}' ${quoteForAgent(containerName)}"
-    return runAgentStdout(command, "docker inspect -- ${containerName}")
-}
+    def output = runAgentStdout(command, "docker inspect -- ${containerName}")
+    def inspectionParts = output.split('\\|')
 
-private void validateContainerPath(String containerName, String containerId, String containerOs, String path) {
-    def successToken = "jenkins-unity-path-${UUID.randomUUID()}"
-    def command
-    if (containerOs == 'windows') {
-        def testScript = "if (Test-Path -LiteralPath ${quotePowerShell(path)} -PathType Container) { " +
-            "[Console]::Out.WriteLine(${quotePowerShell(successToken)}) }"
-        command = "docker exec ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(testScript)}"
-    } else {
-        def testScript = 'if [ -d "$1" ]; then printf \'%s\\n\' "$2"; fi'
-        command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(testScript)} sh ${quoteForAgent(path)} ${quoteForAgent(successToken)}"
+    if (inspectionParts.size() != 3) {
+        error "Docker returned invalid inspection data for Unity container '${containerName}'."
     }
 
-    def output = runAgentStdoutIgnoringStatus(command, "docker path check -- ${containerName}")
-    if (!output.readLines().any { line -> line.trim() == successToken }) {
-        error "Unity container '${containerName}' cannot access Jenkins path '${path}' at the identical location."
-    }
+    return [
+        id        : inspectionParts[0],
+        isRunning : inspectionParts[1] == 'true',
+        os        : inspectionParts[2].toLowerCase()
+    ]
 }
 
 private String buildDockerCommand(String containerId, String containerOs, String currentDirectory, String scriptFile) {
@@ -145,7 +120,7 @@ private List<String> environmentNames() {
     return names.unique()
 }
 
-private String wrapPosixShell(String script, String markerFile, String resultFile, String resultMode) {
+private static String wrapPosixShell(String script, String markerFile, String resultFile, String resultMode) {
     def errorMode = resultMode == 'stdout' ? '' : 'set -e'
     def result = "#!/bin/sh\n" +
         "marker=${quotePosix(markerFile)}\n" +
@@ -161,7 +136,7 @@ private String wrapPosixShell(String script, String markerFile, String resultFil
     return result
 }
 
-private String wrapPowerShell(String script, String markerFile, String resultFile, String resultMode) {
+private static String wrapPowerShell(String script, String markerFile, String resultFile, String resultMode) {
     def result = "\$jenkinsUnityMarker = ${quotePowerShell(markerFile)}\n" +
         "\$jenkinsUnityResult = ${quotePowerShell(resultFile)}\n" +
         "\$jenkinsUnityExitCode = 0\n" +
@@ -206,7 +181,7 @@ private def runAgentCommand(String command, String resultMode, String temporaryD
 }
 
 private int requireContainerResult(String temporaryDirectory, String resultName, Integer dockerStatus = null) {
-    def resultText
+    String resultText = ''
     dir(temporaryDirectory) {
         if (!fileExists(resultName)) {
             def detail = dockerStatus == null ? '' : " (Docker exit ${dockerStatus})"
@@ -320,10 +295,10 @@ private String quoteForAgent(String value) {
     return isWindows() ? quotePowerShell(value) : quotePosix(value)
 }
 
-private String quotePosix(String value) {
+private static String quotePosix(String value) {
     return "'${value.replace("'", "'\"'\"'")}'"
 }
 
-private String quotePowerShell(String value) {
+private static String quotePowerShell(String value) {
     return "'${value.replace("'", "''")}'"
 }
