@@ -279,13 +279,13 @@ if [ -f "$marker" ]; then
     case "$pid" in
         ''|*[!0-9]*) exit 0 ;;
     esac
-    kill -TERM -- "-$pid" 2>/dev/null || true
+    pkill -TERM -g "$pid" 2>/dev/null || true
     count=0
-    while kill -0 -- "-$pid" 2>/dev/null && [ "$count" -lt 5 ]; do
+    while pkill -0 -g "$pid" 2>/dev/null && [ "$count" -lt 5 ]; do
         sleep 1
         count=$((count + 1))
     done
-    kill -KILL -- "-$pid" 2>/dev/null || true
+    pkill -KILL -g "$pid" 2>/dev/null || true
 fi'''
         command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(stopScript)} sh ${quoteForAgent(markerFile)}"
     }

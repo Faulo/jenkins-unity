@@ -69,7 +69,7 @@ Inside the scope, `callShell`, `callShellStdout`, and `callShellStatus` execute 
 
 The scope is lexical and nestable. Previous execution behavior is restored after success, failure, or interruption. Each command uses the current Jenkins `pwd()` as its container working directory. Jenkins environment variables, including variables added by `withEnv` and `withCredentials`, are forwarded by name so credential values do not appear in Docker command-line arguments.
 
-The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh` and `setsid`; Windows containers must provide PowerShell and `taskkill.exe` for interruption cleanup.
+The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh`, `setsid`, and `pkill`; Windows containers must provide PowerShell and `taskkill.exe` for interruption cleanup.
 
 `WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. `withUnity` validates the current directory and `WORKSPACE_TMP` before entering the scope. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
 
