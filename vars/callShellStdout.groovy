@@ -43,21 +43,23 @@ def call(String script, Boolean echoScript = false) {
 private static String streamPowerShell(String script, String outputFile) {
     return "\$jenkinsUnityOutput = ${quotePowerShell(outputFile)}\n" +
         "\$jenkinsUnityUtf8 = New-Object System.Text.UTF8Encoding(\$false)\n" +
-        "[System.IO.File]::WriteAllText(\$jenkinsUnityOutput, '', \$jenkinsUnityUtf8)\n" +
-        "& {\n${script}\n} 2>&1 | ForEach-Object {\n" +
-        "    \$jenkinsUnityText = if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
-        "        @(\$_.Exception.Message)\n" +
-        "    } else {\n" +
-        "        \$_ | Out-String -Stream\n" +
-        "    }\n" +
-        "    foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
-        "        if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
-        "            [Console]::Out.WriteLine(\$jenkinsUnityLine)\n" +
+        "\$jenkinsUnityWriter = New-Object System.IO.StreamWriter(\$jenkinsUnityOutput, \$false, \$jenkinsUnityUtf8)\n" +
+        "try {\n" +
+        "    & {\n${script}\n    } 2>&1 | ForEach-Object {\n" +
+        "        \$jenkinsUnityText = if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
+        "            @(\$_.Exception.Message)\n" +
         "        } else {\n" +
-        "            [System.IO.File]::AppendAllText(\$jenkinsUnityOutput, \$jenkinsUnityLine + [Environment]::NewLine, \$jenkinsUnityUtf8)\n" +
-        "            [Console]::Out.WriteLine(\$jenkinsUnityLine)\n" +
+        "            \$_ | Out-String -Stream\n" +
+        "        }\n" +
+        "        foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
+        "            if (!(\$_ -is [System.Management.Automation.ErrorRecord])) {\n" +
+        "                \$jenkinsUnityWriter.WriteLine(\$jenkinsUnityLine)\n" +
+        "            }\n" +
+        "            Write-Output \$jenkinsUnityLine\n" +
         "        }\n" +
         "    }\n" +
+        "} finally {\n" +
+        "    \$jenkinsUnityWriter.Dispose()\n" +
         "}\n"
 }
 
