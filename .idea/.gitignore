@@ -8,3 +8,7 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+# Downloaded Jenkins/Groovy IDE dependencies
+/groovy-sdk/
+/jenkins-libs/
+/jenkins-sources/

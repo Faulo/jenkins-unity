@@ -7,7 +7,8 @@
       <sourceFolder url="file://$MODULE_DIR$/vars" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="inheritedJdk" />
-    <orderEntry type="library" name="org.jenkinsci" level="project" />
+    <orderEntry type="jdk" jdkName="jdk-21.0.2" jdkType="JavaSDK" />
+    <orderEntry type="library" name="Groovy 2.4.21" level="project" />
+    <orderEntry type="library" name="Jenkins Pipeline APIs" level="project" />
   </component>
 </module>

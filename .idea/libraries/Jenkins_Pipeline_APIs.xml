@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Jenkins Pipeline APIs">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/.idea/jenkins-libs" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/.idea/jenkins-sources" />
+    </SOURCES>
+    <jarDirectory url="file://$PROJECT_DIR$/.idea/jenkins-libs" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/.idea/jenkins-sources" recursive="false" type="SOURCES" />
+  </library>
+</component>

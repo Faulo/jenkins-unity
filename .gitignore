@@ -5,3 +5,8 @@ logs
 
 # Java
 /bin/
+/classes/
+/out/
+
+# Local IDE-managed libraries
+/lib/

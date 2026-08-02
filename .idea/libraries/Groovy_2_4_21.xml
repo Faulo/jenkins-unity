@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Groovy 2.4.21" type="groovy-sdk">
+    <properties version="2.4.21" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/.idea/groovy-sdk/groovy-all-2.4.21.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/.idea/groovy-sdk/groovy-all-2.4.21-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
