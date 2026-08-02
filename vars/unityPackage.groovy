@@ -17,71 +17,71 @@ def call(Map args) {
 
     def defaultArgs = [
         // Define Unity package location relative to repository.
-        LOCATION : '',
+        LOCATION: '',
 
         // specify Jenkins node to process calls to Unity
-        UNITY_NODE : 'unity',
+        UNITY_NODE: 'unity',
 
         // If given, use this package information instead of reading from the package's package.json.
-        VERSION : '',
-        ID : '',
+        VERSION: '',
+        ID: '',
 
         // If given, automatically use these credentials to license a free Unity version.
-        UNITY_CREDENTIALS : '',
-        EMAIL_CREDENTIALS : '',
+        UNITY_CREDENTIALS: '',
+        EMAIL_CREDENTIALS: '',
 
-        UNITY_MANIFEST : '',
+        UNITY_MANIFEST: '',
 
         // Assert that CHANGELOG.md has been updated.
-        TEST_CHANGELOG : '0',
-        CHANGELOG_LOCATION : 'CHANGELOG.md',
+        TEST_CHANGELOG: '0',
+        CHANGELOG_LOCATION: 'CHANGELOG.md',
 
         // Assert that the C# code of the package matches the .editorconfig.
-        TEST_FORMATTING : '0',
-        EDITORCONFIG_LOCATION : '.editorconfig',
-        EDITORCONFIG_ADDONS : '.editor/**, Directory.Build.props',
-        FORMATTING_EXCLUDE : '',
+        TEST_FORMATTING: '0',
+        EDITORCONFIG_LOCATION: '.editorconfig',
+        EDITORCONFIG_ADDONS: '.editor/**, Directory.Build.props',
+        FORMATTING_EXCLUDE: '',
 
         // Assert Unity's Test Runner tests.
-        TEST_UNITY : '0',
-        TEST_MODES : 'EditMode PlayMode',
+        TEST_UNITY: '0',
+        TEST_MODES: 'EditMode PlayMode',
 
         // Automatically create C# docs using DocFX.
-        BUILD_DOCUMENTATION : '0',
+        BUILD_DOCUMENTATION: '0',
 
         // Deploy, even if previous steps reported errors or warnings.
-        DEPLOY_ON_FAILURE : '0',
+        DEPLOY_ON_FAILURE: '0',
 
         // Deploy when the package version is a standard release (according to SemVer)
-        DEPLOY_IF_RELEASE : '1',
+        DEPLOY_IF_RELEASE: '1',
 
         // Deploy when the package version is a pre-release (according to SemVer)
-        DEPLOY_IF_PRERELEASE : '1',
+        DEPLOY_IF_PRERELEASE: '1',
 
         // Deploy the package to a Verdaccio server.
-        DEPLOY_TO_VERDACCIO : '0',
-        VERDACCIO_URL : 'http://verdaccio:4873',
-        VERDACCIO_HOST : 'verdaccio:4873',
-        VERDACCIO_STORAGE : '/var/verdaccio',
-        VERDACCIO_CREDENTIALS : '',
+        DEPLOY_TO_VERDACCIO: '0',
+        VERDACCIO_URL: 'http://verdaccio:4873',
+        VERDACCIO_HOST: 'verdaccio:4873',
+        VERDACCIO_STORAGE: '/var/verdaccio',
+        VERDACCIO_CREDENTIALS: '',
 
         // Only attempt to deploy if the current VCS branch is among the branches listed. Note that Plastic's branches start with a slash.
-        DEPLOYMENT_BRANCHES : ["main", "/main"],
+        DEPLOYMENT_BRANCHES: ["main", "/main"],
 
         // Report the build status to a Discord Webhook.
-        REPORT_TO_DISCORD : '0',
-        DISCORD_WEBHOOK : '',
-        DISCORD_PING_IF : '',
+        REPORT_TO_DISCORD: '0',
+        DISCORD_WEBHOOK: '',
+        DISCORD_PING_IF: '',
 
         // Report the build status to a Microsoft Office 365 Webhook.
-        REPORT_TO_OFFICE_365 : '0',
-        OFFICE_365_WEBHOOK : '',
-        OFFICE_365_PING_IF : '',
+        REPORT_TO_OFFICE_365: '0',
+        OFFICE_365_WEBHOOK: '',
+        OFFICE_365_PING_IF: '',
 
         // Report the build status to a Microsoft Office 365 Webhook.
-        REPORT_TO_ADAPTIVE_CARDS : '0',
-        ADAPTIVE_CARDS_WEBHOOK : '',
-        ADAPTIVE_CARDS_PING_IF : '',
+        REPORT_TO_ADAPTIVE_CARDS: '0',
+        ADAPTIVE_CARDS_WEBHOOK: '',
+        ADAPTIVE_CARDS_PING_IF: '',
     ]
 
     args = defaultArgs + args
@@ -125,12 +125,12 @@ def call(Map args) {
         def localVersion = args.VERSION
         def isRelease = !localVersion.contains("-")
         def stableVersion = isRelease
-                ? localVersion
-                : localVersion.substring(0, localVersion.indexOf("-"))
+            ? localVersion
+            : localVersion.substring(0, localVersion.indexOf("-"))
 
         def editorconfigContent = args.TEST_FORMATTING == '1'
-                ? readFile(file: args.EDITORCONFIG_LOCATION)
-                : ""
+            ? readFile(file: args.EDITORCONFIG_LOCATION)
+            : ""
 
         def editorStashed = false
         if (args.TEST_FORMATTING == '1' && args.EDITORCONFIG_ADDONS != '') {
@@ -282,8 +282,8 @@ def call(Map args) {
                     dir(pack) {
                         def publishedVersion = callShellStdout "npm view --registry '${args.VERDACCIO_URL}' . version || echo '0'"
                         def isPublished = publishedVersion == '0'
-                                ? false
-                                : callShellStdout("npm show ${id}@${localVersion} --registry '${args.VERDACCIO_URL}' version || echo '-'") != '-'
+                            ? false
+                            : callShellStdout("npm show ${id}@${localVersion} --registry '${args.VERDACCIO_URL}' version || echo '-'") != '-'
 
                         stage('Deploy to: Verdaccio') {
                             if (!isPublished) {
@@ -316,7 +316,7 @@ def call(Map args) {
                                         } else {
                                             callShell "npm publish . --registry '${args.VERDACCIO_URL}'"
                                         }
-                                    } catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+                                    } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
                                         currentBuild.result = e.result
                                         throw e
                                     } catch (Throwable e) {
@@ -370,7 +370,7 @@ def call(Map args) {
                     }
                 }
             }
-        } catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+        } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
             currentBuild.result = e.result
             throw e
         } catch (Throwable e) {

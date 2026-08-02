@@ -1,12 +1,12 @@
 def call(body) {
-	properties([
-		disableConcurrentBuilds(),
-		disableResume()
-	])
+    properties([
+        disableConcurrentBuilds(),
+        disableResume()
+    ])
 
-	node('unity') {
-		checkout scm
+    node('unity') {
+        checkout scm
 
-		unityProject(body)
-	}
+        unityProject(body)
+    }
 }

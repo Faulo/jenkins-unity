@@ -1,5 +1,5 @@
-import hudson.model.Label
 import hudson.console.HyperlinkNote
+import hudson.model.Label
 import jenkins.model.Jenkins
 
 def call(String labelExpression, Closure body) {

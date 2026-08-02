@@ -18,11 +18,11 @@ def call(String webhookUrl, def currentBuild, String name, String discordPingIf,
     String footer = buildChangeLogFooter(currentBuild)
 
     def embed = [
-        title       : truncateDiscord(title, 256),
-        description : truncateDiscord(description, 4096),
-        url         : env.BUILD_URL,
-        color       : discordColorForResult(result),
-        footer 		: [
+        title: truncateDiscord(title, 256),
+        description: truncateDiscord(description, 4096),
+        url: env.BUILD_URL,
+        color: discordColorForResult(result),
+        footer: [
             text: truncateDiscord(footer.trim(), 2048)
         ]
     ]
@@ -33,17 +33,17 @@ def call(String webhookUrl, def currentBuild, String name, String discordPingIf,
 
     try {
         httpRequest(
-                httpMode              : 'POST',
-                url                   : webhookUrl,
-                contentType           : 'APPLICATION_JSON',
-                acceptType            : 'APPLICATION_JSON',
-                requestBody           : JsonOutput.toJson(payload),
-                validResponseCodes    : '200:299',
-                timeout               : 30,
-                quiet                 : true,
-                consoleLogResponseBody: false
-                )
-    } catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+            httpMode: 'POST',
+            url: webhookUrl,
+            contentType: 'APPLICATION_JSON',
+            acceptType: 'APPLICATION_JSON',
+            requestBody: JsonOutput.toJson(payload),
+            validResponseCodes: '200:299',
+            timeout: 30,
+            quiet: true,
+            consoleLogResponseBody: false
+        )
+    } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
         currentBuild.result = e.result
         throw e
     } catch (Throwable e) {
@@ -102,7 +102,7 @@ String buildChangeLogFooter(def currentBuild) {
 boolean buildShouldPing(def currentBuild, String discordPingIf) {
     try {
         return currentBuild.resultIsWorseOrEqualTo(discordPingIf)
-    } catch(org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+    } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
         currentBuild.result = e.result
         throw e
     } catch (Throwable e) {
