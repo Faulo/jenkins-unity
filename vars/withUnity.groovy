@@ -69,9 +69,11 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
     def scriptName = "with-unity-${token}.${extension}"
     def scriptFile = "${temporaryDirectory}/${scriptName}"
     def markerFile = "${scriptFile}.pid"
+    def resultName = "${scriptName}.exit"
+    def resultFile = "${temporaryDirectory}/${resultName}"
     def wrappedScript = containerOs == 'windows'
-        ? wrapPowerShell(script, markerFile, resultMode)
-        : wrapPosixShell(script, markerFile, resultMode)
+        ? wrapPowerShell(script, markerFile, resultFile, resultMode)
+        : wrapPosixShell(script, markerFile, resultFile, resultMode)
 
     if (echoScript) {
         echo "> ${script}"
@@ -85,7 +87,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
         }
 
         def dockerCommand = buildDockerCommand(containerId, containerOs, currentDirectory, scriptFile)
-        return runAgentCommand(dockerCommand, resultMode)
+        return runAgentCommand(dockerCommand, resultMode, temporaryDirectory, resultName)
     } catch (FlowInterruptedException e) {
         stopSidecarProcess(containerId, containerOs, markerFile)
         throw e
@@ -93,7 +95,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
         stopSidecarProcess(containerId, containerOs, markerFile)
         throw e
     } finally {
-        deleteAgentFiles(scriptFile, markerFile)
+        deleteAgentFiles(scriptFile, markerFile, resultFile)
     }
 }
 
@@ -103,16 +105,19 @@ private String inspectContainer(String containerName) {
 }
 
 private void validateContainerPath(String containerName, String containerId, String containerOs, String path) {
+    def successToken = "jenkins-unity-path-${UUID.randomUUID()}"
     def command
     if (containerOs == 'windows') {
-        def testScript = "if (-not (Test-Path -LiteralPath ${quotePowerShell(path)} -PathType Container)) { exit 1 }"
+        def testScript = "if (Test-Path -LiteralPath ${quotePowerShell(path)} -PathType Container) { " +
+            "[Console]::Out.WriteLine(${quotePowerShell(successToken)}) }"
         command = "docker exec ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(testScript)}"
     } else {
-        def testScript = 'test -d "$1"'
-        command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(testScript)} sh ${quoteForAgent(path)}"
+        def testScript = 'if [ -d "$1" ]; then printf \'%s\\n\' "$2"; fi'
+        command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(testScript)} sh ${quoteForAgent(path)} ${quoteForAgent(successToken)}"
     }
 
-    if (runAgentStatus(command, "docker path check -- ${containerName}") != 0) {
+    def output = runAgentStdoutIgnoringStatus(command, "docker path check -- ${containerName}")
+    if (!output.readLines().any { line -> line.trim() == successToken }) {
         error "Unity container '${containerName}' cannot access Jenkins path '${path}' at the identical location."
     }
 }
@@ -140,12 +145,13 @@ private List<String> environmentNames() {
     return names.unique()
 }
 
-private String wrapPosixShell(String script, String markerFile, String resultMode) {
+private String wrapPosixShell(String script, String markerFile, String resultFile, String resultMode) {
     def errorMode = resultMode == 'stdout' ? '' : 'set -e'
     def result = "#!/bin/sh\n" +
         "marker=${quotePosix(markerFile)}\n" +
+        "result=${quotePosix(resultFile)}\n" +
         "printf '%s\\n' \"\$\$\" > \"\$marker\"\n" +
-        "trap 'rm -f -- \"\$marker\"' EXIT\n" +
+        "trap 'status=\$?; printf \"%s\\n\" \"\$status\" > \"\$result\"; rm -f -- \"\$marker\"' EXIT\n" +
         (errorMode ? "${errorMode}\n" : '') +
         "${script}\n"
 
@@ -155,12 +161,19 @@ private String wrapPosixShell(String script, String markerFile, String resultMod
     return result
 }
 
-private String wrapPowerShell(String script, String markerFile, String resultMode) {
+private String wrapPowerShell(String script, String markerFile, String resultFile, String resultMode) {
     def result = "\$jenkinsUnityMarker = ${quotePowerShell(markerFile)}\n" +
+        "\$jenkinsUnityResult = ${quotePowerShell(resultFile)}\n" +
+        "\$jenkinsUnityExitCode = 0\n" +
+        "\$global:LASTEXITCODE = 0\n" +
         "Set-Content -LiteralPath \$jenkinsUnityMarker -Value \$PID -NoNewline\n" +
         "try {\n${script}\n" +
         "    \$jenkinsUnityExitCode = \$LASTEXITCODE\n" +
+        "} catch {\n" +
+        "    \$jenkinsUnityExitCode = 1\n" +
+        "    Write-Error -ErrorRecord \$_\n" +
         "} finally {\n" +
+        "    Set-Content -LiteralPath \$jenkinsUnityResult -Value \$jenkinsUnityExitCode -NoNewline\n" +
         "    Remove-Item -LiteralPath \$jenkinsUnityMarker -Force -ErrorAction SilentlyContinue\n" +
         "}\n"
 
@@ -172,52 +185,58 @@ private String wrapPowerShell(String script, String markerFile, String resultMod
     return result
 }
 
-private def runAgentCommand(String command, String resultMode) {
-    if (isWindows()) {
-        if (resultMode == 'stdout') {
-            return powershell(
-                returnStdout: true,
-                encoding: 'UTF-8',
-                label: 'docker exec -- capture',
-                script: "${command}\nexit 0"
-            ).trim()
-        }
-        if (resultMode == 'status') {
-            return powershell(
-                returnStatus: true,
-                encoding: 'UTF-8',
-                label: 'docker exec -- status',
-                script: "${command}\nexit \$LASTEXITCODE"
-            ) as int
-        }
-
-        powershell(
-            encoding: 'UTF-8',
-            label: 'docker exec',
-            script: "${command}\nif (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }"
-        )
-        return null
+private def runAgentCommand(String command, String resultMode, String temporaryDirectory, String resultName) {
+    if (resultMode == 'stdout') {
+        def output = runAgentStdoutIgnoringStatus(command, 'docker exec -- capture')
+        requireContainerResult(temporaryDirectory, resultName)
+        return output
     }
 
-    if (resultMode == 'stdout') {
-        return sh(
-            script: "${command} || true",
+    def dockerStatus = runAgentStatus(command, resultMode == 'status' ? 'docker exec -- status' : 'docker exec')
+    def containerStatus = requireContainerResult(temporaryDirectory, resultName, dockerStatus)
+
+    if (resultMode == 'status') {
+        return containerStatus
+    }
+
+    if (containerStatus != 0) {
+        error "Unity container command failed with exit code ${containerStatus}."
+    }
+    return null
+}
+
+private int requireContainerResult(String temporaryDirectory, String resultName, Integer dockerStatus = null) {
+    def resultText
+    dir(temporaryDirectory) {
+        if (!fileExists(resultName)) {
+            def detail = dockerStatus == null ? '' : " (Docker exit ${dockerStatus})"
+            error "Unity container command did not report a result${detail}."
+        }
+        resultText = readFile(file: resultName, encoding: 'UTF-8').trim()
+    }
+
+    if (!(resultText ==~ /-?[0-9]+/)) {
+        error "Unity container command reported invalid exit code '${resultText}'."
+    }
+    return resultText as int
+}
+
+private String runAgentStdoutIgnoringStatus(String command, String label) {
+    if (isWindows()) {
+        return powershell(
+            returnStdout: true,
             encoding: 'UTF-8',
-            label: 'docker exec -- capture',
-            returnStdout: true
+            label: label,
+            script: "${command} 2>\$null\nexit 0"
         ).trim()
     }
-    if (resultMode == 'status') {
-        return sh(
-            script: command,
-            encoding: 'UTF-8',
-            label: 'docker exec -- status',
-            returnStatus: true
-        ) as int
-    }
 
-    sh(script: command, encoding: 'UTF-8', label: 'docker exec')
-    return null
+    return sh(
+        returnStdout: true,
+        encoding: 'UTF-8',
+        label: label,
+        script: "${command} 2>/dev/null || true"
+    ).trim()
 }
 
 private String runAgentStdout(String command, String label) {
@@ -262,7 +281,7 @@ private void stopSidecarProcess(String containerId, String containerOs, String m
         def stopScript = "if (Test-Path -LiteralPath ${quotePowerShell(markerFile)}) { " +
             "\$processId = Get-Content -LiteralPath ${quotePowerShell(markerFile)}; " +
             'taskkill.exe /PID $processId /T /F | Out-Null }'
-        command = "docker exec ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(stopScript)}"
+        command = "docker exec --detach ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(stopScript)}"
     } else {
         def stopScript = '''marker=$1
 if [ -f "$marker" ]; then
@@ -278,7 +297,7 @@ if [ -f "$marker" ]; then
     done
     pkill -KILL -g "$pid" 2>/dev/null || true
 fi'''
-        command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(stopScript)} sh ${quoteForAgent(markerFile)}"
+        command = "docker exec --detach ${containerId} /bin/sh -c ${quoteForAgent(stopScript)} sh ${quoteForAgent(markerFile)}"
     }
 
     def status = runAgentStatus(command, 'docker exec -- stop interrupted process')
@@ -287,12 +306,12 @@ fi'''
     }
 }
 
-private void deleteAgentFiles(String scriptFile, String markerFile) {
+private void deleteAgentFiles(String scriptFile, String markerFile, String resultFile) {
     if (isWindows()) {
-        def command = "Remove-Item -LiteralPath ${quotePowerShell(scriptFile)}, ${quotePowerShell(markerFile)} -Force -ErrorAction SilentlyContinue"
+        def command = "Remove-Item -LiteralPath ${quotePowerShell(scriptFile)}, ${quotePowerShell(markerFile)}, ${quotePowerShell(resultFile)} -Force -ErrorAction SilentlyContinue"
         powershell(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
     } else {
-        def command = "rm -f -- ${quotePosix(scriptFile)} ${quotePosix(markerFile)}"
+        def command = "rm -f -- ${quotePosix(scriptFile)} ${quotePosix(markerFile)} ${quotePosix(resultFile)}"
         sh(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
     }
 }
