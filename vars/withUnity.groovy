@@ -208,7 +208,7 @@ private void runAgentStdoutStreamingIgnoringStatus(String command, String output
         powershell(
             encoding: 'UTF-8',
             label: label,
-            script: streamPowerShell(command, outputFile)
+            script: streamPowerShell(command, outputFile) + 'exit 0\n'
         )
         return
     }
