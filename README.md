@@ -1,17 +1,65 @@
 # Unity Commands for Jenkins
-This repository adds build commands for Unity to a Jenkins pipeline context.
 
-### Prerequisites
+This repository is the Jenkins Shared Library used by Slothsoft projects to build, test, document, package, and deploy Unity projects. Its production runtime is [ci.slothsoft.net](https://ci.slothsoft.net/).
 
-The Jenkins server needs access to a node tagged with the label `unity`. That node needs the environment variable `COMPOSE_UNITY`, which should point to a working installation of the composer package [slothsoft/unity](https://github.com/Faulo/slothsoft-unity). (On Linux, this would be something like `composer -d /var/unity exec`, whereas on Windows, it could be `composer -d C:\Webserver\unity exec`. Consult that package for information on how to handle Unity licenses.)
+## Runtime model
 
-## Usage
-All of these commands need to be placed inside a `node` block of the iterative or a `steps` block of the declarative Jenkins pipeline.
+The library contributes global Pipeline steps from `vars/*.groovy`. Unity commands follow this call chain:
 
-All values are optional and default to the first value from among the possible values below.
+```text
+unityProject / unityPackage
+  -> callUnity
+  -> callComposer
+  -> callShellStdout
+  -> powershell or sh
+```
 
+`callShell`, `callShellStdout`, and `callShellStatus` are also used directly for supporting tools. Jenkins-native steps continue to handle workspaces, credentials, test reports, archives, HTML reports, stashes, and notifications.
 
-### The `unityProject` command
+## Repository layout
+
+- `vars/unityPipeline.groovy` provides a complete checkout-and-build convenience Pipeline.
+- `vars/unityProject.groovy` handles Unity projects, including versioning, tests, player builds, documentation, Steam, itch.io, and result notifications.
+- `vars/unityPackage.groovy` handles Unity packages, including generated-project tests and Verdaccio publication.
+- `vars/callUnity.groovy` and `vars/callComposer.groovy` initialize and invoke `slothsoft/unity`.
+- `vars/callShell*.groovy` define cross-platform external-process behavior.
+- `vars/callDocFX.groovy` and `vars/callDotnetFormat.groovy` provide documentation and formatting checks.
+- `vars/reportTo*.groovy` send optional build notifications.
+- `vars/executeOnAll.groovy` and `vars/nodeIfCurrentDoesNotMatch.groovy` provide node-selection helpers.
+
+There is no standalone test harness that reproduces Jenkins CPS and dynamic global steps. Changes should receive local syntax and call-chain inspection, followed by an authorized replay of a representative Pipeline on `ci.slothsoft.net` when runtime behavior changes.
+
+`callUnity` invokes the [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) Composer package through `COMPOSE_UNITY`. When unset, `COMPOSE_UNITY` defaults to `compose-unity`. A node may instead set it to another working launcher, such as `composer -d /var/unity exec` on Linux or `composer -d C:\Webserver\unity exec` on Windows.
+
+The node executing Unity work must provide:
+
+- a working `COMPOSE_UNITY` command;
+- installed Unity versions and reusable license state expected by `slothsoft/unity`;
+- `dotnet` when documentation or formatting is enabled;
+- DocFX when documentation is enabled;
+- `steamcmd` for Steam deployment;
+- `butler` for itch.io deployment.
+
+`unityPackage` additionally uses Node.js and NPM for package metadata and Verdaccio deployment. Its Unity-specific work may switch to the configured `UNITY_NODE`; its package and deployment work otherwise remains on the calling node.
+
+## Workspace behavior
+
+Commands must run inside an allocated Jenkins workspace. Jenkins normally provides job-specific paths like:
+
+```text
+WORKSPACE=/workspace/root/job
+WORKSPACE_TMP=/workspace/root/job@tmp
+```
+
+Project sources stay below `WORKSPACE`. Generated Unity logs and intermediate reports use `WORKSPACE_TMP`, then Jenkins publishes the requested reports and artifacts before cleanup. Any external execution environment must see both paths at the same absolute locations.
+
+## Pipeline usage
+
+After this repository is configured as a Jenkins Shared Library, its global commands can be used inside a scripted `node` block or a declarative `steps` block. `unityPipeline` is the convenience entry point that selects a node labeled `unity`, checks out `scm`, and calls `unityProject`.
+
+Configuration can be supplied as a map or as a delegated closure. All values below are optional; shown values are defaults.
+
+## The `unityProject` command
 This command locates a Unity project inside the repository, updates the project version, runs its unit tests, builds executables, and (if successful) deploys the executables to either Steam or itch.io.
 
 ```groovy
@@ -110,7 +158,7 @@ unityProject(
 )
 ```
 
-### The `unityPackage` command
+## The `unityPackage` command
 
 This command locates a Unity package inside the repository, runs its unit tests, and (if successful) deploys it to a Verdaccio server.
 
@@ -129,9 +177,11 @@ unityPackage(
 	// If given, automatically use these credentials to license a free Unity version.
 	UNITY_CREDENTIALS : '',
 	EMAIL_CREDENTIALS : '',
+	// If enabled, bind the Unity-Manifest file credential for the generated project.
+	UNITY_MANIFEST : '',
 
 	// Assert that CHANGELOG.md has been updated.
-	TEST_CHANGELOG : '1',
+	TEST_CHANGELOG : '0',
 	CHANGELOG_LOCATION : 'CHANGELOG.md',
 
 	// Assert that the C# code of the package matches the .editorconfig.
@@ -141,7 +191,7 @@ unityPackage(
 	FORMATTING_EXCLUDE : '',
 
 	// Assert Unity's Test Runner tests.
-	TEST_UNITY : '1',
+	TEST_UNITY : '0',
 	TEST_MODES : 'EditMode PlayMode',
 
 	// Automatically create C# docs using DocFX.
@@ -159,7 +209,12 @@ unityPackage(
 	// Deploy the package to a Verdaccio server.
 	DEPLOY_TO_VERDACCIO : '0',
 	VERDACCIO_URL : 'http://verdaccio:4873',
+	// Host used when writing the project-level NPM authentication setting.
+	VERDACCIO_HOST : 'verdaccio:4873',
+	// Optional direct storage fallback when NPM publication fails.
 	VERDACCIO_STORAGE : '/var/verdaccio',
+	// Optional Jenkins string credential containing the NPM token.
+	VERDACCIO_CREDENTIALS : '',
 
 	// Only attempt to deploy if the current VCS branch is among the branches listed. Note that Plastic's branches start with a slash.
 	DEPLOYMENT_BRANCHES : ["main", "/main"],
