@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Stream stdout and stderr in real time from captured shell calls on Windows and inside `withUnity` while preserving stdout-only return values.
+
 
 ## [2.20.0] - 2025-06-07
 

@@ -73,6 +73,8 @@ The closure-only form reads the container name from `JENKINS_UNITY_CONTAINER`. P
 
 Inside the scope, `callShell`, `callShellStdout`, and `callShellStatus` execute through `docker exec`. Their existing streamed-output, captured-stdout, and numeric-status contracts remain unchanged. Calls outside the scope continue to execute directly on the Jenkins agent. Custom `BUILD_*_CALL` closures inherit the scope when they use these helpers.
 
+All three shell helpers stream stdout and stderr as commands produce them. `callShellStdout` also returns a trimmed copy of stdout; stderr is printed but never added to that return value. This behavior is identical for native Linux, native Windows, and `withUnity` execution.
+
 The scope is lexical and nestable. Previous execution behavior is restored after success, failure, or interruption. Each command uses the current Jenkins `pwd()` as its container working directory. Agent environment variables are not forwarded by default; configure persistent sidecar values through the Docker stack environment.
 
 Set `JENKINS_UNITY_ENV` to a colon-separated allowlist when a Pipeline-scoped value must enter the container, such as `UNITY_CREDENTIALS_USR:UNITY_CREDENTIALS_PSW`. Listed variables, including variables added by `withEnv` and `withCredentials`, are forwarded by name so their values do not appear in Docker command-line arguments. Empty list entries are ignored, duplicate names are forwarded once, and variable names must match `[A-Za-z_][A-Za-z0-9_]*`. WSLENV-style flags are not supported.
