@@ -122,7 +122,7 @@ private String buildDockerCommand(String containerId, String containerOs, String
         "--env ${quoteForAgent(name)}"
     }.join(' ')
     def targetCommand = containerOs == 'windows'
-        ? "powershell.exe -NoProfile -NonInteractive -File ${quoteForAgent(scriptFile)}"
+        ? "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ${quoteForAgent(scriptFile)}"
         : "setsid --wait /bin/sh ${quoteForAgent(scriptFile)}"
 
     return "docker exec --workdir ${quoteForAgent(currentDirectory)} ${environmentArguments} ${containerId} ${targetCommand}"
