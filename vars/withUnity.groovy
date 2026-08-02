@@ -105,8 +105,8 @@ private String inspectContainer(String containerName) {
 private void validateContainerPath(String containerName, String containerId, String containerOs, String path) {
     def command
     if (containerOs == 'windows') {
-        def testScript = 'if (-not (Test-Path -LiteralPath $args[0] -PathType Container)) { exit 1 }'
-        command = "docker exec ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(testScript)} ${quoteForAgent(path)}"
+        def testScript = "if (-not (Test-Path -LiteralPath ${quotePowerShell(path)} -PathType Container)) { exit 1 }"
+        command = "docker exec ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(testScript)}"
     } else {
         def testScript = 'test -d "$1"'
         command = "docker exec ${containerId} /bin/sh -c ${quoteForAgent(testScript)} sh ${quoteForAgent(path)}"
