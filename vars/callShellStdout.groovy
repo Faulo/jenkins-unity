@@ -45,10 +45,14 @@ private static String streamPowerShell(String script, String outputFile) {
         "\$jenkinsUnityUtf8 = New-Object System.Text.UTF8Encoding(\$false)\n" +
         "[System.IO.File]::WriteAllText(\$jenkinsUnityOutput, '', \$jenkinsUnityUtf8)\n" +
         "& {\n${script}\n} 2>&1 | ForEach-Object {\n" +
-        "    \$jenkinsUnityText = \$_ | Out-String -Stream\n" +
+        "    \$jenkinsUnityText = if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
+        "        @(\$_.Exception.Message)\n" +
+        "    } else {\n" +
+        "        \$_ | Out-String -Stream\n" +
+        "    }\n" +
         "    foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
         "        if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
-        "            [Console]::Error.WriteLine(\$jenkinsUnityLine)\n" +
+        "            [Console]::Out.WriteLine(\$jenkinsUnityLine)\n" +
         "        } else {\n" +
         "            [System.IO.File]::AppendAllText(\$jenkinsUnityOutput, \$jenkinsUnityLine + [Environment]::NewLine, \$jenkinsUnityUtf8)\n" +
         "            [Console]::Out.WriteLine(\$jenkinsUnityLine)\n" +
