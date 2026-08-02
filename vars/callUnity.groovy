@@ -1,5 +1,6 @@
 def call(String body, String file = "") {
-    if (CallUnityInitializer.initialize(env.NODE_NAME)) {
+    def executionIdentity = env.JENKINS_UNITY_CONTAINER_ID ?: env.NODE_NAME
+    if (CallUnityInitializer.initialize(executionIdentity)) {
         callComposer('update --no-interaction --no-dev --optimize-autoloader --classmap-authoritative')
     }
 

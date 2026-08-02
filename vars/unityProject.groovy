@@ -237,7 +237,7 @@ def call(Map args) {
                             }
                             dir(project) {
                                 for (file in findFiles(glob: '*.sln')) {
-                                    def path = realpath(file.path)
+                                    def path = "${pwd()}/${file.path}"
                                     callDotnetFormat(path, reports, args.FORMATTING_EXCLUDE)
                                 }
                             }
@@ -335,7 +335,7 @@ def call(Map args) {
 
                                     callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
-                                    callShell "steamcmd +login $STEAM_CREDENTIALS_USR $STEAM_CREDENTIALS_PSW +run_app_build '${reports}/deploy-steam.vdf' +quit"
+                                    callShell "steamcmd +login \"\$STEAM_CREDENTIALS_USR\" \"\$STEAM_CREDENTIALS_PSW\" +run_app_build '${reports}/deploy-steam.vdf' +quit"
                                 }
                             }
 

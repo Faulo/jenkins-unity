@@ -11,7 +11,8 @@ unityProject / unityPackage
   -> callUnity
   -> callComposer
   -> callShellStdout
-  -> powershell or sh
+     -> powershell or sh on the Jenkins agent (default)
+     -> docker exec inside withUnity
 ```
 
 `callShell`, `callShellStdout`, and `callShellStatus` are also used directly for supporting tools. Jenkins-native steps continue to handle workspaces, credentials, test reports, archives, HTML reports, stashes, and notifications.
@@ -22,6 +23,7 @@ unityProject / unityPackage
 - `vars/unityProject.groovy` handles Unity projects, including versioning, tests, player builds, documentation, Steam, itch.io, and result notifications.
 - `vars/unityPackage.groovy` handles Unity packages, including generated-project tests and Verdaccio publication.
 - `vars/callUnity.groovy` and `vars/callComposer.groovy` initialize and invoke `slothsoft/unity`.
+- `vars/withUnity.groovy` scopes external-process execution to a long-running Unity container.
 - `vars/callShell*.groovy` define cross-platform external-process behavior.
 - `vars/callDocFX.groovy` and `vars/callDotnetFormat.groovy` provide documentation and formatting checks.
 - `vars/reportTo*.groovy` send optional build notifications.
@@ -52,6 +54,26 @@ WORKSPACE_TMP=/workspace/root/job@tmp
 ```
 
 Project sources stay below `WORKSPACE`. Generated Unity logs and intermediate reports use `WORKSPACE_TMP`, then Jenkins publishes the requested reports and artifacts before cleanup. Any external execution environment must see both paths at the same absolute locations.
+
+## The `withUnity` command
+
+`withUnity` routes library shell helpers through a named, running Docker container while leaving Jenkins-native Pipeline steps on the Jenkins agent:
+
+```groovy
+withUnity('agents_unity') {
+    unityProject(unityConfig)
+}
+```
+
+Inside the scope, `callShell`, `callShellStdout`, and `callShellStatus` execute through `docker exec`. Their existing streamed-output, captured-stdout, and numeric-status contracts remain unchanged. Calls outside the scope continue to execute directly on the Jenkins agent. Custom `BUILD_*_CALL` closures inherit the scope when they use these helpers.
+
+The scope is lexical and nestable. Previous execution behavior is restored after success, failure, or interruption. Each command uses the current Jenkins `pwd()` as its container working directory. Jenkins environment variables, including variables added by `withEnv` and `withCredentials`, are forwarded by name so credential values do not appear in Docker command-line arguments.
+
+The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh` and `setsid`; Windows containers must provide PowerShell and `taskkill.exe` for interruption cleanup.
+
+`WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. `withUnity` validates the current directory and `WORKSPACE_TMP` before entering the scope. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
+
+`unityPackage` is not yet adapted for `withUnity`; it changes Jenkins nodes internally and mixes Unity commands with Node.js, NPM, and Verdaccio work.
 
 ## Pipeline usage
 

@@ -1,4 +1,8 @@
 def call(String script, Boolean echoScript = false) {
+    if (withUnity.isActive()) {
+        return withUnity.executeShell(script, echoScript, 'status')
+    }
+
     if (echoScript) {
         echo "> ${script}"
     }
