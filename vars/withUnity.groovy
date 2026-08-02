@@ -129,6 +129,7 @@ private String buildDockerCommand(String containerId, String containerOs, String
 }
 
 private List<String> environmentNames() {
+    def containerSearchPathNames = ['PATH', 'PATHEXT', 'PSMODULEPATH']
     def output
     if (isWindows()) {
         output = powershell(
@@ -147,7 +148,7 @@ private List<String> environmentNames() {
     }
 
     def names = output.readLines().collect { it.trim() }.findAll { name ->
-        name ==~ /[A-Za-z_][A-Za-z0-9_]*/
+        name ==~ /[A-Za-z_][A-Za-z0-9_]*/ && !(name.toUpperCase() in containerSearchPathNames)
     }.unique()
     names.sort()
     return names
