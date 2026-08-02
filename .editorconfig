@@ -551,14 +551,6 @@ dotnet_diagnostic.UNT0033.severity = warning
 # Groovy-Dateien
 [*.groovy]
 
-# Bestehender Jenkins-Library-Stil: vier Leerzeichen und Windows-Zeilenenden.
-indent_size = 4
-indent_style = space
-tab_width = 4
-trim_trailing_whitespace = true
-insert_final_newline = true
-end_of_line = crlf
-
 #### JetBrains / IntelliJ IDEA ####
 
 ij_continuation_indent_size = 4
