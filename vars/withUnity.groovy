@@ -129,29 +129,15 @@ private String buildDockerCommand(String containerId, String containerOs, String
 }
 
 private List<String> environmentNames() {
-    def containerSearchPathNames = ['PATH', 'PATHEXT', 'PSMODULEPATH']
-    def output
-    if (isWindows()) {
-        output = powershell(
-            returnStdout: true,
-            encoding: 'UTF-8',
-            label: 'collect environment names',
-            script: '[Environment]::GetEnvironmentVariables().Keys | Sort-Object'
-        )
-    } else {
-        output = sh(
-            returnStdout: true,
-            encoding: 'UTF-8',
-            label: 'collect environment names',
-            script: "set +x\nenv -0 | cut -z -d= -f1 | tr '\\0' '\\n'"
-        )
+    def names = (env.JENKINS_UNITY_ENV ?: '').split(':', -1).findAll { it }
+    def invalidName = names.find { name ->
+        !(name ==~ /[A-Za-z_][A-Za-z0-9_]*/)
+    }
+    if (invalidName) {
+        error "Invalid environment variable name '${invalidName}' in JENKINS_UNITY_ENV."
     }
 
-    def names = output.readLines().collect { it.trim() }.findAll { name ->
-        name ==~ /[A-Za-z_][A-Za-z0-9_]*/ && !(name.toUpperCase() in containerSearchPathNames)
-    }.unique()
-    names.sort()
-    return names
+    return names.unique()
 }
 
 private String wrapPosixShell(String script, String markerFile, String resultMode) {
