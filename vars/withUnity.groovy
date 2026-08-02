@@ -53,6 +53,8 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
     String markerFile = "${scriptFile}.pid"
     String resultName = "${scriptName}.exit"
     String resultFile = "${temporaryDirectory}/${resultName}"
+    String outputName = "${scriptName}.stdout"
+    String outputFile = "${temporaryDirectory}/${outputName}"
     String wrappedScript = containerOs == 'windows'
         ? wrapPowerShell(script, markerFile, resultFile, resultMode)
         : wrapPosixShell(script, markerFile, resultFile, resultMode)
@@ -69,7 +71,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
         }
 
         String dockerCommand = buildDockerCommand(containerId, containerOs, currentDirectory, scriptFile)
-        return runAgentCommand(dockerCommand, resultMode, temporaryDirectory, resultName)
+        return runAgentCommand(dockerCommand, resultMode, temporaryDirectory, resultName, outputName, outputFile)
     } catch (FlowInterruptedException e) {
         stopSidecarProcess(containerId, containerOs, markerFile)
         throw e
@@ -77,7 +79,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
         stopSidecarProcess(containerId, containerOs, markerFile)
         throw e
     } finally {
-        deleteAgentFiles(scriptFile, markerFile, resultFile)
+        deleteAgentFiles(scriptFile, markerFile, resultFile, outputFile)
     }
 }
 
@@ -160,10 +162,15 @@ private static String wrapPowerShell(String script, String markerFile, String re
     return result
 }
 
-private def runAgentCommand(String command, String resultMode, String temporaryDirectory, String resultName) {
+private def runAgentCommand(String command, String resultMode, String temporaryDirectory, String resultName, String outputName, String outputFile) {
     if (resultMode == 'stdout') {
-        def output = runAgentStdoutIgnoringStatus(command, 'docker exec -- capture')
+        runAgentStdoutStreamingIgnoringStatus(command, outputFile, 'docker exec -- capture')
         requireContainerResult(temporaryDirectory, resultName)
+
+        String output = ''
+        dir(temporaryDirectory) {
+            output = readFile(file: outputName, encoding: 'UTF-8').trim()
+        }
         return output
     }
 
@@ -196,22 +203,38 @@ private int requireContainerResult(String temporaryDirectory, String resultName,
     return resultText as int
 }
 
-private String runAgentStdoutIgnoringStatus(String command, String label) {
+private void runAgentStdoutStreamingIgnoringStatus(String command, String outputFile, String label) {
     if (isWindows()) {
-        return powershell(
-            returnStdout: true,
+        powershell(
             encoding: 'UTF-8',
             label: label,
-            script: "${command} 2>\$null\nexit 0"
-        ).trim()
+            script: streamPowerShell(command, outputFile)
+        )
+        return
     }
 
-    return sh(
-        returnStdout: true,
+    sh(
         encoding: 'UTF-8',
         label: label,
-        script: "${command} 2>/dev/null || true"
-    ).trim()
+        script: "(${command}\n) | tee ${quotePosix(outputFile)}"
+    )
+}
+
+private static String streamPowerShell(String script, String outputFile) {
+    return "\$jenkinsUnityOutput = ${quotePowerShell(outputFile)}\n" +
+        "\$jenkinsUnityUtf8 = New-Object System.Text.UTF8Encoding(\$false)\n" +
+        "[System.IO.File]::WriteAllText(\$jenkinsUnityOutput, '', \$jenkinsUnityUtf8)\n" +
+        "& {\n${script}\n} 2>&1 | ForEach-Object {\n" +
+        "    \$jenkinsUnityText = \$_ | Out-String -Stream\n" +
+        "    foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
+        "        if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
+        "            [Console]::Error.WriteLine(\$jenkinsUnityLine)\n" +
+        "        } else {\n" +
+        "            [System.IO.File]::AppendAllText(\$jenkinsUnityOutput, \$jenkinsUnityLine + [Environment]::NewLine, \$jenkinsUnityUtf8)\n" +
+        "            [Console]::Out.WriteLine(\$jenkinsUnityLine)\n" +
+        "        }\n" +
+        "    }\n" +
+        "}\n"
 }
 
 private String runAgentStdout(String command, String label) {
@@ -281,12 +304,12 @@ fi'''
     }
 }
 
-private void deleteAgentFiles(String scriptFile, String markerFile, String resultFile) {
+private void deleteAgentFiles(String scriptFile, String markerFile, String resultFile, String outputFile) {
     if (isWindows()) {
-        def command = "Remove-Item -LiteralPath ${quotePowerShell(scriptFile)}, ${quotePowerShell(markerFile)}, ${quotePowerShell(resultFile)} -Force -ErrorAction SilentlyContinue"
+        def command = "Remove-Item -LiteralPath ${quotePowerShell(scriptFile)}, ${quotePowerShell(markerFile)}, ${quotePowerShell(resultFile)}, ${quotePowerShell(outputFile)} -Force -ErrorAction SilentlyContinue"
         powershell(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
     } else {
-        def command = "rm -f -- ${quotePosix(scriptFile)} ${quotePosix(markerFile)} ${quotePosix(resultFile)}"
+        def command = "rm -f -- ${quotePosix(scriptFile)} ${quotePosix(markerFile)} ${quotePosix(resultFile)} ${quotePosix(outputFile)}"
         sh(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
     }
 }
