@@ -71,7 +71,7 @@ def executeShell(String script, Boolean echoScript, String resultMode) {
 
     if (echoScript) {
         echo "> ${script}"
-    } else if (containerOs == 'windows') {
+    } else {
         echo "+ ${script}"
     }
 
@@ -150,12 +150,12 @@ private List<String> environmentNames() {
 }
 
 private String wrapPosixShell(String script, String markerFile, String resultMode) {
-    def errorMode = resultMode == 'stdout' ? 'set -x' : 'set -ex'
+    def errorMode = resultMode == 'stdout' ? '' : 'set -e'
     def result = "#!/bin/sh\n" +
         "marker=${quotePosix(markerFile)}\n" +
         "printf '%s\\n' \"\$\$\" > \"\$marker\"\n" +
         "trap 'rm -f -- \"\$marker\"' EXIT\n" +
-        "${errorMode}\n" +
+        (errorMode ? "${errorMode}\n" : '') +
         "${script}\n"
 
     if (resultMode == 'stdout') {
