@@ -60,10 +60,16 @@ Project sources stay below `WORKSPACE`. Generated Unity logs and intermediate re
 `withUnity` routes library shell helpers through a named, running Docker container while leaving Jenkins-native Pipeline steps on the Jenkins agent:
 
 ```groovy
-withUnity('agents_unity') {
+environment {
+    JENKINS_UNITY_CONTAINER = 'agents_unity'
+}
+
+withUnity() {
     unityProject(unityConfig)
 }
 ```
+
+The closure-only form reads the container name from `JENKINS_UNITY_CONTAINER`. Pass a name explicitly, such as `withUnity('agents_unity')`, to override that default.
 
 Inside the scope, `callShell`, `callShellStdout`, and `callShellStatus` execute through `docker exec`. Their existing streamed-output, captured-stdout, and numeric-status contracts remain unchanged. Calls outside the scope continue to execute directly on the Jenkins agent. Custom `BUILD_*_CALL` closures inherit the scope when they use these helpers.
 

@@ -1,5 +1,9 @@
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
+def call(Closure body) {
+    call(env.JENKINS_UNITY_CONTAINER, body)
+}
+
 def call(String containerName, Closure body) {
     if (!containerName || !(containerName ==~ /[A-Za-z0-9][A-Za-z0-9_.-]*/)) {
         error "Invalid Unity container name '${containerName}'."
