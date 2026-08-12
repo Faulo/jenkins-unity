@@ -12,8 +12,7 @@ def call(String script, Boolean echoScript = false) {
             echo "+ ${script}"
         }
 
-        // https://stackoverflow.com/questions/2095088/error-when-calling-3rd-party-executable-from-powershell-when-using-an-ide
-        return powershell(returnStatus: true, encoding: 'UTF-8', label: 'powershell -- ' + script, script: script + ' 2>&1') as int
+        return pwsh(returnStatus: true, encoding: 'UTF-8', label: 'pwsh -- ' + script, script: script) as int
     } else {
         return sh(script: script, encoding: 'UTF-8', label: 'sh', returnStatus: true) as int
     }

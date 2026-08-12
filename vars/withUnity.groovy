@@ -104,7 +104,7 @@ private String buildDockerCommand(String containerId, String containerOs, String
         "--env ${quoteForAgent(name)}"
     }.join(' ')
     def targetCommand = containerOs == 'windows'
-        ? "powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ${quoteForAgent(scriptFile)}"
+        ? "pwsh -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ${quoteForAgent(scriptFile)}"
         : "setsid --wait /bin/sh ${quoteForAgent(scriptFile)}"
 
     return "docker exec --workdir ${quoteForAgent(currentDirectory)} ${environmentArguments} ${containerId} ${targetCommand}"
@@ -205,7 +205,7 @@ private int requireContainerResult(String temporaryDirectory, String resultName,
 
 private void runAgentStdoutStreamingIgnoringStatus(String command, String outputFile, String label) {
     if (isWindows()) {
-        powershell(
+        pwsh(
             encoding: 'UTF-8',
             label: label,
             script: streamPowerShell(command, outputFile) + 'exit 0\n'
@@ -225,16 +225,10 @@ private static String streamPowerShell(String script, String outputFile) {
         "\$jenkinsUnityUtf8 = New-Object System.Text.UTF8Encoding(\$false)\n" +
         "\$jenkinsUnityWriter = New-Object System.IO.StreamWriter(\$jenkinsUnityOutput, \$false, \$jenkinsUnityUtf8)\n" +
         "try {\n" +
-        "    & {\n${script}\n    } 2>&1 | ForEach-Object {\n" +
-        "        \$jenkinsUnityText = if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
-        "            @(\$_.Exception.Message)\n" +
-        "        } else {\n" +
-        "            \$_ | Out-String -Stream\n" +
-        "        }\n" +
+        "    & {\n${script}\n    } | ForEach-Object {\n" +
+        "        \$jenkinsUnityText = \$_ | Out-String -Stream\n" +
         "        foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
-        "            if (!(\$_ -is [System.Management.Automation.ErrorRecord])) {\n" +
-        "                \$jenkinsUnityWriter.WriteLine(\$jenkinsUnityLine)\n" +
-        "            }\n" +
+        "            \$jenkinsUnityWriter.WriteLine(\$jenkinsUnityLine)\n" +
         "            Write-Output \$jenkinsUnityLine\n" +
         "        }\n" +
         "    }\n" +
@@ -245,7 +239,7 @@ private static String streamPowerShell(String script, String outputFile) {
 
 private String runAgentStdout(String command, String label) {
     if (isWindows()) {
-        return powershell(
+        return pwsh(
             returnStdout: true,
             encoding: 'UTF-8',
             label: label,
@@ -263,7 +257,7 @@ private String runAgentStdout(String command, String label) {
 
 private int runAgentStatus(String command, String label) {
     if (isWindows()) {
-        return powershell(
+        return pwsh(
             returnStatus: true,
             encoding: 'UTF-8',
             label: label,
@@ -285,7 +279,7 @@ private void stopSidecarProcess(String containerId, String containerOs, String m
         def stopScript = "if (Test-Path -LiteralPath ${quotePowerShell(markerFile)}) { " +
             "\$processId = Get-Content -LiteralPath ${quotePowerShell(markerFile)}; " +
             'taskkill.exe /PID $processId /T /F | Out-Null }'
-        command = "docker exec --detach ${containerId} powershell.exe -NoProfile -NonInteractive -Command ${quoteForAgent(stopScript)}"
+        command = "docker exec --detach ${containerId} pwsh -NoProfile -NonInteractive -Command ${quoteForAgent(stopScript)}"
     } else {
         def stopScript = '''marker=$1
 if [ -f "$marker" ]; then
@@ -313,7 +307,7 @@ fi'''
 private void deleteAgentFiles(String scriptFile, String markerFile, String resultFile, String outputFile) {
     if (isWindows()) {
         def command = "Remove-Item -LiteralPath ${quotePowerShell(scriptFile)}, ${quotePowerShell(markerFile)}, ${quotePowerShell(resultFile)}, ${quotePowerShell(outputFile)} -Force -ErrorAction SilentlyContinue"
-        powershell(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
+        pwsh(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)
     } else {
         def command = "rm -f -- ${quotePosix(scriptFile)} ${quotePosix(markerFile)} ${quotePosix(resultFile)} ${quotePosix(outputFile)}"
         sh(returnStatus: true, encoding: 'UTF-8', label: 'cleanup Unity command', script: command)

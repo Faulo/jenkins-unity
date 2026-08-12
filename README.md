@@ -11,7 +11,7 @@ unityProject / unityPackage
   -> callUnity
   -> callComposer
   -> callShellStdout
-     -> powershell or sh on the Jenkins agent (default)
+     -> pwsh or sh on the Jenkins agent (default)
      -> docker exec inside withUnity
 ```
 
@@ -32,6 +32,8 @@ unityProject / unityPackage
 There is no standalone test harness that reproduces Jenkins CPS and dynamic global steps. Changes should receive local syntax and call-chain inspection, followed by an authorized replay of a representative Pipeline on `ci.slothsoft.net` when runtime behavior changes.
 
 `callUnity` invokes the [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) Composer package through `COMPOSE_UNITY`. When unset, `COMPOSE_UNITY` defaults to `compose-unity`. A node may instead set it to another working launcher, such as `composer -d /var/unity exec` on Linux or `composer -d C:\Webserver\unity exec` on Windows.
+
+On Windows, this library requires PowerShell 7.2 or newer installed as `pwsh`.
 
 The node executing Unity work must provide:
 
@@ -79,7 +81,7 @@ The scope is lexical and nestable. Previous execution behavior is restored after
 
 Set `JENKINS_UNITY_ENV` to a colon-separated allowlist when a Pipeline-scoped value must enter the container, such as `UNITY_CREDENTIALS_USR:UNITY_CREDENTIALS_PSW`. Listed variables, including variables added by `withEnv` and `withCredentials`, are forwarded by name so their values do not appear in Docker command-line arguments. Empty list entries are ignored, duplicate names are forwarded once, and variable names must match `[A-Za-z_][A-Za-z0-9_]*`. WSLENV-style flags are not supported.
 
-The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh`, `setsid`, and `pkill`; Windows containers must provide PowerShell and `taskkill.exe` for interruption cleanup.
+The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh`, `setsid`, and `pkill`; Windows containers must provide PowerShell 7.2 or newer as `pwsh` and `taskkill.exe` for interruption cleanup.
 
 `WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
 

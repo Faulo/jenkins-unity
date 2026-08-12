@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
+
+## [3.0.0] - 2026-08-12
+
+### Changed
+- Windows commands now use `pwsh` and require PowerShell 7.2 or newer on Windows Jenkins agents and Windows Unity containers.
 - Stream stdout and stderr in real time from captured shell calls on Windows and inside `withUnity` while preserving stdout-only return values.
+
+### Fixed
+- Removed Windows PowerShell stderr merging and error-record filtering; native stderr no longer causes successful commands to fail or pollutes captured stdout.
 
 
 ## [2.20.0] - 2025-06-07

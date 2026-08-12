@@ -17,9 +17,9 @@ def call(String script, Boolean echoScript = false) {
 
     try {
         if (isWindows()) {
-            powershell(
+            pwsh(
                 encoding: 'UTF-8',
-                label: 'powershell -- ' + script,
+                label: 'pwsh -- ' + script,
                 script: streamPowerShell(script, outputFile)
             )
         } else {
@@ -45,16 +45,10 @@ private static String streamPowerShell(String script, String outputFile) {
         "\$jenkinsUnityUtf8 = New-Object System.Text.UTF8Encoding(\$false)\n" +
         "\$jenkinsUnityWriter = New-Object System.IO.StreamWriter(\$jenkinsUnityOutput, \$false, \$jenkinsUnityUtf8)\n" +
         "try {\n" +
-        "    & {\n${script}\n    } 2>&1 | ForEach-Object {\n" +
-        "        \$jenkinsUnityText = if (\$_ -is [System.Management.Automation.ErrorRecord]) {\n" +
-        "            @(\$_.Exception.Message)\n" +
-        "        } else {\n" +
-        "            \$_ | Out-String -Stream\n" +
-        "        }\n" +
+        "    & {\n${script}\n    } | ForEach-Object {\n" +
+        "        \$jenkinsUnityText = \$_ | Out-String -Stream\n" +
         "        foreach (\$jenkinsUnityLine in \$jenkinsUnityText) {\n" +
-        "            if (!(\$_ -is [System.Management.Automation.ErrorRecord])) {\n" +
-        "                \$jenkinsUnityWriter.WriteLine(\$jenkinsUnityLine)\n" +
-        "            }\n" +
+        "            \$jenkinsUnityWriter.WriteLine(\$jenkinsUnityLine)\n" +
         "            Write-Output \$jenkinsUnityLine\n" +
         "        }\n" +
         "    }\n" +
@@ -65,7 +59,7 @@ private static String streamPowerShell(String script, String outputFile) {
 
 private void deleteOutputFile(String outputFile) {
     if (isWindows()) {
-        powershell(
+        pwsh(
             returnStatus: true,
             encoding: 'UTF-8',
             label: 'cleanup captured shell output',
