@@ -29,7 +29,23 @@ unityProject / unityPackage
 - `vars/reportTo*.groovy` send optional build notifications.
 - `vars/executeOnAll.groovy` and `vars/nodeIfCurrentDoesNotMatch.groovy` provide node-selection helpers.
 
-There is no standalone test harness that reproduces Jenkins CPS and dynamic global steps. Changes should receive local syntax and call-chain inspection, followed by an authorized replay of a representative Pipeline on `ci.slothsoft.net` when runtime behavior changes.
+The offline test harness does not reproduce Jenkins CPS and dynamic global steps. Changes should receive local unit coverage, syntax and call-chain inspection, followed by an authorized replay of a representative Pipeline on `ci.slothsoft.net` when runtime behavior changes.
+
+## Offline unit tests
+
+The Maven test suite supports fast JenkinsPipelineUnit tests with mocked steps and behavioral tests using a temporary local Jenkins. Behavioral tests can load this repository as a real Shared Library and exercise actual workspace and Pipeline-step behavior without connecting to the production controller. Run the suite with:
+
+```shell
+mvn test
+```
+
+After Maven has downloaded the dependencies once, the same suite can run without network access:
+
+```shell
+mvn -o test
+```
+
+IntelliJ IDEA can import `pom.xml` and run or debug individual test methods under `src/test/groovy`. These tests cover configuration, branching, generated commands, and Pipeline-step contracts. Jenkins integration remains necessary for CPS persistence, controller restarts, real agents, credentials, and external processes.
 
 `callUnity` invokes the [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) Composer package through `COMPOSE_UNITY`. When unset, `COMPOSE_UNITY` defaults to `compose-unity`. A node may instead set it to another working launcher, such as `composer -d /var/unity exec` on Linux or `composer -d C:\Webserver\unity exec` on Windows.
 
