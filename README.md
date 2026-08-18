@@ -11,8 +11,9 @@ unityProject / unityPackage
   -> callUnity
   -> callComposer
   -> callShellStdout
-     -> pwsh or sh on the Jenkins agent (default)
-     -> docker exec inside withUnity
+     -> execStdout (Strayfarer Pipeline Steps)
+        -> native agent shell (default)
+        -> docker exec inside withUnity
 ```
 
 `callShell`, `callShellStdout`, and `callShellStatus` are also used directly for supporting tools. Jenkins-native steps continue to handle workspaces, credentials, test reports, archives, HTML reports, stashes, and notifications.
@@ -23,8 +24,8 @@ unityProject / unityPackage
 - `vars/unityProject.groovy` handles Unity projects, including versioning, tests, player builds, documentation, Steam, itch.io, and result notifications.
 - `vars/unityPackage.groovy` handles Unity packages, including generated-project tests and Verdaccio publication.
 - `vars/callUnity.groovy` and `vars/callComposer.groovy` initialize and invoke `slothsoft/unity`.
-- `vars/withUnity.groovy` scopes external-process execution to a long-running Unity container.
-- `vars/callShell*.groovy` define cross-platform external-process behavior.
+- `vars/withUnity.groovy` adapts Unity configuration to the plugin's `insideDockerContainer` scope.
+- `vars/callShell*.groovy` preserve the library API while delegating to the plugin's `exec*` steps.
 - `vars/callDocFX.groovy` and `vars/callDotnetFormat.groovy` provide documentation and formatting checks.
 - `vars/reportTo*.groovy` send optional build notifications.
 - `vars/executeOnAll.groovy` and `vars/nodeIfCurrentDoesNotMatch.groovy` provide node-selection helpers.
@@ -47,9 +48,11 @@ mvn -o test
 
 IntelliJ IDEA can import `pom.xml` and run or debug individual test methods under `src/test/groovy`. These tests cover configuration, branching, generated commands, and Pipeline-step contracts. Jenkins integration remains necessary for CPS persistence, controller restarts, real agents, credentials, and external processes.
 
+This library requires [Strayfarer Pipeline Steps](https://github.com/Strayfarer/com.strayfarer.jenkins.pipeline-steps) 0.4.0 or newer on Jenkins.
+
 `callUnity` invokes the [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) Composer package through `COMPOSE_UNITY`. When unset, `COMPOSE_UNITY` defaults to `compose-unity`. A node may instead set it to another working launcher, such as `composer -d /var/unity exec` on Linux or `composer -d C:\Webserver\unity exec` on Windows.
 
-On Windows, this library requires PowerShell 7.2 or newer installed as `pwsh`.
+Native Windows command execution uses `pwsh` when available and Windows PowerShell otherwise. A Windows Unity sidecar requires PowerShell 7.2 or newer installed as `pwsh`.
 
 The node executing Unity work must provide:
 
@@ -75,7 +78,7 @@ Project sources stay below `WORKSPACE`. Generated Unity logs and intermediate re
 
 ## The `withUnity` command
 
-`withUnity` routes library shell helpers through a named, running Docker container while leaving Jenkins-native Pipeline steps on the Jenkins agent:
+`withUnity` delegates to the plugin's `insideDockerContainer` step, routing library shell helpers through a named, running Docker container while leaving Jenkins-native Pipeline steps on the Jenkins agent:
 
 ```groovy
 environment {
@@ -89,7 +92,7 @@ withUnity() {
 
 The closure-only form reads the container name from `JENKINS_UNITY_CONTAINER`. Pass a name explicitly, such as `withUnity('agents_unity')`, to override that default.
 
-Inside the scope, `callShell`, `callShellStdout`, and `callShellStatus` execute through `docker exec`. Their existing streamed-output, captured-stdout, and numeric-status contracts remain unchanged. Calls outside the scope continue to execute directly on the Jenkins agent. Custom `BUILD_*_CALL` closures inherit the scope when they use these helpers.
+`callShell`, `callShellStdout`, and `callShellStatus` are backward-compatible adapters for the plugin's `exec`, `execStdout`, and `execStatus` steps. Inside the scope, those plugin steps execute through `docker exec`; outside it, they execute directly on the Jenkins agent. Custom `BUILD_*_CALL` closures inherit the scope when they use either naming scheme.
 
 All three shell helpers stream stdout and stderr as commands produce them. `callShellStdout` also returns a trimmed copy of stdout; stderr is printed but never added to that return value. This behavior is identical for native Linux, native Windows, and `withUnity` execution.
 
@@ -99,7 +102,7 @@ Set `JENKINS_UNITY_ENV` to a colon-separated allowlist when a Pipeline-scoped va
 
 The Jenkins agent must provide Docker CLI access to the daemon hosting the sidecar. The named container must be running and provide `compose-unity`, `dotnet`, DocFX, `butler`, and `steamcmd`. Linux containers must also provide `/bin/sh`, `setsid`, and `pkill`; Windows containers must provide PowerShell 7.2 or newer as `pwsh` and `taskkill.exe` for interruption cleanup.
 
-`WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. Container replacement is detected through the Docker container ID, causing the replacement container to receive its own one-time `compose-unity update` initialization.
+`WORKSPACE`, `WORKSPACE_TMP`, and nested workspace directories must be mounted into the container at identical absolute paths. Container replacement is detected through the plugin's `PIPELINE_DOCKER_CONTAINER_ID` metadata, causing the replacement container to receive its own one-time `compose-unity update` initialization.
 
 `unityPackage` is not yet adapted for `withUnity`; it changes Jenkins nodes internally and mixes Unity commands with Node.js, NPM, and Verdaccio work.
 
