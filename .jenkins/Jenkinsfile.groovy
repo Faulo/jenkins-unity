@@ -6,11 +6,11 @@ def assertValue(actual, expected, description) {
 
 node('compose-unity') {
     stage('withUnity') {
-        def outsideStatus = execStatus 'compose-unity exec unity-help'
+        def outsideStatus = callShellStatus 'compose-unity exec unity-help'
         assertValue(outsideStatus == 0, false, "compose-unity is expected to fail outside withUnity")
 
         withUnity {
-            def insideStatus = execStatus 'compose-unity exec unity-help'
+            def insideStatus = callShellStatus 'compose-unity exec unity-help'
             assertValue(insideStatus == 0, true, "compose-unity is expected to pass inside withUnity")
         }
     }
