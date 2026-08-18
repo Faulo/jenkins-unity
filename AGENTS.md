@@ -107,7 +107,7 @@ When release operations are authorized, the complete release cycle is:
 1. Implement the features and update the integration tests in `.jenkins/Jenkinsfile.groovy` as needed.
 2. Run the local test suite.
 3. Commit and push the changes.
-4. Update the Jenkins Global Trusted Pipeline Libraries settings to use the pushed commit hash.
+4. Update the Jenkins Global Trusted Pipeline Libraries settings to use the branch pushed in step 3, then clear the Shared Library cache.
 5. Run this library's job in `https://ci.slothsoft.net/job/jenkins/` and watch its complete console log.
 6. If the candidate integration test fails, fix the issue, then repeat from step 2.
 7. After the candidate passes, amend CHANGELOG.md, then commit, push and tag the final version.
