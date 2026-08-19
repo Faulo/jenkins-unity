@@ -1,11 +1,15 @@
 import groovy.json.JsonOutput
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 def call(String webhookUrl, def currentBuild, String name) {
-    call(webhookUrl, currentBuild, name, env.DISCORD_PING_IF, env.DISCORD_PING_USER)
+    String discordPingIf = env.DISCORD_PING_IF
+    String discordPingUser = env.DISCORD_PING_USER
+    call(webhookUrl, currentBuild, name, discordPingIf, discordPingUser)
 }
 
 def call(String webhookUrl, def currentBuild, String name, String discordPingIf) {
-    call(webhookUrl, currentBuild, name, discordPingIf, env.DISCORD_PING_USER)
+    String discordPingUser = env.DISCORD_PING_USER
+    call(webhookUrl, currentBuild, name, discordPingIf, discordPingUser)
 }
 
 def call(String webhookUrl, def currentBuild, String name, String discordPingIf, String discordPingUser) {
@@ -43,7 +47,7 @@ def call(String webhookUrl, def currentBuild, String name, String discordPingIf,
             quiet: true,
             consoleLogResponseBody: false
         )
-    } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+    } catch (FlowInterruptedException e) {
         currentBuild.result = e.result
         throw e
     } catch (Throwable e) {
@@ -70,6 +74,7 @@ String buildChangeLogDescription(def currentBuild, String discordPingIf, String 
     return description
 }
 
+@SuppressWarnings('GrMethodMayBeStatic')
 String buildChangeLogFooter(def currentBuild) {
     String footer = ""
 
@@ -102,15 +107,16 @@ String buildChangeLogFooter(def currentBuild) {
 boolean buildShouldPing(def currentBuild, String discordPingIf) {
     try {
         return currentBuild.resultIsWorseOrEqualTo(discordPingIf)
-    } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+    } catch (FlowInterruptedException e) {
         currentBuild.result = e.result
         throw e
     } catch (Throwable e) {
-        echo "Invalid DISCORD_PING_IF='${threshold}': ${e.class.simpleName}: ${e.message}"
+        echo "Invalid DISCORD_PING_IF='${discordPingIf}': ${e.class.simpleName}: ${e.message}"
         return true
     }
 }
 
+@SuppressWarnings('GrMethodMayBeStatic')
 Integer discordColorForResult(String result) {
     switch (result) {
         case 'SUCCESS':
@@ -128,6 +134,7 @@ Integer discordColorForResult(String result) {
     }
 }
 
+@SuppressWarnings('GrMethodMayBeStatic')
 String truncateDiscord(String value, int maxLength) {
     if (value == null) {
         return ""
