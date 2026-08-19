@@ -10,19 +10,14 @@ Feature switches in `unityProject` and `unityPackage` are strings, not booleans:
 
 ## Command index
 
+### Current commands
+
 | Command | Purpose |
 |---|---|
 | [`unityPipeline`](#unitypipeline) | Check out the current SCM and run `unityProject` on a Unity node. |
 | [`unityProject`](#unityproject) | Test, document, build, deploy, and report on a Unity project. |
 | [`unityPackage`](#unitypackage) | Test, document, publish, and report on a Unity package. |
 | [`withUnity`](#withunity) | Run library shell commands inside a Unity sidecar container. |
-| `withEnvFile` | Removed from this library; use `withEnvFile` from Strayfarer Pipeline Steps. |
-| `nodeIfCurrentDoesNotMatch` | Removed from this library; use `nodeIfCurrentDoesNotMatch` from Strayfarer Pipeline Steps. |
-| `executeOnAll` | Deprecated; use `everyNode` from Strayfarer Pipeline Steps. |
-| `isWindows` | Removed from this library; use `isWindows` from Strayfarer Pipeline Steps. |
-| `callShell` | Deprecated; use `exec` from Strayfarer Pipeline Steps. |
-| `callShellStatus` | Deprecated; use `execStatus` from Strayfarer Pipeline Steps. |
-| `callShellStdout` | Deprecated; use `execStdout` from Strayfarer Pipeline Steps. |
 | [`callComposer`](#callcomposer) | Invoke the configured `compose-unity` launcher. |
 | [`callUnity`](#callunity) | Initialize and invoke a `slothsoft/unity` command. |
 | [`callDotnetFormat`](#calldotnetformat) | Check a solution with `dotnet format` and publish a JUnit report. |
@@ -30,6 +25,18 @@ Feature switches in `unityProject` and `unityPackage` are strings, not booleans:
 | [`reportToDiscord`](#reporttodiscord) | Post a build summary to a Discord webhook. |
 | [`reportToOffice365`](#reporttooffice365) | Post a build summary through the Office 365 Connector plugin. |
 | [`reportToAdaptiveCard`](#reporttoadaptivecard) | Post an Adaptive Card build summary to a webhook. |
+
+### Deprecated and removed commands
+
+| Command | Status |
+|---|---|
+| `callShell` | Deprecated; use `exec` from Strayfarer Pipeline Steps. |
+| `callShellStatus` | Deprecated; use `execStatus` from Strayfarer Pipeline Steps. |
+| `callShellStdout` | Deprecated; use `execStdout` from Strayfarer Pipeline Steps. |
+| `executeOnAll` | Deprecated; use `everyNode` from Strayfarer Pipeline Steps. |
+| `isWindows` | Removed from this library; use `isWindows` from Strayfarer Pipeline Steps. |
+| `nodeIfCurrentDoesNotMatch` | Removed from this library; use `nodeIfCurrentDoesNotMatch` from Strayfarer Pipeline Steps. |
+| `withEnvFile` | Removed from this library; use `withEnvFile` from Strayfarer Pipeline Steps. |
 
 ## Workflow commands
 
@@ -342,7 +349,7 @@ Linux containers need `/bin/sh`, `setsid`, and `pkill`; Windows containers need 
 ## Shell and tool commands
 
 The retained `call*` commands below compose application-specific behavior from the generic commands supplied by
-[Strayfarer Pipeline Steps](https://github.com/Strayfarer/com.strayfarer.jenkins.pipeline-steps), version 0.4.0 or newer.
+[Strayfarer Pipeline Steps](https://github.com/Strayfarer/com.strayfarer.jenkins.pipeline-steps), version 0.5.0 or newer.
 
 ### `callComposer`
 
@@ -518,7 +525,7 @@ The node or Unity sidecar executing these commands must provide the tools requir
 - `steamcmd` for Steam deployment;
 - Butler for itch.io deployment;
 - Node.js and NPM for `unityPackage` metadata and Verdaccio publication;
-- the Jenkins plugins providing the Pipeline steps used by the selected commands, including Strayfarer Pipeline Steps 0.4.0 or newer.
+- the Jenkins plugins providing the Pipeline steps used by the selected commands, including Strayfarer Pipeline Steps 0.5.0 or newer.
 
 Local tests exercise configuration and delegation without reproducing every Jenkins CPS, durability, agent, credential, container, or plugin behavior:
 
