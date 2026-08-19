@@ -8,14 +8,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [4.0.0] - 2026-08-19
+
+### Changed
+- Deprecated `callShell`, `callShellStatus`, and `callShellStdout` now delegate to the corresponding Strayfarer Pipeline Steps commands.
+- `withUnity` now delegates sidecar execution to Strayfarer Pipeline Steps.
+- Require Strayfarer Pipeline Steps 0.5.0 or newer.
+
+### Removed
+- Removed `isWindows`, `nodeIfCurrentDoesNotMatch`, and `withEnvFile`; use the corresponding Strayfarer Pipeline Steps commands instead.
+
+
 ## [3.0.0] - 2026-08-12
 
 ### Changed
 - Windows commands now use `pwsh` and require PowerShell 7.2 or newer on Windows Jenkins agents and Windows Unity containers.
-- Stream stdout and stderr in real time from captured shell calls on Windows and inside `withUnity` while preserving stdout-only return values.
 
 ### Fixed
 - Removed Windows PowerShell stderr merging and error-record filtering; native stderr no longer causes successful commands to fail or pollutes captured stdout.
+
+
+## [2.22.0] - 2026-08-02
+
+### Added
+- Added `withUnity` for scoped command execution inside a running Unity sidecar container.
+- Added `JENKINS_UNITY_CONTAINER` and `JENKINS_UNITY_ENV` configuration for selecting the sidecar and forwarding allowlisted environment variables.
+
+### Fixed
+- Stream stdout and stderr in real time from captured shell calls on Windows and inside `withUnity` while preserving stdout-only return values.
+- Preserve command status and interruption behavior inside `withUnity` and terminate interrupted sidecar processes.
+- Initialize Composer dependencies again when a Unity sidecar container is replaced.
+
+
+## [2.21.1] - 2026-05-15
+
+### Fixed
+- Fixed Jenkins serialization in `executeOnAll`.
+
+
+## [2.21.0] - 2026-05-09
+
+### Added
+- Added `withEnvFile`.
+- Added `nodeIfCurrentDoesNotMatch` and reuse the current node in `unityPackage` when it matches `UNITY_NODE`.
+
+
+## [2.20.13] - 2026-04-25
+
+### Fixed
+- Preserve Pipeline aborts and timeouts instead of converting them to ordinary failures.
+
+
+## [2.20.12] - 2026-04-24
+
+### Added
+- Added `isWindows`.
+- Added an optional command-echo argument to the `callShell` helpers.
+
+### Fixed
+- Fixed Windows detection for shell and DocFX commands.
+
+
+## [2.20.11] - 2026-04-24
+
+### Fixed
+- Fixed parallel `executeOnAll` calls using the wrong node.
+
+
+## [2.20.10] - 2026-04-22
+
+### Added
+- Added optional Discord failure pings and user mentions to `reportToDiscord`.
+
+
+## [2.20.9] - 2026-04-22
+
+### Changed
+- Send Discord reports directly through the webhook instead of the Discord Notifier plugin.
+
+### Fixed
+- Limit Discord report fields to the supported lengths and do not fail builds when webhook requests fail.
+
+
+## [2.20.8] - 2026-04-21
+
+### Fixed
+- Discord notification failures and timeouts no longer change the build result.
+
+
+## [2.20.7] - 2026-04-21
+
+### Added
+- Added a 30-second timeout to Discord notifications.
+
+
+## [2.20.6] - 2025-09-24
+
+### Added
+- Added Steam login initialization before deployment.
+
+### Fixed
+- Fixed the Steam credential environment variable names.
+
+
+## [2.20.5] - 2025-09-14
+
+### Added
+- Use `PLASTICSCM_BRANCH` as the default for `BRANCH_NAME`.
+
+
+## [2.20.4] - 2025-09-01
+
+### Fixed
+- Initialize Composer dependencies once per Jenkins node instead of once globally.
+
+
+## [2.20.3] - 2025-08-21
+
+### Fixed
+- Do not swallow Pipeline interruptions while handling documentation failures or a missing Unity manifest.
+
+
+## [2.20.2] - 2025-07-09
+
+### Added
+- Added `executeOnAll` and `realpath`.
+- Added unityPackage args `VERDACCIO_HOST` and `VERDACCIO_CREDENTIALS`.
+
+### Changed
+- Changed unityPackage defaults for `TEST_CHANGELOG` and `TEST_UNITY` to `'0'`.
+
+### Fixed
+- Fixed authenticated Verdaccio publication and use the direct-storage fallback only when its storage exists.
+- Fixed workspace path handling in Pipeline code.
+
+
+## [2.20.1] - 2025-06-10
+
+### Fixed
+- Fixed stderr handling for captured and status-returning PowerShell commands.
 
 
 ## [2.20.0] - 2025-06-07
@@ -25,8 +156,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for env UNITY_EMPTY_MANIFEST.
 - Added unityPackage arg UNITY_MANIFEST (reads Jenkins file credential, stores in UNITY_EMPTY_MANIFEST).
 
+### Fixed
+- Fixed Unity manifest path resolution on Jenkins agents.
+- Install DocFX on Windows only when it is missing.
 
-## [2.19.0] - 2025-05-06
+
+## [2.19.0] - 2025-05-19
 
 ### Added
 - Added unityProject arg UNITY_CREDENTIALS.
@@ -60,11 +195,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added Map syntax to unityProject and unityPackage calls.
+- Added unityPackage arg EDITORCONFIG_ADDONS for copying formatting configuration into its temporary project.
 
 
-## [2.16.0] - 2025-02-13
+## [2.16.2] - 2025-02-14
 
 ### Added
+- Added result emojis and summaries to Adaptive Card reports.
+
+### Fixed
+- Send Adaptive Card payloads as UTF-8.
+
+
+## [2.16.1] - 2025-02-14
+
+### Fixed
+- Fixed `reportToOffice365` ignoring its webhook argument.
+
+
+## [2.16.0] - 2025-02-14
+
+### Added
+- Added `reportToAdaptiveCard`, `reportToDiscord`, and `reportToOffice365` commands.
 - Added unityProject/unityPackage arg REPORT_TO_ADAPTIVE_CARDS, ADAPTIVE_CARDS_WEBHOOK.
 - Added unityProject/unityPackage arg DISCORD_PING_IF, OFFICE_365_PING_IF, ADAPTIVE_CARDS_PING_IF.
 
@@ -77,13 +229,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added unityProject arg BUILD_MAC_CALL.
 
 
-## [2.14.1] - 2024-10-31
+## [2.14.6] - 2024-10-31
 
 ### Fixed
 - Fixed published version detection.
 
 
-## [2.14.0] - 2024-09-17
+## [2.14.5] - 2024-10-10
+
+### Added
+- Added node and workspace logging to unityPackage calls.
+
+
+## [2.14.4] - 2024-10-06
+
+### Changed
+- `callComposer` now defaults `COMPOSE_UNITY` to `compose-unity`.
+
+
+## [2.14.3] - 2024-10-04
+
+### Fixed
+- Fixed unityPackage paths after moving temporary files to `WORKSPACE_TMP`.
+
+
+## [2.14.2] - 2024-10-04
+
+### Changed
+- Moved temporary unityPackage files to `WORKSPACE_TMP`.
+
+
+## [2.14.1] - 2024-09-25
+
+### Changed
+- Optimize the Composer autoloader during Unity command initialization.
+
+
+## [2.14.0] - 2024-09-18
 
 ### Added
 - Added UNITY_NODE property to unityPackage call.
@@ -137,6 +319,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.8.1] - 2024-04-14
 
+### Changed
+- Restored PowerShell for Windows commands and use UTF-8 for shell calls.
+
 ### Fixed
 - Use writeFile instead of pipes.
 
@@ -168,13 +353,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed DEPLOY_TO_DISCORD to REPORT_TO_DISCORD.
 
 
+## [2.6.3] - 2024-02-27
+
+### Fixed
+- Send Discord reports from finalization so failed builds can still be reported.
+- Read the project version for reporting instead of for every deployment.
+
+
+## [2.6.2] - 2024-02-27
+
+### Added
+- Added commit messages to Discord reports.
+
+
+## [2.6.1] - 2024-02-27
+
+### Fixed
+- Fixed the project version in Discord reports.
+
+
 ## [2.6.0] - 2024-02-27
 
 ### Added
 - Added DEPLOY_TO_DISCORD, DISCORD_WEBHOOK.
 
 
-## [2.5.0] - 2023-11-06
+## [2.5.1] - 2023-11-06
 
 ### Fixed
 - Added -buildTarget parameters to WebGL and Android build commands.
@@ -211,6 +415,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added stage names for projects and packages.
 
 
+## [2.2.3] - 2023-07-28
+
+### Added
+- Added a package ID stage to unityPackage calls.
+
+
+## [2.2.2] - 2023-07-28
+
+### Fixed
+- Delete the temporary Unity project after processing a package.
+
+
+## [2.2.1] - 2023-07-28
+
+### Fixed
+- Do not archive the temporary package created by the direct Verdaccio fallback.
+
+
 ## [2.2.0] - 2023-07-19
 
 ### Fixed
@@ -233,6 +455,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed the expected `COMPOSE_UNITY` envrionment variable to just point to a valid composer installation, excluding the `exec`.
 
 
+## [1.1.3] - 2023-04-24
+
+### Changed
+- Package formatting failures now mark the build unstable instead of stopping it.
+
+
+## [1.1.2] - 2023-04-24
+
+### Fixed
+- Fixed C# solution and DocFX generation order for projects and packages.
+
+
+## [1.1.1] - 2023-04-24
+
+### Fixed
+- Restored the unityProject `TEST_UNITY` default to `'0'`.
+- Fixed documentation setup for unityPackage calls.
+
+
 ## [1.1.0] - 2023-04-24
 
 ### Changed
@@ -247,6 +488,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2023-04-02
 
 ### Added
+- `unityPipeline`: check out and run a Unity project Pipeline.
 - `callShell`: call either `sh` or `powershell`, depending on the node's operating system.
 - `callShellStatus`: `callShell` and return its status code.
 - `callShellStdout`: `callShell` and return its output.
