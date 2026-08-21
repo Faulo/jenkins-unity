@@ -115,7 +115,7 @@
 
     <build>
         <sourceDirectory>vars</sourceDirectory>
-        <testSourceDirectory>src/test/groovy</testSourceDirectory>
+        <testSourceDirectory>test/groovy</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
@@ -123,6 +123,14 @@
                 <version>5.1.0</version>
                 <configuration>
                     <targetBytecode>1.8</targetBytecode>
+                    <testSources>
+                        <testSource>
+                            <directory>${project.basedir}/test/groovy</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </testSource>
+                    </testSources>
                 </configuration>
                 <executions>
                     <execution>
