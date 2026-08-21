@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [4.0.1] - 2026-08-22
+
+### Changed
+- Moved local test sources outside `src` so Jenkins does not inspect or exclude them when loading the Shared Library.
+
+### Fixed
+- Fixed `reportToDiscord` handling of an invalid `DISCORD_PING_IF` value failing while formatting its warning.
+
+
 ## [4.0.0] - 2026-08-19
 
 ### Changed
