@@ -1,5 +1,7 @@
 package net.slothsoft.jenkins.unity
 
+import com.cloudbees.groovy.cps.NonCPS
+
 final class UnityPackagePipelineOptions implements Serializable {
     private static final long serialVersionUID = 1L
 
@@ -24,6 +26,7 @@ final class UnityPackagePipelineOptions implements Serializable {
     final Map<String, String> unityAgents
     final Map<String, String> unityContainers
 
+    @NonCPS
     static UnityPackagePipelineOptions fromMap(Map values = [:]) {
         def infrastructureValues = values.findAll { key, ignored -> INFRASTRUCTURE_DEFAULTS.containsKey(key) }
         def packageValues = values.findAll { key, ignored -> !INFRASTRUCTURE_DEFAULTS.containsKey(key) }

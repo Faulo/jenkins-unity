@@ -1,5 +1,7 @@
 package net.slothsoft.jenkins.unity
 
+import com.cloudbees.groovy.cps.NonCPS
+
 final class PreparedUnityPackage implements Serializable {
     private static final long serialVersionUID = 1L
 

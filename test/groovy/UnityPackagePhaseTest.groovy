@@ -43,12 +43,12 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         helper.registerAllowedMethod('stash', [Map]) { Map args -> stashes << args }
 
         def prepare = loadScript('vars/prepareUnityPackage.groovy')
-        def prepared = prepare.call([
-            PACKAGE_LOCATION: 'Package',
-            VALIDATE_CHANGELOG: false,
-            CHECK_FORMATTING: false,
-            RUN_UNITY_TESTS: false,
-        ])
+        def prepared = prepare.call {
+            PACKAGE_LOCATION = 'Package'
+            VALIDATE_CHANGELOG = false
+            CHECK_FORMATTING = false
+            RUN_UNITY_TESTS = false
+        }
 
         assertEquals(1, metadataReads)
         assertEquals('net.example.package', prepared.context.packageId)

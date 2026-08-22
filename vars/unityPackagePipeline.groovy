@@ -3,9 +3,16 @@ import net.slothsoft.jenkins.unity.UnityPackagePipelineOptions
 
 void call(Closure body) {
     def args = [:]
-    def configuredBody = body.rehydrate(args, body.owner, body.thisObject)
-    configuredBody.resolveStrategy = Closure.DELEGATE_FIRST
-    configuredBody()
+    def originalDelegate = body.delegate
+    def originalResolveStrategy = body.resolveStrategy
+    try {
+        body.delegate = args
+        body.resolveStrategy = Closure.DELEGATE_FIRST
+        body()
+    } finally {
+        body.delegate = originalDelegate
+        body.resolveStrategy = originalResolveStrategy
+    }
     call(UnityPackagePipelineOptions.fromMap(args))
 }
 

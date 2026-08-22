@@ -1,9 +1,12 @@
 package net.slothsoft.jenkins.unity
 
+import com.cloudbees.groovy.cps.NonCPS
+
 final class UnityPackageConfig {
     private UnityPackageConfig() {
     }
 
+    @NonCPS
     static Map<String, Object> normalize(Map values, Map<String, Object> defaults) {
         def unknownKeys = values.keySet() - defaults.keySet()
         if (unknownKeys) {
@@ -13,6 +16,7 @@ final class UnityPackageConfig {
         defaults + values
     }
 
+    @NonCPS
     static String stringValue(Map values, String key) {
         def value = values[key]
         if (!(value instanceof CharSequence)) {
@@ -21,6 +25,7 @@ final class UnityPackageConfig {
         value.toString()
     }
 
+    @NonCPS
     static boolean booleanValue(Map values, String key) {
         def value = values[key]
         if (!(value instanceof Boolean)) {
@@ -29,6 +34,7 @@ final class UnityPackageConfig {
         value
     }
 
+    @NonCPS
     static List<String> stringList(Map values, String key, boolean allowEmpty = true) {
         def value = values[key]
         if (!(value instanceof Collection) || value.any { !(it instanceof CharSequence) }) {
@@ -45,6 +51,7 @@ final class UnityPackageConfig {
         Collections.unmodifiableList(result)
     }
 
+    @NonCPS
     static Map<String, String> stringMap(Map values, String key, Collection<String> requiredKeys) {
         def value = values[key]
         if (!(value instanceof Map) || value.any { entry -> !(entry.key instanceof CharSequence) || !(entry.value instanceof CharSequence) }) {
@@ -60,6 +67,7 @@ final class UnityPackageConfig {
         Collections.unmodifiableMap(new LinkedHashMap<String, String>(result))
     }
 
+    @NonCPS
     static void requireRelativePath(String value, String key) {
         if (!value || value.startsWith('/') || value.startsWith('\\') || value ==~ /^[A-Za-z]:.*/ || value.tokenize('/\\').contains('..')) {
             throw new IllegalArgumentException("${key} must be a non-empty relative path without '..'")

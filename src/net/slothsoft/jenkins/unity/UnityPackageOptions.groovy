@@ -1,5 +1,7 @@
 package net.slothsoft.jenkins.unity
 
+import com.cloudbees.groovy.cps.NonCPS
+
 final class UnityPackageOptions implements Serializable {
     private static final long serialVersionUID = 1L
 
@@ -81,6 +83,7 @@ final class UnityPackageOptions implements Serializable {
     final String adaptiveCardsWebhook
     final String adaptiveCardsThreshold
 
+    @NonCPS
     static UnityPackageOptions fromMap(Map values = [:]) {
         new UnityPackageOptions(UnityPackageConfig.normalize(values, DEFAULTS))
     }
