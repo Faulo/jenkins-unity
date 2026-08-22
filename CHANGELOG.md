@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [4.1.0] - 2026-08-22
+
+### Added
+- Added the `prepareUnityPackage`, `testUnityPackage`, `publishUnityPackage`, and `reportUnityPackage` phases with immutable, serializable package configuration and prepared context objects.
+- Added `unityPackagePipeline` as an opinionated prepare, parallel Linux/Windows test, publish, and report orchestration entry point.
+- Added configurable prepare and publish agent labels, Docker images and arguments, Unity agent labels and sidecar names, and an explicit package branch override.
+- Added local phase, configuration, serialization, controller restart/resume, and orchestration coverage plus real Linux and Windows Unity integration tests using a stub package without registry publication.
+
+### Changed
+- New Unity package APIs use strict Boolean and collection values, reject unknown options, keep credentials scoped to their consuming phase, and do not allocate hidden nodes inside individual phases.
+
+### Deprecated
+- Deprecated the monolithic `unityPackage` step in favor of the new phase APIs or `unityPackagePipeline`.
+
+
 ## [4.0.1] - 2026-08-22
 
 ### Changed
