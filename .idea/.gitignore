@@ -12,3 +12,5 @@
 /groovy-sdk/
 /jenkins-libs/
 /jenkins-sources/
+
+/jarRepositories.xml
