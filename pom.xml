@@ -104,6 +104,12 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -123,6 +129,14 @@
                 <version>5.1.0</version>
                 <configuration>
                     <targetBytecode>1.8</targetBytecode>
+                    <sources>
+                        <source>
+                            <directory>${project.basedir}/src</directory>
+                            <includes>
+                                <include>**/*.groovy</include>
+                            </includes>
+                        </source>
+                    </sources>
                     <testSources>
                         <testSource>
                             <directory>${project.basedir}/test/groovy</directory>
@@ -135,6 +149,7 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>compile</goal>
                             <goal>compileTests</goal>
                         </goals>
                     </execution>

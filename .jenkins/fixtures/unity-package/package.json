@@ -1,0 +1,7 @@
+{
+    "name": "net.slothsoft.jenkins-unity.integration",
+    "version": "1.0.0",
+    "displayName": "Jenkins Unity Integration Fixture",
+    "description": "Stub package used by the jenkins-unity integration build.",
+    "unity": "2022.3"
+}

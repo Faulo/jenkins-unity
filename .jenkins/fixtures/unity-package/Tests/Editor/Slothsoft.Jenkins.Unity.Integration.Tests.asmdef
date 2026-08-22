@@ -1,0 +1,13 @@
+{
+    "name": "Slothsoft.Jenkins.Unity.Integration.Tests",
+    "rootNamespace": "Slothsoft.Jenkins.Unity.Integration.Tests",
+    "references": [
+        "Slothsoft.Jenkins.Unity.Integration"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

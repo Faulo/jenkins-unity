@@ -6,7 +6,8 @@ It is loaded globally and implicitly on [ci.slothsoft.net](https://ci.slothsoft.
 Commands must run in the Jenkins context their contracts describe. Workspace commands require an allocated `node`.
 Commands that inspect `currentBuild`, `scm`, or Jenkins nodes require those Jenkins globals to be available.
 
-Feature switches in `unityProject` and `unityPackage` are strings, not booleans: use `'1'` to enable a feature and `'0'` to disable it.
+Feature switches in the legacy `unityProject` and `unityPackage` steps are strings, not booleans: use `'1'` to enable a feature and `'0'` to disable it.
+The new Unity package release API uses real booleans and typed collections and rejects unknown or incorrectly typed configuration values.
 
 ## Command index
 
@@ -16,7 +17,11 @@ Feature switches in `unityProject` and `unityPackage` are strings, not booleans:
 |---|---|
 | [`unityPipeline`](#unitypipeline) | Check out the current SCM and run `unityProject` on a Unity node. |
 | [`unityProject`](#unityproject) | Test, document, build, deploy, and report on a Unity project. |
-| [`unityPackage`](#unitypackage) | Test, document, publish, and report on a Unity package. |
+| [`unityPackagePipeline`](#unitypackagepipeline) | Run the standard prepare, Linux/Windows test, publish, and report topology for a Unity package. |
+| [`prepareUnityPackage`](#prepareunitypackage) | Resolve and validate package metadata and create portable source stashes. |
+| [`testUnityPackage`](#testunitypackage) | Restore and test a prepared package on the caller-selected Unity agent. |
+| [`publishUnityPackage`](#publishunitypackage) | Restore and publish a prepared package on the caller-selected npm agent. |
+| [`reportUnityPackage`](#reportunitypackage) | Report a prepared package's final build result without requiring a workspace. |
 | [`withUnity`](#withunity) | Run library shell commands inside a Unity sidecar container. |
 | [`callComposer`](#callcomposer) | Invoke the configured `compose-unity` launcher. |
 | [`callUnity`](#callunity) | Initialize and invoke a `slothsoft/unity` command. |
@@ -30,6 +35,7 @@ Feature switches in `unityProject` and `unityPackage` are strings, not booleans:
 
 | Command | Status |
 |---|---|
+| `unityPackage` | Deprecated; use `unityPackagePipeline` or the four package phase steps. |
 | `callShell` | Deprecated; use `exec` from Strayfarer Pipeline Steps. |
 | `callShellStatus` | Deprecated; use `execStatus` from Strayfarer Pipeline Steps. |
 | `callShellStdout` | Deprecated; use `execStdout` from Strayfarer Pipeline Steps. |
@@ -207,7 +213,162 @@ These older names remain accepted. If present, they override the corresponding c
 | `PROJECT_LOCATION` | `LOCATION` |
 | `PROJECT_AUTOVERSION` | `AUTOVERSION` |
 
-### `unityPackage`
+### `unityPackagePipeline`
+
+Provides the opinionated, executor-efficient package release topology. It must be the top-level entry point in a Jenkinsfile; do not call it from another `pipeline`, `stage`, or `node`.
+
+```groovy
+unityPackagePipeline {
+    PACKAGE_LOCATION = 'Packages/net.slothsoft.example'
+    UNITY_TEST_MODES = ['EditMode', 'PlayMode']
+
+    PUBLISH_TO_VERDACCIO = true
+    VERDACCIO_CREDENTIALS = 'Slothsoft-Verdaccio'
+}
+```
+
+The wrapper owns `pipeline { agent none }`, a prepare stage, a non-fail-fast Linux/Windows matrix, a success-gated publish stage and final reporting. It disables concurrent builds, Pipeline resume, restart from a later stage and default checkout. The prepare agent is released before Unity testing starts, and the publish agent is allocated only after both matrix cells have completed successfully.
+
+Its infrastructure settings are separate from package behavior and are all configurable:
+
+| Option | Default | Contract |
+|---|---|---|
+| `PREPARE_AGENT` | `'npm'` | Jenkins label used by the prepare Docker agent. |
+| `PREPARE_DOCKER_IMAGE` | `'node:22-bookworm-slim'` | Pinned image used for checkout and preparation. |
+| `PREPARE_DOCKER_ARGS` | `''` | Additional Docker agent arguments for preparation. |
+| `PUBLISH_AGENT` | `'npm'` | Jenkins label used by the publish Docker agent. |
+| `PUBLISH_DOCKER_IMAGE` | `'node:22-bookworm-slim'` | Pinned image used for publication. |
+| `PUBLISH_DOCKER_ARGS` | `''` | Additional Docker agent arguments for publication. |
+| `UNITY_AGENTS` | `[linux: 'linux && compose-unity', windows: 'windows && compose-unity']` | Exact Linux and Windows label expressions used by the matrix. Both keys are required. |
+| `UNITY_CONTAINERS` | `[linux: '', windows: '']` | Optional sidecar names. Empty values retain each agent's `JENKINS_UNITY_CONTAINER`; non-empty values override it for that matrix cell. |
+
+Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before entering the Pipeline.
+
+### Unity package options
+
+The four package phases share one normalized `UnityPackageOptions` value. Public Map and DSL adapters require real `Boolean`, `Collection<String>` and `Map<String, String>` values; the legacy `'0'`/`'1'` switches are intentionally not accepted.
+
+| Option | Default | Contract |
+|---|---|---|
+| `PACKAGE_LOCATION` | `'.'` | Relative package directory in the prepare workspace. Absolute paths and `..` are rejected. |
+| `PACKAGE_ID` | `''` | Package ID override; empty reads `name` from `package.json`. |
+| `PACKAGE_VERSION` | `''` | Version override; empty reads `version` from `package.json`. |
+| `SOURCE_INCLUDES` | `['**']` | Jenkins stash include patterns for prepared source. |
+| `SOURCE_EXCLUDES` | Generated Unity directories and `.git` | Jenkins stash exclusions. Credentials are bound only in later phases and can never enter these stashes. |
+| `VALIDATE_CHANGELOG` | `true` | Require a dated changelog entry for the exact version, or the stable version for a prerelease. |
+| `CHANGELOG_FILE` | `'CHANGELOG.md'` | Changelog path relative to the package. |
+| `CHECK_FORMATTING` | `true` | Generate a solution, run `dotnet format`, and publish its JUnit report. |
+| `EDITORCONFIG_FILE` | `'.editorconfig'` | Repository-relative EditorConfig file copied to the generated project's root. |
+| `FORMATTING_FILES` | `['.editor/**', 'Directory.Build.props']` | Optional repository-relative files restored into the generated project. |
+| `FORMATTING_EXCLUDE` | `[]` | Paths passed to `dotnet format --exclude`. |
+| `RUN_UNITY_TESTS` | `true` | Install the package into a temporary project and run Unity Test Runner. |
+| `UNITY_TEST_MODES` | `['EditMode', 'PlayMode']` | Non-empty Unity test-mode argument list when tests are enabled. |
+| `BUILD_DOCUMENTATION` | `false` | Generate and publish DocFX documentation. Documentation failure makes the build unstable. |
+| `UNITY_CREDENTIALS` | `''` | Optional Unity username/password credential ID, bound only during testing. |
+| `EMAIL_CREDENTIALS` | `''` | Optional email username/password credential ID, bound only during testing. |
+| `UNITY_MANIFEST_CREDENTIALS` | `''` | Optional Unity manifest file credential ID, bound only during testing. |
+| `PUBLISH_TO_VERDACCIO` | `false` | Enable Verdaccio publication. Publication is opt-in. |
+| `PUBLISH_ON_FAILURE` | `false` | Permit publication when the current result is not `SUCCESS`. |
+| `PUBLISH_RELEASES` | `true` | Permit versions without a prerelease suffix. |
+| `PUBLISH_PRERELEASES` | `true` | Permit versions with a prerelease suffix. |
+| `PUBLISH_BRANCHES` | `['main', '/main']` | Exact prepared branch names permitted to publish. |
+| `VERDACCIO_URL` | `'http://verdaccio:4873'` | Registry URL used by npm and generated package metadata. |
+| `VERDACCIO_HOST` | `'verdaccio:4873'` | Host used for project-local npm authentication. |
+| `VERDACCIO_STORAGE` | `''` | Direct-storage fallback root. Empty disables the fallback. |
+| `VERDACCIO_CREDENTIALS` | `''` | Optional npm token credential ID, bound only around publication. |
+| `REPORT_TO_DISCORD` | `false` | Enable Discord reporting. |
+| `DISCORD_WEBHOOK` | `''` | Discord webhook URL. |
+| `DISCORD_THRESHOLD` | `''` | Empty reports every result; otherwise report only at or above this severity. |
+| `REPORT_TO_OFFICE_365` | `false` | Enable Office 365 reporting. |
+| `OFFICE_365_WEBHOOK` | `''` | Office 365 webhook URL. |
+| `OFFICE_365_THRESHOLD` | `''` | Optional result threshold. |
+| `REPORT_TO_ADAPTIVE_CARDS` | `false` | Enable Adaptive Card reporting. |
+| `ADAPTIVE_CARDS_WEBHOOK` | `''` | Adaptive Card webhook URL. |
+| `ADAPTIVE_CARDS_THRESHOLD` | `''` | Optional result threshold. |
+
+### `prepareUnityPackage`
+
+Runs in the caller's allocated workspace. It resolves the branch, package ID and version exactly once, validates source-only policy, and creates uniquely named source and formatting-configuration stashes. It returns an immutable, `Serializable` `PreparedUnityPackage` containing normalized options, portable metadata and stash identifiers.
+
+It never allocates or selects a node and never stores a workspace path, credential, Pipeline script, closure, Jenkins object, matcher or stream in the returned value.
+
+```groovy
+def preparedPackage = prepareUnityPackage(
+    PACKAGE_LOCATION: 'Packages/net.slothsoft.example',
+    RUN_UNITY_TESTS: true
+)
+```
+
+### `testUnityPackage`
+
+Runs on the caller-selected Unity agent and never allocates another node. It restores prepared source below a unique directory derived from `pwd(tmp: true)`, binds credentials locally, enters `withUnity`, creates the temporary project and solution as needed, then performs formatting, documentation and Unity tests with their JUnit publication behavior.
+
+The same prepared object may be passed concurrently to Linux and Windows calls. Each call has a distinct temporary directory and only reads shared DTO and stash data.
+
+### `publishUnityPackage`
+
+Runs on the caller-selected npm/Verdaccio-capable agent and never allocates another node. It restores prepared source afresh, verifies the prepared branch, release policy and final build result, checks whether the exact version already exists, and binds the npm token only around `npm publish`.
+
+When npm returns a nonzero status and `VERDACCIO_STORAGE` identifies existing package storage, it uses `npm pack --json` metadata for the direct-storage fallback. An empty or missing storage configuration fails instead of silently falling back.
+
+### `reportUnityPackage`
+
+Uses only prepared metadata and `currentBuild`; it does not call `pwd`, allocate a node or require a workspace. This makes it safe to call from an agent-free `post { always { ... } }` block.
+
+### Custom Unity package Pipeline
+
+Pipelines that need a different graph may call the phases directly. The caller owns all agents, stages and parallelism:
+
+```groovy
+def preparedPackage
+
+pipeline {
+    agent none
+
+    stages {
+        stage('Prepare') {
+            agent { label 'npm' }
+            steps {
+                checkout scm
+                script {
+                    preparedPackage = prepareUnityPackage(PACKAGE_LOCATION: 'Package')
+                }
+            }
+        }
+
+        stage('Test') {
+            failFast false
+            parallel {
+                stage('Linux') {
+                    agent { label 'linux && compose-unity' }
+                    steps { script { testUnityPackage(preparedPackage) } }
+                }
+                stage('Windows') {
+                    agent { label 'windows && compose-unity' }
+                    steps { script { testUnityPackage(preparedPackage) } }
+                }
+            }
+        }
+
+        stage('Publish') {
+            agent { label 'npm' }
+            steps { script { publishUnityPackage(preparedPackage) } }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (preparedPackage != null) {
+                    reportUnityPackage(preparedPackage)
+                }
+            }
+        }
+    }
+}
+```
+
+### `unityPackage` (deprecated)
 
 Processes a Unity package in the current Jenkins workspace. It can validate the changelog, create a temporary Unity project, run checks,
 generate documentation, publish the package to Verdaccio, and send build notifications.
