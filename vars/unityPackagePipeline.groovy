@@ -24,7 +24,7 @@ void call(UnityPackagePipelineOptions pipelineOptions) {
     PreparedUnityPackage preparedPackage
 
     pipeline {
-        agent none
+        agent('none')
 
         options {
             disableConcurrentBuilds()
