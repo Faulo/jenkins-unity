@@ -203,11 +203,48 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     }
 
     @Test
-    void loadsTheTopLevelDeclarativeWrapper() {
-        def wrapper = loadScript('vars/unityPackagePipeline.groovy')
+    void orchestratesConfiguredAgentsAndImages() {
+        def nodes = []
+        def images = []
+        def tested = []
+        def published = []
+        def reported = []
+        def prepared = preparedPackage([CHECK_FORMATTING: false, RUN_UNITY_TESTS: false])
+        binding.setVariable('scm', new Expando())
+        binding.setVariable('docker', new Expando(image: { String imageName ->
+            images << imageName
+            new Expando(inside: { String ignored, Closure body -> body() })
+        }))
+        helper.registerAllowedMethod('stage', [String, Closure]) { String ignored, Closure body -> body() }
+        helper.registerAllowedMethod('node', [String, Closure]) { String label, Closure body ->
+            nodes << label
+            body()
+        }
+        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('parallel', [Map]) { Map branches ->
+            branches.findAll { name, ignored -> name != 'failFast' }.each { name, branch -> branch() }
+        }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored -> prepared }
+        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
+        helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
+        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> reported << value }
 
-        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call', Object).empty)
-        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call').empty)
+        def wrapper = loadScript('vars/unityPackagePipeline.groovy')
+        wrapper.call([
+            PREPARE_AGENT: 'prepare-node',
+            PREPARE_DOCKER_IMAGE: 'prepare-image',
+            PUBLISH_AGENT: 'publish-node',
+            PUBLISH_DOCKER_IMAGE: 'publish-image',
+            UNITY_AGENTS: [linux: 'linux-node', windows: 'windows-node'],
+            UNITY_CONTAINERS: [linux: 'linux-container', windows: ''],
+        ])
+
+        assertEquals(['prepare-node', 'linux-node', 'windows-node', 'publish-node'], nodes)
+        assertEquals(['prepare-image', 'publish-image'], images)
+        assertEquals([prepared, prepared], tested)
+        assertEquals([prepared], published)
+        assertEquals([prepared], reported)
     }
 
     private PreparedUnityPackage preparedPackage(Map overrides = [:]) {

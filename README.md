@@ -227,7 +227,7 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper owns `pipeline { agent none }`, a prepare stage, a non-fail-fast Linux/Windows matrix, a success-gated publish stage and final reporting. It disables concurrent builds, Pipeline resume, restart from a later stage and default checkout. The prepare agent is released before Unity testing starts, and the publish agent is allocated only after both matrix cells have completed successfully.
+The wrapper owns scripted prepare, parallel Linux/Windows test and success-gated publish stages plus final reporting. The prepare agent is released before Unity testing starts, and the publish agent is allocated only after both test branches have completed successfully. The Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
 Its infrastructure settings are separate from package behavior and are all configurable:
 
@@ -242,7 +242,7 @@ Its infrastructure settings are separate from package behavior and are all confi
 | `UNITY_AGENTS` | `[linux: 'linux && compose-unity', windows: 'windows && compose-unity']` | Exact Linux and Windows label expressions used by the matrix. Both keys are required. |
 | `UNITY_CONTAINERS` | `[linux: '', windows: '']` | Optional sidecar names. Empty values retain each agent's `JENKINS_UNITY_CONTAINER`; non-empty values override it for that matrix cell. |
 
-Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before entering the Pipeline.
+Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
 
 ### Unity package options
 

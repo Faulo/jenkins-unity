@@ -25,94 +25,57 @@ def call(Object input = [:]) {
     }
 
     PreparedUnityPackage preparedPackage
-
-    pipeline {
-        agent none
-
-        options {
-            disableConcurrentBuilds()
-            disableResume()
-            disableRestartFromStage()
-            skipDefaultCheckout()
+    try {
+        stage('Prepare') {
+            node(pipelineOptions.prepareAgent) {
+                docker.image(pipelineOptions.prepareDockerImage).inside(pipelineOptions.prepareDockerArgs) {
+                    checkout scm
+                    preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
+                }
+            }
         }
 
-        stages {
-            stage('Prepare') {
-                agent {
-                    docker {
-                        label "${pipelineOptions.prepareAgent}"
-                        image "${pipelineOptions.prepareDockerImage}"
-                        args "${pipelineOptions.prepareDockerArgs}"
-                    }
-                }
-                steps {
-                    checkout scm
-                    script {
-                        preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
-                    }
-                }
-            }
+        stage('Test') {
+            def linuxAgent = pipelineOptions.unityAgents.linux
+            def windowsAgent = pipelineOptions.unityAgents.windows
+            def linuxContainer = pipelineOptions.unityContainers.linux
+            def windowsContainer = pipelineOptions.unityContainers.windows
+            parallel(
+                linux: {
+                    testOnAgent('linux', linuxAgent, linuxContainer, preparedPackage)
+                },
+                windows: {
+                    testOnAgent('windows', windowsAgent, windowsContainer, preparedPackage)
+                },
+                failFast: false
+            )
+        }
 
-            stage('Test') {
-                failFast false
-                matrix {
-                    axes {
-                        axis {
-                            name 'OS'
-                            values 'linux', 'windows'
-                        }
-                    }
-                    agent {
-                        label "${pipelineOptions.unityAgents[OS]}"
-                    }
-                    stages {
-                        stage('Unity package') {
-                            steps {
-                                script {
-                                    def container = pipelineOptions.unityContainers[OS]
-                                    if (container) {
-                                        withEnv(["JENKINS_UNITY_CONTAINER=${container}"]) {
-                                            testUnityPackage(preparedPackage)
-                                        }
-                                    } else {
-                                        testUnityPackage(preparedPackage)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
+        if (currentBuild.currentResult == 'SUCCESS') {
             stage('Publish') {
-                when {
-                    beforeAgent true
-                    expression {
-                        preparedPackage != null && currentBuild.currentResult == 'SUCCESS'
-                    }
-                }
-                agent {
-                    docker {
-                        label "${pipelineOptions.publishAgent}"
-                        image "${pipelineOptions.publishDockerImage}"
-                        args "${pipelineOptions.publishDockerArgs}"
-                    }
-                }
-                steps {
-                    script {
+                node(pipelineOptions.publishAgent) {
+                    docker.image(pipelineOptions.publishDockerImage).inside(pipelineOptions.publishDockerArgs) {
                         publishUnityPackage(preparedPackage)
                     }
                 }
             }
         }
+    } finally {
+        if (preparedPackage != null) {
+            reportUnityPackage(preparedPackage)
+        }
+    }
+}
 
-        post {
-            always {
-                script {
-                    if (preparedPackage != null) {
-                        reportUnityPackage(preparedPackage)
-                    }
+private void testOnAgent(String os, String agent, String container, PreparedUnityPackage preparedPackage) {
+    node(agent) {
+        stage("Unity package (${os})") {
+            if (container) {
+                withEnv(["JENKINS_UNITY_CONTAINER=${container}"]) {
+                    testUnityPackage(preparedPackage)
                 }
+            } else {
+                testUnityPackage(preparedPackage)
             }
         }
     }
