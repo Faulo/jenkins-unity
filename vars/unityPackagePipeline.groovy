@@ -1,30 +1,33 @@
 import net.slothsoft.jenkins.unity.PreparedUnityPackage
 import net.slothsoft.jenkins.unity.UnityPackagePipelineOptions
 
-void call(Closure body) {
-    def args = [:]
-    def originalDelegate = body.delegate
-    def originalResolveStrategy = body.resolveStrategy
-    try {
-        body.delegate = args
-        body.resolveStrategy = Closure.DELEGATE_FIRST
-        body()
-    } finally {
-        body.delegate = originalDelegate
-        body.resolveStrategy = originalResolveStrategy
+def call(Object input = [:]) {
+    UnityPackagePipelineOptions pipelineOptions
+    if (input instanceof Closure) {
+        def args = [:]
+        def originalDelegate = input.delegate
+        def originalResolveStrategy = input.resolveStrategy
+        try {
+            input.delegate = args
+            input.resolveStrategy = Closure.DELEGATE_FIRST
+            input()
+        } finally {
+            input.delegate = originalDelegate
+            input.resolveStrategy = originalResolveStrategy
+        }
+        pipelineOptions = UnityPackagePipelineOptions.fromMap(args)
+    } else if (input instanceof Map) {
+        pipelineOptions = UnityPackagePipelineOptions.fromMap(input)
+    } else if (input instanceof UnityPackagePipelineOptions) {
+        pipelineOptions = input
+    } else {
+        throw new IllegalArgumentException("Expected Map, Closure, or UnityPackagePipelineOptions, got ${input?.getClass()?.name ?: 'null'}")
     }
-    call(UnityPackagePipelineOptions.fromMap(args))
-}
 
-void call(Map args) {
-    call(UnityPackagePipelineOptions.fromMap(args))
-}
-
-void call(UnityPackagePipelineOptions pipelineOptions) {
     PreparedUnityPackage preparedPackage
 
     pipeline {
-        agent('none')
+        agent none
 
         options {
             disableConcurrentBuilds()

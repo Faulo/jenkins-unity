@@ -205,8 +205,8 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     void loadsTheTopLevelDeclarativeWrapper() {
         def wrapper = loadScript('vars/unityPackagePipeline.groovy')
 
-        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call', Map).empty)
-        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call', Closure).empty)
+        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call', Object).empty)
+        assertFalse(wrapper.metaClass.respondsTo(wrapper, 'call').empty)
     }
 
     private PreparedUnityPackage preparedPackage(Map overrides = [:]) {
