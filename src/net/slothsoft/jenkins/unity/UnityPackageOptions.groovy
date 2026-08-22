@@ -9,6 +9,7 @@ final class UnityPackageOptions implements Serializable {
         PACKAGE_LOCATION: '.',
         PACKAGE_ID: '',
         PACKAGE_VERSION: '',
+        PACKAGE_BRANCH: '',
         SOURCE_INCLUDES: ['**'],
         SOURCE_EXCLUDES: ['.git/**', 'Library/**', 'Logs/**', 'Obj/**', 'Temp/**', 'UserSettings/**'],
 
@@ -50,6 +51,7 @@ final class UnityPackageOptions implements Serializable {
     final String packageLocation
     final String packageId
     final String packageVersion
+    final String packageBranch
     final List<String> sourceIncludes
     final List<String> sourceExcludes
     final boolean validateChangelog
@@ -93,6 +95,7 @@ final class UnityPackageOptions implements Serializable {
         UnityPackageConfig.requireRelativePath(packageLocation, 'PACKAGE_LOCATION')
         packageId = UnityPackageConfig.stringValue(values, 'PACKAGE_ID')
         packageVersion = UnityPackageConfig.stringValue(values, 'PACKAGE_VERSION')
+        packageBranch = UnityPackageConfig.stringValue(values, 'PACKAGE_BRANCH')
         sourceIncludes = UnityPackageConfig.stringList(values, 'SOURCE_INCLUDES', false)
         sourceExcludes = UnityPackageConfig.stringList(values, 'SOURCE_EXCLUDES')
         validateChangelog = UnityPackageConfig.booleanValue(values, 'VALIDATE_CHANGELOG')

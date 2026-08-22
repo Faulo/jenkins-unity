@@ -14,12 +14,14 @@ class UnityPackageOptionsTest {
     void normalizesFreshTypedConfiguration() {
         def options = UnityPackageOptions.fromMap([
             PACKAGE_LOCATION: 'Packages/net.example.test',
+            PACKAGE_BRANCH: 'release',
             VALIDATE_CHANGELOG: false,
             UNITY_TEST_MODES: ['EditMode'],
             PUBLISH_BRANCHES: ['release'],
         ])
 
         assertEquals('Packages/net.example.test', options.packageLocation)
+        assertEquals('release', options.packageBranch)
         assertFalse(options.validateChangelog)
         assertEquals(['EditMode'], options.unityTestModes)
         assertEquals(['release'], options.publishBranches)

@@ -29,9 +29,9 @@ PreparedUnityPackage call(UnityPackageOptions options) {
         error "Package folder '${options.packageLocation}' does not exist in the current workspace."
     }
 
-    def branch = env.BRANCH_NAME ?: env.PLASTICSCM_BRANCH
+    def branch = options.packageBranch ?: env.BRANCH_NAME ?: env.PLASTICSCM_BRANCH
     if (!branch) {
-        error 'BRANCH_NAME or PLASTICSCM_BRANCH is required.'
+        error 'PACKAGE_BRANCH, BRANCH_NAME, or PLASTICSCM_BRANCH is required.'
     }
 
     def discovered = dir(packageDirectory) {

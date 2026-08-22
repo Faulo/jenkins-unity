@@ -253,6 +253,7 @@ The four package phases share one normalized `UnityPackageOptions` value. Public
 | `PACKAGE_LOCATION` | `'.'` | Relative package directory in the prepare workspace. Absolute paths and `..` are rejected. |
 | `PACKAGE_ID` | `''` | Package ID override; empty reads `name` from `package.json`. |
 | `PACKAGE_VERSION` | `''` | Version override; empty reads `version` from `package.json`. |
+| `PACKAGE_BRANCH` | `''` | Branch override; empty uses `BRANCH_NAME`, then `PLASTICSCM_BRANCH`. Standalone jobs can set this explicitly. |
 | `SOURCE_INCLUDES` | `['**']` | Jenkins stash include patterns for prepared source. |
 | `SOURCE_EXCLUDES` | Generated Unity directories and `.git` | Jenkins stash exclusions. Credentials are bound only in later phases and can never enter these stashes. |
 | `VALIDATE_CHANGELOG` | `true` | Require a dated changelog entry for the exact version, or the stable version for a prerelease. |

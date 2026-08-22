@@ -45,6 +45,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def prepare = loadScript('vars/prepareUnityPackage.groovy')
         def prepared = prepare.call {
             PACKAGE_LOCATION = 'Package'
+            PACKAGE_BRANCH = 'release'
             VALIDATE_CHANGELOG = false
             CHECK_FORMATTING = false
             RUN_UNITY_TESTS = false
@@ -53,7 +54,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals(1, metadataReads)
         assertEquals('net.example.package', prepared.context.packageId)
         assertEquals('1.2.3', prepared.context.version)
-        assertEquals('main', prepared.context.branch)
+        assertEquals('release', prepared.context.branch)
         assertEquals(1, stashes.size())
         assertTrue(stashes[0].name.startsWith('unity-package-source-'))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
