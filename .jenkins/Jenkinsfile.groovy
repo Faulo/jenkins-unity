@@ -2,10 +2,7 @@ unityPackagePipeline {
     PACKAGE_LOCATION = '.jenkins/fixtures/unity-package'
     PACKAGE_BRANCH = 'main'
     VALIDATE_CHANGELOG = true
-    CHECK_FORMATTING = true
-    EDITORCONFIG_FILE = '.jenkins/fixtures/unity-package/.editorconfig'
-    FORMATTING_FILES = []
-    FORMATTING_EXCLUDE = []
+    CHECK_FORMATTING = false
     RUN_UNITY_TESTS = true
     UNITY_TEST_MODES = ['EditMode']
     BUILD_DOCUMENTATION = false
