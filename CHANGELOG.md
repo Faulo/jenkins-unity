@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [5.0.1] - 2026-08-25
+
+### Fixed
+- Skip the publish stage entirely when `PUBLISH_TO_VERDACCIO` is disabled.
+- Give each enabled package test exactly one descriptive stage, including `Testing: Linux` and `Testing: Windows`, without a singular `Test` wrapper stage.
+- Exercise `TEST_FORMATTING` with real Unity solution generation and `dotnet format` calls on Linux and Windows in the integration build.
+
+
 ## [5.0.0] - 2026-08-25
 
 ### Changed
