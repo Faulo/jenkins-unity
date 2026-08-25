@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [5.0.0] - 2026-08-25
+
+### Changed
+- Renamed the fresh Unity package options to `TEST_CHANGELOG`, `CHANGELOG_LOCATION`, `TEST_FORMATTING`, `FORMATTING_LOCATION`, `FORMATTING_ADDONS`, `FORMATTING_EXCLUSIONS`, and `TEST_UNITY`.
+- Renamed the prepare and publish container options to `PREPARE_IMAGE`, `PREPARE_ARGS`, `PUBLISH_IMAGE`, and `PUBLISH_ARGS`, and use the `docker` agent label and `node:slim` image by default.
+- Made `UNITY_AGENTS` an arbitrary map of parallel branch names to Jenkins labels, with `Linux` and `Windows` defaults. An empty map skips the test stage.
+- Reduced the default source exclusions to `.git/**` and enabled `/verdaccio/storage` as the default direct-storage fallback.
+
+### Removed
+- Removed the fixed `linux` and `windows` `UNITY_AGENTS` contract and the separate `UNITY_CONTAINERS` option.
+- Removed the superseded 4.1.0 option names from the fresh Unity package API.
+
+### Fixed
+- Restored the existing Pipeline Steps and `withUnity` integration coverage alongside the Unity package integration tests.
+
+
 ## [4.1.0] - 2026-08-22
 
 ### Added
