@@ -227,7 +227,9 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper owns scripted preparation, ordered test agents, opt-in publication, and final reporting. Preparation appears as `Package: <package ID>`, followed by changelog validation as `Test: CHANGELOG.md`. Each configured Unity agent then appears as `Agent: <name>`, with the stage enclosing its node allocation and formatting as `Test: .editorconfig` and Unity modes as `Test: Unity (EditMode PlayMode)`. Agents and their tests run sequentially in `UNITY_AGENTS` declaration order so the Jenkins stage graph is deterministic. Each enabled `TEST_*` option creates exactly one focused stage per applicable scope: changelog validation once, and formatting and Unity testing once per agent. Verdaccio publication appears as `Publish: Verdaccio`; that stage likewise encloses its node allocation, and both are omitted when `PUBLISH_TO_VERDACCIO` is disabled. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
+The wrapper is the sole owner of Pipeline stages. Preparation appears as `Package: <package ID>`. The first entry in `UNITY_AGENTS` runs the singleton `Test: CHANGELOG.md`, `Test: .editorconfig`, and `Build: DocFX documentation` stages when enabled, followed by `Test: Unity (EditMode PlayMode)`. Every remaining entry runs only the Unity Test Runner stage. Agent stages and their nested work run sequentially in map declaration order, so the Jenkins stage graph is deterministic. `[:]` skips all singleton and per-agent work.
+
+Verdaccio publication appears as `Publish: Verdaccio`; that stage and its node allocation are omitted when `PUBLISH_TO_VERDACCIO` is disabled. Each enabled reporting method that satisfies its result threshold gets its own agent-free `Report: Discord`, `Report: Office 365`, or `Report: Adaptive Cards` stage. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
 Its infrastructure settings are separate from package behavior and are all configurable:
 
@@ -288,7 +290,7 @@ The four package phases share one normalized `UnityPackageOptions` value. Public
 
 ### `prepareUnityPackage`
 
-Runs in the caller's allocated workspace. It resolves the branch, package ID and version exactly once, validates source-only policy, and creates uniquely named source and formatting-configuration stashes. It returns an immutable, `Serializable` `PreparedUnityPackage` containing normalized options, portable metadata and stash identifiers.
+Runs in the caller's allocated workspace. It only prepares portable package data: it resolves the branch, package ID and version and creates uniquely named source and formatting-configuration stashes. It performs no changelog or formatting assertions and allocates no stages or nodes. It returns an immutable, `Serializable` `PreparedUnityPackage` containing normalized options, portable metadata and stash identifiers.
 
 It never allocates or selects a node and never stores a workspace path, credential, Pipeline script, closure, Jenkins object, matcher or stream in the returned value.
 
@@ -301,7 +303,7 @@ def preparedPackage = prepareUnityPackage(
 
 ### `testUnityPackage`
 
-Runs on the caller-selected Unity agent and never allocates another node. It restores prepared source below a unique directory derived from `pwd(tmp: true)`, binds credentials locally, enters `withUnity`, creates the temporary project and solution as needed, then performs formatting, documentation and Unity tests with their JUnit publication behavior.
+Runs on the caller-selected Unity agent and never allocates a stage or another node. It restores prepared source below a unique directory derived from `pwd(tmp: true)`, binds credentials locally, enters `withUnity`, creates the temporary project and solution as needed, then performs formatting, documentation and Unity tests with their JUnit publication behavior. The one-argument form runs every enabled operation without adding stages. The orchestration wrapper uses the two-argument operation form (`changelog`, `formatting`, `documentation`, or `unity`) to place each operation in the appropriate stage.
 
 The same prepared object may be passed concurrently to Linux and Windows calls. Each call has a distinct temporary directory and only reads shared DTO and stash data.
 
@@ -313,7 +315,7 @@ When npm returns a nonzero status and `VERDACCIO_STORAGE` identifies existing pa
 
 ### `reportUnityPackage`
 
-Uses only prepared metadata and `currentBuild`; it does not call `pwd`, allocate a node or require a workspace. This makes it safe to call from an agent-free `post { always { ... } }` block.
+Uses only prepared metadata and `currentBuild`; it does not allocate a stage, call `pwd`, allocate a node or require a workspace. The one-argument form sends every enabled report that satisfies its threshold. The wrapper uses the two-argument method form (`discord`, `office365`, or `adaptiveCards`) inside its corresponding report stage.
 
 ### Custom Unity package Pipeline
 

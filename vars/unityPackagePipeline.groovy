@@ -29,15 +29,24 @@ def call(Object input = [:]) {
         node(pipelineOptions.prepareAgent) {
             docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
                 checkout scm
-                preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
+                def packageId = packageIdForStage(pipelineOptions)
+                stage("Package: ${packageId}") {
+                    preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
+                }
             }
         }
 
         if (pipelineOptions.unityAgents) {
             def agentNames = new ArrayList(pipelineOptions.unityAgents.keySet())
-            for (int index = 0; index < agentNames.size(); index++) {
-                def name = agentNames[index]
-                testOnAgent(name, pipelineOptions.unityAgents[name], preparedPackage)
+            def firstName = agentNames[0]
+            if (hasSingletonWork(preparedPackage) || preparedPackage.options.testUnity) {
+                testOnFirstAgent(firstName, pipelineOptions.unityAgents[firstName], preparedPackage)
+            }
+            if (preparedPackage.options.testUnity) {
+                for (int index = 1; index < agentNames.size(); index++) {
+                    def name = agentNames[index]
+                    testUnityOnAgent(name, pipelineOptions.unityAgents[name], preparedPackage)
+                }
             }
         }
 
@@ -52,15 +61,87 @@ def call(Object input = [:]) {
         }
     } finally {
         if (preparedPackage != null) {
-            reportUnityPackage(preparedPackage)
+            report(preparedPackage)
         }
     }
 }
 
-private void testOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
+private void testOnFirstAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
     stage("Agent: ${name}") {
         node(agent) {
-            testUnityPackage(preparedPackage)
+            def options = preparedPackage.options
+            if (options.testChangelog) {
+                stage("Test: ${displayName(options.changelogLocation)}") {
+                    testUnityPackage(preparedPackage, 'changelog')
+                }
+            }
+            if (options.testFormatting) {
+                stage("Test: ${displayName(options.formattingLocation)}") {
+                    testUnityPackage(preparedPackage, 'formatting')
+                }
+            }
+            if (options.buildDocumentation) {
+                stage('Build: DocFX documentation') {
+                    testUnityPackage(preparedPackage, 'documentation')
+                }
+            }
+            if (options.testUnity) {
+                stage("Test: Unity (${options.unityTestModes.join(' ')})") {
+                    testUnityPackage(preparedPackage, 'unity')
+                }
+            }
         }
+    }
+}
+
+private void testUnityOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
+    stage("Agent: ${name}") {
+        node(agent) {
+            stage("Test: Unity (${preparedPackage.options.unityTestModes.join(' ')})") {
+                testUnityPackage(preparedPackage, 'unity')
+            }
+        }
+    }
+}
+
+private void report(PreparedUnityPackage preparedPackage) {
+    def options = preparedPackage.options
+    if (options.reportToDiscord && shouldReport(options.discordThreshold)) {
+        stage('Report: Discord') {
+            reportUnityPackage(preparedPackage, 'discord')
+        }
+    }
+    if (options.reportToOffice365 && shouldReport(options.office365Threshold)) {
+        stage('Report: Office 365') {
+            reportUnityPackage(preparedPackage, 'office365')
+        }
+    }
+    if (options.reportToAdaptiveCards && shouldReport(options.adaptiveCardsThreshold)) {
+        stage('Report: Adaptive Cards') {
+            reportUnityPackage(preparedPackage, 'adaptiveCards')
+        }
+    }
+}
+
+private boolean hasSingletonWork(PreparedUnityPackage preparedPackage) {
+    def options = preparedPackage.options
+    options.testChangelog || options.testFormatting || options.buildDocumentation
+}
+
+private boolean shouldReport(String threshold) {
+    !threshold || currentBuild.resultIsWorseOrEqualTo(threshold)
+}
+
+private String displayName(String location) {
+    location.replace('\\', '/').tokenize('/').last()
+}
+
+private String packageIdForStage(UnityPackagePipelineOptions pipelineOptions) {
+    def options = pipelineOptions.packageOptions
+    if (options.packageId) {
+        return options.packageId
+    }
+    dir(options.packageLocation) {
+        readJSON(file: 'package.json').name.toString()
     }
 }

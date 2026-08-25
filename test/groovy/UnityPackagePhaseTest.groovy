@@ -31,25 +31,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     }
 
     @Test
-    void preparesMetadataOnceWithoutAllocatingANode() {
+    void preparationOnlyCreatesPortablePackageData() {
         int metadataReads = 0
-        def stages = []
-        def stageStack = []
-        def stageParents = [:]
         def stashes = []
         helper.registerAllowedMethod('pwd', []) { 'C:/workspace' }
-        helper.registerAllowedMethod('fileExists', [String]) { String path -> path.endsWith('/Package') || path == 'CHANGELOG.md' }
-        helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
-            stages << name
-            stageParents[name] = stageStack ? stageStack.last() : null
-            stageStack << name
-            try {
-                body()
-            } finally {
-                stageStack.remove(stageStack.size() - 1)
-            }
-        }
-        helper.registerAllowedMethod('readFile', [String]) { String ignored -> '## [1.2.3] - 2026-08-25' }
         helper.registerAllowedMethod('readJSON', [Map]) { Map ignored ->
             metadataReads++
             [name: 'net.example.package', version: '1.2.3']
@@ -69,12 +54,9 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals('net.example.package', prepared.context.packageId)
         assertEquals('1.2.3', prepared.context.version)
         assertEquals('release', prepared.context.branch)
-        assertEquals(['Package: net.example.package', 'Test: CHANGELOG.md'], stages)
-        assertEquals(null, stageParents['Package: net.example.package'])
-        assertEquals(null, stageParents['Test: CHANGELOG.md'])
         assertEquals(1, stashes.size())
         assertTrue(stashes[0].name.startsWith('unity-package-source-'))
-        assertFalse(helper.callStack.any { it.methodName == 'node' })
+        assertFalse(helper.callStack.any { it.methodName in ['stage', 'node', 'fileExists', 'unstable', 'error'] })
     }
 
     @Test
@@ -86,23 +68,25 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             body()
         }
 
-        def prepared = preparedPackage([
-            TEST_FORMATTING: false,
-            TEST_UNITY: false,
-        ])
+        helper.registerAllowedMethod('fileExists', [String]) { String ignored -> true }
+        helper.registerAllowedMethod('readFile', [String]) { String ignored -> '## [1.2.3] - 2026-08-25' }
+        def prepared = preparedPackage([TEST_CHANGELOG: true])
         def testPackage = loadScript('vars/testUnityPackage.groovy')
-        testPackage.call(prepared)
-        testPackage.call(prepared)
+        testPackage.call(prepared, 'changelog')
+        testPackage.call(prepared, 'changelog')
 
-        def invocationDirectories = directories.findAll { it.startsWith('C:/workspace@tmp/unity-package-execution-') }.unique()
+        def invocationDirectories = directories.findAll {
+            it.startsWith('C:/workspace@tmp/unity-package-execution-') && !it.endsWith('/package')
+        }.unique()
         assertEquals(2, invocationDirectories.size())
         assertNotEquals(invocationDirectories[0], invocationDirectories[1])
         assertFalse(helper.callStack.any { it.methodName == 'node' })
     }
 
     @Test
-    void givesEachEnabledPackageTestExactlyOneStage() {
+    void packageTestOperationsDoNotAllocateStages() {
         def stages = []
+        def documentation = []
         helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/workspace@tmp' }
         helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
             stages << name
@@ -112,17 +96,27 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
         helper.registerAllowedMethod('withUnity', [Closure]) { Closure body -> body() }
         helper.registerAllowedMethod('callUnity', [String, String]) { String ignored, String ignoredFile -> }
+        helper.registerAllowedMethod('callUnity', [String]) { String command -> documentation << command }
         helper.registerAllowedMethod('junit', [Map]) { Map ignored -> }
         helper.registerAllowedMethod('callDotnetFormat', [String, String, String]) { String ignoredSolution, String ignoredReports, String ignoredExclusions -> }
+        helper.registerAllowedMethod('callDocFX', [String]) { String reportName -> documentation << reportName }
+        helper.registerAllowedMethod('catchError', [Map, Closure]) { Map ignored, Closure body -> body() }
+        helper.registerAllowedMethod('fileExists', [String]) { String ignored -> true }
 
         def testPackage = loadScript('vars/testUnityPackage.groovy')
-        testPackage.call(preparedPackage([
+        def prepared = preparedPackage([
             TEST_FORMATTING: true,
             TEST_UNITY: true,
             UNITY_TEST_MODES: ['EditMode', 'PlayMode'],
-        ]))
+            BUILD_DOCUMENTATION: true,
+        ])
+        testPackage.call(prepared, 'formatting')
+        testPackage.call(prepared, 'documentation')
+        testPackage.call(prepared, 'unity')
 
-        assertEquals(['Test: .editorconfig', 'Test: Unity (EditMode PlayMode)'], stages)
+        assertTrue(stages.empty)
+        assertTrue(documentation[0].startsWith("unity-documentation 'C:/workspace@tmp/unity-package-execution-"))
+        assertEquals('net.example.package', documentation[1])
     }
 
     @Test
@@ -253,7 +247,21 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def tested = []
         def published = []
         def reported = []
-        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false, PUBLISH_TO_VERDACCIO: true])
+        def prepared = preparedPackage([
+            TEST_CHANGELOG: true,
+            TEST_FORMATTING: true,
+            TEST_UNITY: true,
+            UNITY_TEST_MODES: ['EditMode'],
+            BUILD_DOCUMENTATION: true,
+            PUBLISH_TO_VERDACCIO: true,
+            REPORT_TO_DISCORD: true,
+            DISCORD_WEBHOOK: 'https://discord.example/webhook',
+            REPORT_TO_OFFICE_365: true,
+            OFFICE_365_WEBHOOK: 'https://office.example/webhook',
+            REPORT_TO_ADAPTIVE_CARDS: true,
+            ADAPTIVE_CARDS_WEBHOOK: 'https://cards.example/webhook',
+        ])
+        currentBuild.resultIsWorseOrEqualTo = { String ignored -> true }
         binding.setVariable('scm', new Expando())
         binding.setVariable('docker', new Expando(image: { String imageName ->
             images << imageName
@@ -270,17 +278,19 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             body()
         }
         helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('readJSON', [Map]) { Map ignored -> [name: 'net.example.package'] }
         helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
             throw new AssertionError('parallel must not be called')
         }
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
         helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
-            stages << 'Package: net.example.package'
             prepared
         }
-        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
+        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage, String]) { PreparedUnityPackage value, String operation ->
+            tested << [value, operation, nodes.last()]
+        }
         helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
-        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> reported << value }
+        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage, String]) { PreparedUnityPackage value, String method -> reported << [value, method] }
 
         def wrapper = loadScript('vars/unityPackagePipeline.groovy')
         wrapper.call([
@@ -292,23 +302,59 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             PUBLISH_TO_VERDACCIO: true,
         ])
 
-        assertEquals(['Package: net.example.package', 'Agent: Windows', 'Agent: Linux', 'Agent: WebGL', 'Publish: Verdaccio'], stages)
+        assertEquals([
+            'Package: net.example.package',
+            'Agent: Windows',
+            'Test: CHANGELOG.md',
+            'Test: .editorconfig',
+            'Build: DocFX documentation',
+            'Test: Unity (EditMode)',
+            'Agent: Linux',
+            'Test: Unity (EditMode)',
+            'Agent: WebGL',
+            'Test: Unity (EditMode)',
+            'Publish: Verdaccio',
+            'Report: Discord',
+            'Report: Office 365',
+            'Report: Adaptive Cards',
+        ], stages)
         assertEquals(['prepare-node', 'windows-node', 'linux-node', 'webgl-node', 'publish-node'], nodes)
         assertEquals([
             'node:prepare-node',
+            'stage:Package: net.example.package',
             'stage:Agent: Windows',
             'node:windows-node',
+            'stage:Test: CHANGELOG.md',
+            'stage:Test: .editorconfig',
+            'stage:Build: DocFX documentation',
+            'stage:Test: Unity (EditMode)',
             'stage:Agent: Linux',
             'node:linux-node',
+            'stage:Test: Unity (EditMode)',
             'stage:Agent: WebGL',
             'node:webgl-node',
+            'stage:Test: Unity (EditMode)',
             'stage:Publish: Verdaccio',
             'node:publish-node',
+            'stage:Report: Discord',
+            'stage:Report: Office 365',
+            'stage:Report: Adaptive Cards',
         ], events)
         assertEquals(['prepare-image', 'publish-image'], images)
-        assertEquals([prepared, prepared, prepared], tested)
+        assertEquals([
+            [prepared, 'changelog', 'windows-node'],
+            [prepared, 'formatting', 'windows-node'],
+            [prepared, 'documentation', 'windows-node'],
+            [prepared, 'unity', 'windows-node'],
+            [prepared, 'unity', 'linux-node'],
+            [prepared, 'unity', 'webgl-node'],
+        ], tested)
         assertEquals([prepared], published)
-        assertEquals([prepared], reported)
+        assertEquals([
+            [prepared, 'discord'],
+            [prepared, 'office365'],
+            [prepared, 'adaptiveCards'],
+        ], reported)
     }
 
     @Test
@@ -317,7 +363,14 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def nodes = []
         def published = []
         def tested = []
-        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false])
+        def prepared = preparedPackage([
+            TEST_FORMATTING: false,
+            TEST_UNITY: false,
+            REPORT_TO_DISCORD: true,
+            DISCORD_WEBHOOK: 'https://discord.example/webhook',
+            DISCORD_THRESHOLD: 'FAILURE',
+        ])
+        currentBuild.resultIsWorseOrEqualTo = { String ignored -> false }
         binding.setVariable('scm', new Expando())
         binding.setVariable('docker', new Expando(image: { String ignored ->
             new Expando(inside: { String ignoredArgs, Closure body -> body() })
@@ -331,16 +384,16 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             body()
         }
         helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('readJSON', [Map]) { Map ignored -> [name: 'net.example.package'] }
         helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
             throw new AssertionError('parallel must not be called')
         }
         helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
-            stages << 'Package: net.example.package'
             prepared
         }
-        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
+        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage, String]) { PreparedUnityPackage value, String ignored -> tested << value }
         helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
-        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
+        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage, String]) { PreparedUnityPackage ignored, String ignoredMethod -> }
 
         def wrapper = loadScript('vars/unityPackagePipeline.groovy')
         wrapper.call([

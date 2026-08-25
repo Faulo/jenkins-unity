@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run `UNITY_AGENTS` sequentially in declaration order so agent stages and their nested tests always have deterministic ordering.
 - Show `TEST_CHANGELOG` as its own stage immediately after package preparation.
 - Make agent stages consistently enclose their Jenkins node allocation.
+- Make `unityPackagePipeline` the sole owner of package stages, run changelog, formatting, and documentation exactly once on the first declared Unity agent, and reserve subsequent agents for Unity Test Runner.
+- Give each enabled and threshold-eligible reporting method its own `Report: <method>` stage.
+- Restore DocFX documentation coverage to the Unity package integration build.
 
 
 ## [5.0.1] - 2026-08-25
