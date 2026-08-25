@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restore DocFX documentation coverage to the Unity package integration build.
 - Split package installation, package validation, Unity project builds, and Unity project tests into `installUnityPackage`, `testUnityPackage`, `buildUnityProject`, and `testUnityProject` steps that share one installed project per agent.
 - Show solution generation and DocFX as project `Build:` stages, while formatting and Unity Test Runner remain project `Test:` stages.
+- Add the typed, single-agent `unityProjectPipeline` with stage-free project build, test, Steam/itch deployment, and reporting operations.
+- Keep checkout and project inspection inside `Project: <id>` instead of adding a redundant `prepareUnityProject` phase.
 
 
 ## [5.0.1] - 2026-08-25

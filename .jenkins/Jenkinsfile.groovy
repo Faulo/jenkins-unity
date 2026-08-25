@@ -52,3 +52,16 @@ unityPackagePipeline {
     PUBLISH_TO_VERDACCIO = false
 
 }
+
+unityProjectPipeline {
+    PROJECT_LOCATION = '.jenkins/fixtures/unity-project'
+    PROJECT_ID = 'Jenkins Unity Project Integration'
+    PROJECT_BRANCH = 'main'
+    TEST_FORMATTING = true
+    FORMATTING_LOCATION = '.jenkins/fixtures/unity-project/.editorconfig'
+    TEST_UNITY = true
+    UNITY_TEST_MODES = ['EditMode']
+    BUILD_DOCUMENTATION = true
+    DEPLOY_TO_STEAM = false
+    DEPLOY_TO_ITCH = false
+}

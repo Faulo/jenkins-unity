@@ -1,0 +1,5 @@
+{
+    "dependencies": {
+        "net.slothsoft.jenkins-unity.integration": "file:../unity-package"
+    }
+}

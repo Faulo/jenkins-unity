@@ -7,7 +7,7 @@ Commands must run in the Jenkins context their contracts describe. Workspace com
 Commands that inspect `currentBuild`, `scm`, or Jenkins nodes require those Jenkins globals to be available.
 
 Feature switches in the legacy `unityProject` and `unityPackage` steps are strings, not booleans: use `'1'` to enable a feature and `'0'` to disable it.
-The new Unity package release API uses real booleans and typed collections and rejects unknown or incorrectly typed configuration values.
+The new Unity project and package Pipeline APIs use real booleans and typed collections and reject unknown or incorrectly typed configuration values.
 
 ## Command index
 
@@ -15,6 +15,7 @@ The new Unity package release API uses real booleans and typed collections and r
 
 | Command | Purpose |
 |---|---|
+| [`unityProjectPipeline`](#unityprojectpipeline) | Run the standard single-agent build, test, deploy, and report topology for a Unity project. |
 | [`unityPipeline`](#unitypipeline) | Check out the current SCM and run `unityProject` on a Unity node. |
 | [`unityProject`](#unityproject) | Test, document, build, deploy, and report on a Unity project. |
 | [`unityPackagePipeline`](#unitypackagepipeline) | Run the standard prepare, Linux/Windows test, publish, and report topology for a Unity package. |
@@ -22,8 +23,10 @@ The new Unity package release API uses real booleans and typed collections and r
 | [`installUnityPackage`](#installunitypackage) | Create a temporary Unity project and install a prepared package into it. |
 | [`testUnityPackage`](#testunitypackage) | Validate package-level concerns in an installed package. |
 | [`buildUnityProject`](#buildunityproject) | Build the solution or DocFX site for an installed Unity project. |
-| [`testUnityProject`](#testunityproject) | Run formatting or Unity Test Runner against an installed Unity project. |
+| [`testUnityProject`](#testunityproject) | Run formatting or Unity Test Runner against a Unity project. |
 | [`deleteUnityProject`](#deleteunityproject) | Delete an installed package's temporary Unity project. |
+| [`deployUnityProject`](#deployunityproject) | Deploy enabled Unity project builds to Steam or itch.io. |
+| [`reportUnityProject`](#reportunityproject) | Report a Unity project's final build result without requiring a workspace. |
 | [`publishUnityPackage`](#publishunitypackage) | Restore and publish a prepared package on the caller-selected npm agent. |
 | [`reportUnityPackage`](#reportunitypackage) | Report a prepared package's final build result without requiring a workspace. |
 | [`withUnity`](#withunity) | Run library shell commands inside a Unity sidecar container. |
@@ -49,6 +52,65 @@ The new Unity package release API uses real booleans and typed collections and r
 | `withEnvFile` | Removed from this library; use `withEnvFile` from Strayfarer Pipeline Steps. |
 
 ## Workflow commands
+
+### `unityProjectPipeline`
+
+Provides the opinionated single-agent Unity project topology. It must be a top-level Jenkinsfile entry point; do not call it from another `pipeline`, `stage`, or `node`.
+
+```groovy
+unityProjectPipeline {
+    PROJECT_LOCATION = 'Game'
+    PROJECT_ID = 'Example Game'
+    UNITY_AGENT = 'compose-unity'
+
+    TEST_FORMATTING = true
+    TEST_UNITY = true
+    UNITY_TEST_MODES = ['EditMode', 'PlayMode']
+    BUILD_FOR_WINDOWS = true
+}
+```
+
+The wrapper is the sole owner of stages. `Project: <id>` encloses checkout and the one node selected by `UNITY_AGENT`. Supplying `PROJECT_ID` makes the exact name available before checkout; otherwise the stage is `Project: Unity project`, while the actual product name is discovered inside the node for reporting.
+
+Enabled operations appear as `Set: Project version`, `Build: C# solution`, `Build: DocFX documentation`, `Test: .editorconfig`, `Test: Unity (<modes>)`, `Build: <platform>`, `Deploy: Steam`, and `Deploy: itch.io`. Each enabled, threshold-eligible reporter gets an agent-free `Report: <method>` stage after the project node is released.
+
+There is deliberately no `prepareUnityProject` step. Unlike a package matrix, the project never moves to another workspace: checkout, context discovery, builds, tests, and deployment all share the same node and project directory. The serializable `UnityProjectContext` contains normalized options, discovered metadata, and agent paths, but no stash or hidden node allocation.
+
+#### Project Pipeline options
+
+All switches are real booleans. String lists require `Collection<String>` values.
+
+| Option | Default | Contract |
+|---|---:|---|
+| `UNITY_AGENT` | `'compose-unity'` | Jenkins label for the single project node. |
+| `PROJECT_LOCATION` | `'.'` | Relative Unity project directory. Absolute paths and `..` are rejected. |
+| `PROJECT_ID` | `''` | Product-name override used for stage and report names. Empty discovers `productName` inside the node. |
+| `PROJECT_VERSION` | `''` | Explicit version to set. Empty preserves the project version unless autoversioning is enabled. |
+| `PROJECT_BRANCH` | `''` | Branch override; empty uses `BRANCH_NAME`, then `PLASTICSCM_BRANCH`. |
+| `AUTOVERSION` | `''` | Empty disables VCS version discovery; otherwise passed to `autoversion`, normally as `git` or `plastic`. |
+| `AUTOVERSION_REVISION` | `false` | Append `BUILD_NUMBER` to the discovered version. |
+| `AUTOVERSION_REVISION_PREFIX` / `AUTOVERSION_REVISION_SUFFIX` | `''` | Text surrounding the appended build number. |
+| `TEST_FORMATTING` | `true` | Generate a solution, copy the formatting configuration, run `dotnet format`, and publish JUnit. |
+| `FORMATTING_LOCATION` | `'.editorconfig'` | Repository-relative formatting configuration copied to the project root. |
+| `FORMATTING_EXCLUSIONS` | `['Library']` | Paths passed to `dotnet format --exclude`. |
+| `TEST_UNITY` | `true` | Run Unity Test Runner and publish JUnit. |
+| `UNITY_TEST_MODES` | `['EditMode', 'PlayMode']` | Non-empty test-mode arguments when Unity testing is enabled. |
+| `BUILD_DOCUMENTATION` | `false` | Generate and publish DocFX documentation; failures make the build unstable. |
+| `BUILD_FOR_WINDOWS` / `BUILD_FOR_LINUX` / `BUILD_FOR_MAC` | `false` | Build and archive the corresponding desktop player. |
+| `BUILD_FOR_WEBGL` / `BUILD_FOR_ANDROID` | `false` | Build and archive or publish the corresponding player. These require UnityExtensions. |
+| `BUILD_NAME` | `'build'` | Base name for player outputs and archives. |
+| `UNITY_CREDENTIALS` / `EMAIL_CREDENTIALS` | `''` | Optional credentials bound only around Unity operations. |
+| `DEPLOY_ON_FAILURE` | `false` | Permit deployment after an unstable result if execution reaches deployment. |
+| `DEPLOYMENT_BRANCHES` | `['main', '/main']` | Exact project branches eligible for deployment. |
+| `DEPLOY_TO_STEAM` | `false` | Deploy enabled desktop builds through Steam. |
+| `STEAM_CREDENTIALS` / `STEAM_ID` | `''` | Required credential ID and app ID when Steam deployment runs. |
+| `STEAM_DEPOT_WINDOWS` / `STEAM_DEPOT_LINUX` / `STEAM_DEPOT_MAC` | `''` | Depot IDs for enabled desktop builds. At least one is required for Steam. |
+| `STEAM_BRANCH` | `''` | Steam branch; empty derives it from the project branch. |
+| `DEPLOY_TO_ITCH` | `false` | Deploy every enabled player build through Butler. |
+| `ITCH_CREDENTIALS` / `ITCH_ID` | `''` | Required token credential and `author/game` target when itch.io deployment runs. |
+| `REPORT_TO_DISCORD` / `REPORT_TO_OFFICE_365` / `REPORT_TO_ADAPTIVE_CARDS` | `false` | Enable the corresponding report stage. |
+| `DISCORD_WEBHOOK` / `OFFICE_365_WEBHOOK` / `ADAPTIVE_CARDS_WEBHOOK` | `''` | Webhook passed to the corresponding reporter. |
+| `DISCORD_THRESHOLD` / `OFFICE_365_THRESHOLD` / `ADAPTIVE_CARDS_THRESHOLD` | `''` | Empty reports every result; otherwise report only at or above the threshold. |
 
 ### `unityPipeline`
 
@@ -319,15 +381,23 @@ Each agent must create its own installation. Subsequent package tests, project b
 
 ### `buildUnityProject`
 
-Runs build operations against an `InstalledUnityPackage` without allocating a stage or node. The two-argument form accepts `solution` to generate `project.sln`, or `documentation` to generate and publish DocFX documentation. The one-argument form builds the solution when `TEST_FORMATTING` is enabled and documentation when `BUILD_DOCUMENTATION` is enabled.
+Runs build operations without allocating a stage or node. For an `InstalledUnityPackage`, the operation is `solution` or `documentation`. For a checked-out `UnityProjectContext`, it additionally accepts `windows`, `linux`, `mac`, `webgl`, or `android`. The one-argument form runs the builds enabled by the object's normalized options.
 
 ### `testUnityProject`
 
-Runs project-level tests against an `InstalledUnityPackage` without allocating a stage or node. The two-argument form accepts `formatting` or `unity`; the one-argument form runs the operations enabled by `TEST_FORMATTING` and `TEST_UNITY`. Formatting checks the previously generated solution. Unity Test Runner uses the configured `UNITY_TEST_MODES` and publishes its JUnit report.
+Runs project-level tests against an `InstalledUnityPackage` or checked-out `UnityProjectContext` without allocating a stage or node. The two-argument form accepts `formatting` or `unity`; the one-argument form runs the operations enabled by `TEST_FORMATTING` and `TEST_UNITY`. Formatting checks the previously generated solution. Unity Test Runner uses the configured `UNITY_TEST_MODES` and publishes its JUnit report.
 
 ### `deleteUnityProject`
 
 Deletes the temporary work directory belonging to an `InstalledUnityPackage`. It allocates no stage or node and safely accepts `null`, making it suitable for a `finally` block.
+
+### `deployUnityProject`
+
+Deploys a checked-out `UnityProjectContext` without allocating a stage or node. The two-argument form selects `steam` or `itch`; the one-argument form runs both enabled methods. Steam and itch credentials are bound only around their own operation and forwarded to the Unity sidecar without being archived. Callers and tests must not invoke this step unless the external deployment is explicitly authorized.
+
+### `reportUnityProject`
+
+Uses only project metadata and `currentBuild`; it does not allocate a stage, call `pwd`, allocate a node, or require a workspace. Its one-argument form sends every enabled, threshold-eligible report. `unityProjectPipeline` uses the per-method form so each reporter receives its own `Report: <method>` stage.
 
 ### `publishUnityPackage`
 

@@ -1,0 +1,10 @@
+%YAML 1.1
+--- !u!129 &1
+PlayerSettings:
+  companyName: Slothsoft
+  productName: Jenkins Unity Project Integration
+  bundleVersion: 1.0.0
+  m_ActiveColorSpace: 1
+  allowUnsafeCode: 0
+  apiCompatibilityLevel: 6
+  activeInputHandler: 1
