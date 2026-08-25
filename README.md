@@ -303,10 +303,10 @@ Its infrastructure settings are separate from package behavior and are all confi
 
 | Option | Default | Contract |
 |---|---|---|
-| `PREPARE_AGENT` | `'docker'` | Jenkins label used by the prepare Docker agent. |
+| `PREPARE_AGENT` | `'linux && docker'` | Jenkins label used by the prepare Docker agent. The default matches the Linux-only `node:slim` image. |
 | `PREPARE_IMAGE` | `'node:slim'` | Docker image used for checkout and preparation. |
 | `PREPARE_ARGS` | `''` | Additional Docker container arguments for preparation. |
-| `PUBLISH_AGENT` | `'docker'` | Jenkins label used by the publish Docker agent. |
+| `PUBLISH_AGENT` | `'linux && docker'` | Jenkins label used by the publish Docker agent. The default matches the Linux-only `node:slim` image. |
 | `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
 | `PUBLISH_ARGS` | `''` | Additional Docker container arguments for publication. |
 | `UNITY_AGENTS` | `[Linux: 'linux && compose-unity', Windows: 'windows && compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |

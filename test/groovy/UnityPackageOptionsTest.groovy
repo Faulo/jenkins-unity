@@ -58,9 +58,9 @@ class UnityPackageOptionsTest {
     @Test
     void keepsInfrastructureSeparateAndConfigurable() {
         def defaults = UnityPackagePipelineOptions.fromMap()
-        assertEquals('docker', defaults.prepareAgent)
+        assertEquals('linux && docker', defaults.prepareAgent)
         assertEquals('node:slim', defaults.prepareImage)
-        assertEquals('docker', defaults.publishAgent)
+        assertEquals('linux && docker', defaults.publishAgent)
         assertEquals('node:slim', defaults.publishImage)
         assertEquals([Linux: 'linux && compose-unity', Windows: 'windows && compose-unity'], defaults.unityAgents)
 

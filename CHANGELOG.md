@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show solution generation and DocFX as project `Build:` stages, while formatting and Unity Test Runner remain project `Test:` stages.
 - Add the typed, single-agent `unityProjectPipeline` with stage-free project build, test, Steam/itch deployment, and reporting operations.
 - Keep checkout and project inspection inside `Project: <id>` instead of adding a redundant `prepareUnityProject` phase.
+- Constrain the default package prepare and publish agents to `linux && docker`, matching the Linux-only `node:slim` image while retaining fully configurable labels and images.
 
 
 ## [5.0.1] - 2026-08-25

@@ -6,11 +6,11 @@ final class UnityPackagePipelineOptions implements Serializable {
     private static final long serialVersionUID = 1L
 
     static final Map<String, Object> INFRASTRUCTURE_DEFAULTS = Collections.unmodifiableMap([
-        PREPARE_AGENT: 'docker',
+        PREPARE_AGENT: 'linux && docker',
         PREPARE_IMAGE: 'node:slim',
         PREPARE_ARGS: '',
 
-        PUBLISH_AGENT: 'docker',
+        PUBLISH_AGENT: 'linux && docker',
         PUBLISH_IMAGE: 'node:slim',
         PUBLISH_ARGS: '',
 
