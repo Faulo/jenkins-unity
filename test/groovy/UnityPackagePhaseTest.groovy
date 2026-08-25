@@ -61,7 +61,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals('net.example.package', prepared.context.packageId)
         assertEquals('1.2.3', prepared.context.version)
         assertEquals('release', prepared.context.branch)
-        assertEquals(['Testing: CHANGELOG.md'], stages)
+        assertEquals(['Package: net.example.package', 'Test: CHANGELOG.md'], stages)
         assertEquals(1, stashes.size())
         assertTrue(stashes[0].name.startsWith('unity-package-source-'))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
@@ -112,7 +112,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             UNITY_TEST_MODES: ['EditMode', 'PlayMode'],
         ]))
 
-        assertEquals(['Testing: .editorconfig', 'Testing: EditMode, PlayMode'], stages)
+        assertEquals(['Test: .editorconfig', 'Test: Unity (EditMode PlayMode)'], stages)
     }
 
     @Test
@@ -261,7 +261,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             branches.findAll { name, ignored -> name != 'failFast' }.each { name, branch -> branch() }
         }
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
-        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored -> prepared }
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
+            stages << 'Package: net.example.package'
+            prepared
+        }
         helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
         helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
         helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> reported << value }
@@ -276,7 +279,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             PUBLISH_TO_VERDACCIO: true,
         ])
 
-        assertEquals(['Prepare', 'Testing: Editor', 'Testing: Player', 'Testing: WebGL', 'Publish'], stages)
+        assertEquals(['Package: net.example.package', 'Agent: Editor', 'Agent: Player', 'Agent: WebGL', 'Publish: Verdaccio'], stages)
         assertEquals(['prepare-node', 'editor-node', 'player-node', 'webgl-node', 'publish-node'], nodes)
         assertEquals(['prepare-image', 'publish-image'], images)
         assertEquals([prepared, prepared, prepared], tested)
@@ -307,7 +310,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
             throw new AssertionError('parallel must not be called')
         }
-        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored -> prepared }
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
+            stages << 'Package: net.example.package'
+            prepared
+        }
         helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
         helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
         helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
@@ -321,7 +327,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             UNITY_AGENTS: [:],
         ])
 
-        assertEquals(['Prepare'], stages)
+        assertEquals(['Package: net.example.package'], stages)
         assertEquals(['prepare-node'], nodes)
         assertTrue(tested.empty)
         assertTrue(published.empty)

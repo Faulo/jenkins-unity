@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Renamed Unity package Pipeline stages to `Package: <id>`, `Agent: <name>`, `Test: <target>`, and `Publish: Verdaccio`.
+
 
 ## [5.0.1] - 2026-08-25
 

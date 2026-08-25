@@ -227,7 +227,7 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper owns scripted preparation, named parallel test branches, opt-in publication, and final reporting. Each agent entry creates a `Testing: <name>` stage directly, without a singular parent test stage. Each enabled `TEST_*` option creates exactly one focused stage within its phase. The prepare agent is released before Unity testing starts; the publish stage and agent are allocated only when `PUBLISH_TO_VERDACCIO` is enabled and the tests completed successfully. The Jenkinsfile performs no implicit checkout outside the configured prepare agent.
+The wrapper owns scripted preparation, named parallel test branches, opt-in publication, and final reporting. Preparation appears as `Package: <package ID>`, each configured Unity agent as `Agent: <name>`, formatting as `Test: .editorconfig`, changelog validation as `Test: CHANGELOG.md`, and Unity modes as `Test: Unity (EditMode PlayMode)`. Each enabled `TEST_*` option creates exactly one focused stage. Verdaccio publication appears as `Publish: Verdaccio`; that stage and its agent are omitted when `PUBLISH_TO_VERDACCIO` is disabled. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
 Its infrastructure settings are separate from package behavior and are all configurable:
 

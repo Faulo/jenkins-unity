@@ -26,12 +26,10 @@ def call(Object input = [:]) {
 
     PreparedUnityPackage preparedPackage
     try {
-        stage('Prepare') {
-            node(pipelineOptions.prepareAgent) {
-                docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
-                    checkout scm
-                    preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
-                }
+        node(pipelineOptions.prepareAgent) {
+            docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
+                checkout scm
+                preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
             }
         }
 
@@ -46,7 +44,7 @@ def call(Object input = [:]) {
         }
 
         if (pipelineOptions.packageOptions.publishToVerdaccio && currentBuild.currentResult == 'SUCCESS') {
-            stage('Publish') {
+            stage('Publish: Verdaccio') {
                 node(pipelineOptions.publishAgent) {
                     docker.image(pipelineOptions.publishImage).inside(pipelineOptions.publishArgs) {
                         publishUnityPackage(preparedPackage)
@@ -63,7 +61,7 @@ def call(Object input = [:]) {
 
 private void testOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
     node(agent) {
-        stage("Testing: ${name}") {
+        stage("Agent: ${name}") {
             testUnityPackage(preparedPackage)
         }
     }

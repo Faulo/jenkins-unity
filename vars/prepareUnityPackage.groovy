@@ -43,56 +43,65 @@ PreparedUnityPackage call(UnityPackageOptions options) {
     }
     def context = new UnityPackageContext(discovered.id, discovered.version, branch.toString(), options.packageLocation)
 
-    if (options.testChangelog) {
-        stage("Testing: ${options.changelogLocation}") {
-            dir(packageDirectory) {
-                if (!fileExists(options.changelogLocation)) {
-                    unstable "Changelog at '${options.changelogLocation}' is missing."
-                } else {
-                    def changelogContent = readFile(options.changelogLocation)
-                    def validChangelog = containsDatedVersion(changelogContent, context.version)
-                    if (!context.release) {
-                        validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
-                    }
-                    if (!validChangelog) {
-                        unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+    PreparedUnityPackage preparedPackage
+    stage("Package: ${context.packageId}") {
+        if (options.testChangelog) {
+            stage("Test: ${displayName(options.changelogLocation)}") {
+                dir(packageDirectory) {
+                    if (!fileExists(options.changelogLocation)) {
+                        unstable "Changelog at '${options.changelogLocation}' is missing."
+                    } else {
+                        def changelogContent = readFile(options.changelogLocation)
+                        def validChangelog = containsDatedVersion(changelogContent, context.version)
+                        if (!context.release) {
+                            validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
+                        }
+                        if (!validChangelog) {
+                            unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+                        }
                     }
                 }
             }
         }
-    }
 
-    if (options.testFormatting && !fileExists("${workspace}/${options.formattingLocation}")) {
-        error "Formatting configuration '${options.formattingLocation}' does not exist in the current workspace."
-    }
-
-    def executionId = UUID.randomUUID().toString()
-    def packageStash = "unity-package-source-${executionId}"
-    dir(packageDirectory) {
-        def stashArgs = [
-            name: packageStash,
-            includes: options.sourceIncludes.join(', '),
-            useDefaultExcludes: true,
-        ]
-        if (options.sourceExcludes) {
-            stashArgs.excludes = options.sourceExcludes.join(', ')
+        if (options.testFormatting && !fileExists("${workspace}/${options.formattingLocation}")) {
+            error "Formatting configuration '${options.formattingLocation}' does not exist in the current workspace."
         }
-        stash(stashArgs)
-    }
 
-    def configurationStash = ''
-    if (options.testFormatting) {
-        configurationStash = "unity-package-configuration-${executionId}"
-        def includes = ([options.formattingLocation] + options.formattingAddons).unique()
-        stash(
-            name: configurationStash,
-            includes: includes.join(', '),
-            allowEmpty: false,
-            useDefaultExcludes: true
-        )
-    }
+        def executionId = UUID.randomUUID().toString()
+        def packageStash = "unity-package-source-${executionId}"
+        dir(packageDirectory) {
+            def stashArgs = [
+                name: packageStash,
+                includes: options.sourceIncludes.join(', '),
+                useDefaultExcludes: true,
+            ]
+            if (options.sourceExcludes) {
+                stashArgs.excludes = options.sourceExcludes.join(', ')
+            }
+            stash(stashArgs)
+        }
 
-    new PreparedUnityPackage(options, context, executionId, packageStash, configurationStash)
+        def configurationStash = ''
+        if (options.testFormatting) {
+            configurationStash = "unity-package-configuration-${executionId}"
+            def includes = ([options.formattingLocation] + options.formattingAddons).unique()
+            stash(
+                name: configurationStash,
+                includes: includes.join(', '),
+                allowEmpty: false,
+                useDefaultExcludes: true
+            )
+        }
+
+        preparedPackage = new PreparedUnityPackage(options, context, executionId, packageStash, configurationStash)
+    }
+    preparedPackage
+}
+
+@NonCPS
+private String displayName(String location) {
+    location.replace('\\', '/').tokenize('/').last()
 }
 
 @NonCPS
