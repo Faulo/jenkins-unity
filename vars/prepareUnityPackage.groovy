@@ -43,25 +43,25 @@ PreparedUnityPackage call(UnityPackageOptions options) {
     }
     def context = new UnityPackageContext(discovered.id, discovered.version, branch.toString(), options.packageLocation)
 
-    if (options.validateChangelog) {
+    if (options.testChangelog) {
         dir(packageDirectory) {
-            if (!fileExists(options.changelogFile)) {
-                unstable "Changelog at '${options.changelogFile}' is missing."
+            if (!fileExists(options.changelogLocation)) {
+                unstable "Changelog at '${options.changelogLocation}' is missing."
             } else {
-                def changelogContent = readFile(options.changelogFile)
+                def changelogContent = readFile(options.changelogLocation)
                 def validChangelog = containsDatedVersion(changelogContent, context.version)
                 if (!context.release) {
                     validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
                 }
                 if (!validChangelog) {
-                    unstable "${options.changelogFile} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+                    unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
                 }
             }
         }
     }
 
-    if (options.checkFormatting && !fileExists("${workspace}/${options.editorConfigFile}")) {
-        error "EditorConfig file '${options.editorConfigFile}' does not exist in the current workspace."
+    if (options.testFormatting && !fileExists("${workspace}/${options.formattingLocation}")) {
+        error "Formatting configuration '${options.formattingLocation}' does not exist in the current workspace."
     }
 
     def executionId = UUID.randomUUID().toString()
@@ -79,9 +79,9 @@ PreparedUnityPackage call(UnityPackageOptions options) {
     }
 
     def configurationStash = ''
-    if (options.checkFormatting) {
+    if (options.testFormatting) {
         configurationStash = "unity-package-configuration-${executionId}"
-        def includes = ([options.editorConfigFile] + options.formattingFiles).unique()
+        def includes = ([options.formattingLocation] + options.formattingAddons).unique()
         stash(
             name: configurationStash,
             includes: includes.join(', '),

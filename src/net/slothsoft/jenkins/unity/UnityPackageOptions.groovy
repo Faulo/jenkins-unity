@@ -11,15 +11,15 @@ final class UnityPackageOptions implements Serializable {
         PACKAGE_VERSION: '',
         PACKAGE_BRANCH: '',
         SOURCE_INCLUDES: ['**'],
-        SOURCE_EXCLUDES: ['.git/**', 'Library/**', 'Logs/**', 'Obj/**', 'Temp/**', 'UserSettings/**'],
+        SOURCE_EXCLUDES: ['.git/**'],
 
-        VALIDATE_CHANGELOG: true,
-        CHANGELOG_FILE: 'CHANGELOG.md',
-        CHECK_FORMATTING: true,
-        EDITORCONFIG_FILE: '.editorconfig',
-        FORMATTING_FILES: ['.editor/**', 'Directory.Build.props'],
-        FORMATTING_EXCLUDE: [],
-        RUN_UNITY_TESTS: true,
+        TEST_CHANGELOG: true,
+        CHANGELOG_LOCATION: 'CHANGELOG.md',
+        TEST_FORMATTING: true,
+        FORMATTING_LOCATION: '.editorconfig',
+        FORMATTING_ADDONS: ['.editor/**', 'Directory.Build.props'],
+        FORMATTING_EXCLUSIONS: [],
+        TEST_UNITY: true,
         UNITY_TEST_MODES: ['EditMode', 'PlayMode'],
         BUILD_DOCUMENTATION: false,
 
@@ -34,7 +34,7 @@ final class UnityPackageOptions implements Serializable {
         PUBLISH_BRANCHES: ['main', '/main'],
         VERDACCIO_URL: 'http://verdaccio:4873',
         VERDACCIO_HOST: 'verdaccio:4873',
-        VERDACCIO_STORAGE: '',
+        VERDACCIO_STORAGE: '/verdaccio/storage',
         VERDACCIO_CREDENTIALS: '',
 
         REPORT_TO_DISCORD: false,
@@ -54,13 +54,13 @@ final class UnityPackageOptions implements Serializable {
     final String packageBranch
     final List<String> sourceIncludes
     final List<String> sourceExcludes
-    final boolean validateChangelog
-    final String changelogFile
-    final boolean checkFormatting
-    final String editorConfigFile
-    final List<String> formattingFiles
-    final List<String> formattingExclude
-    final boolean runUnityTests
+    final boolean testChangelog
+    final String changelogLocation
+    final boolean testFormatting
+    final String formattingLocation
+    final List<String> formattingAddons
+    final List<String> formattingExclusions
+    final boolean testUnity
     final List<String> unityTestModes
     final boolean buildDocumentation
     final String unityCredentialsId
@@ -98,16 +98,16 @@ final class UnityPackageOptions implements Serializable {
         packageBranch = UnityPackageConfig.stringValue(values, 'PACKAGE_BRANCH')
         sourceIncludes = UnityPackageConfig.stringList(values, 'SOURCE_INCLUDES', false)
         sourceExcludes = UnityPackageConfig.stringList(values, 'SOURCE_EXCLUDES')
-        validateChangelog = UnityPackageConfig.booleanValue(values, 'VALIDATE_CHANGELOG')
-        changelogFile = UnityPackageConfig.stringValue(values, 'CHANGELOG_FILE')
-        UnityPackageConfig.requireRelativePath(changelogFile, 'CHANGELOG_FILE')
-        checkFormatting = UnityPackageConfig.booleanValue(values, 'CHECK_FORMATTING')
-        editorConfigFile = UnityPackageConfig.stringValue(values, 'EDITORCONFIG_FILE')
-        UnityPackageConfig.requireRelativePath(editorConfigFile, 'EDITORCONFIG_FILE')
-        formattingFiles = UnityPackageConfig.stringList(values, 'FORMATTING_FILES')
-        formattingExclude = UnityPackageConfig.stringList(values, 'FORMATTING_EXCLUDE')
-        runUnityTests = UnityPackageConfig.booleanValue(values, 'RUN_UNITY_TESTS')
-        unityTestModes = UnityPackageConfig.stringList(values, 'UNITY_TEST_MODES', !runUnityTests)
+        testChangelog = UnityPackageConfig.booleanValue(values, 'TEST_CHANGELOG')
+        changelogLocation = UnityPackageConfig.stringValue(values, 'CHANGELOG_LOCATION')
+        UnityPackageConfig.requireRelativePath(changelogLocation, 'CHANGELOG_LOCATION')
+        testFormatting = UnityPackageConfig.booleanValue(values, 'TEST_FORMATTING')
+        formattingLocation = UnityPackageConfig.stringValue(values, 'FORMATTING_LOCATION')
+        UnityPackageConfig.requireRelativePath(formattingLocation, 'FORMATTING_LOCATION')
+        formattingAddons = UnityPackageConfig.stringList(values, 'FORMATTING_ADDONS')
+        formattingExclusions = UnityPackageConfig.stringList(values, 'FORMATTING_EXCLUSIONS')
+        testUnity = UnityPackageConfig.booleanValue(values, 'TEST_UNITY')
+        unityTestModes = UnityPackageConfig.stringList(values, 'UNITY_TEST_MODES', !testUnity)
         buildDocumentation = UnityPackageConfig.booleanValue(values, 'BUILD_DOCUMENTATION')
         unityCredentialsId = UnityPackageConfig.stringValue(values, 'UNITY_CREDENTIALS')
         emailCredentialsId = UnityPackageConfig.stringValue(values, 'EMAIL_CREDENTIALS')

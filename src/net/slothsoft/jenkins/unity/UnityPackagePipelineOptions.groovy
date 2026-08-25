@@ -6,25 +6,25 @@ final class UnityPackagePipelineOptions implements Serializable {
     private static final long serialVersionUID = 1L
 
     static final Map<String, Object> INFRASTRUCTURE_DEFAULTS = Collections.unmodifiableMap([
-        PREPARE_AGENT: 'npm',
-        PREPARE_DOCKER_IMAGE: 'node:22-bookworm-slim',
-        PREPARE_DOCKER_ARGS: '',
-        PUBLISH_AGENT: 'npm',
-        PUBLISH_DOCKER_IMAGE: 'node:22-bookworm-slim',
-        PUBLISH_DOCKER_ARGS: '',
-        UNITY_AGENTS: [linux: 'linux && compose-unity', windows: 'windows && compose-unity'],
-        UNITY_CONTAINERS: [linux: '', windows: ''],
+        PREPARE_AGENT: 'docker',
+        PREPARE_IMAGE: 'node:slim',
+        PREPARE_ARGS: '',
+
+        PUBLISH_AGENT: 'docker',
+        PUBLISH_IMAGE: 'node:slim',
+        PUBLISH_ARGS: '',
+
+        UNITY_AGENTS: [Linux: 'linux && compose-unity', Windows: 'windows && compose-unity'],
     ])
 
     final UnityPackageOptions packageOptions
     final String prepareAgent
-    final String prepareDockerImage
-    final String prepareDockerArgs
+    final String prepareImage
+    final String prepareArgs
     final String publishAgent
-    final String publishDockerImage
-    final String publishDockerArgs
+    final String publishImage
+    final String publishArgs
     final Map<String, String> unityAgents
-    final Map<String, String> unityContainers
 
     @NonCPS
     static UnityPackagePipelineOptions fromMap(Map values = [:]) {
@@ -38,16 +38,18 @@ final class UnityPackagePipelineOptions implements Serializable {
         this.packageOptions = packageOptions
         def values = UnityPackageConfig.normalize(infrastructureValues, INFRASTRUCTURE_DEFAULTS)
         prepareAgent = UnityPackageConfig.stringValue(values, 'PREPARE_AGENT')
-        prepareDockerImage = UnityPackageConfig.stringValue(values, 'PREPARE_DOCKER_IMAGE')
-        prepareDockerArgs = UnityPackageConfig.stringValue(values, 'PREPARE_DOCKER_ARGS')
+        prepareImage = UnityPackageConfig.stringValue(values, 'PREPARE_IMAGE')
+        prepareArgs = UnityPackageConfig.stringValue(values, 'PREPARE_ARGS')
         publishAgent = UnityPackageConfig.stringValue(values, 'PUBLISH_AGENT')
-        publishDockerImage = UnityPackageConfig.stringValue(values, 'PUBLISH_DOCKER_IMAGE')
-        publishDockerArgs = UnityPackageConfig.stringValue(values, 'PUBLISH_DOCKER_ARGS')
-        unityAgents = UnityPackageConfig.stringMap(values, 'UNITY_AGENTS', ['linux', 'windows'])
-        unityContainers = UnityPackageConfig.stringMap(values, 'UNITY_CONTAINERS', ['linux', 'windows'])
+        publishImage = UnityPackageConfig.stringValue(values, 'PUBLISH_IMAGE')
+        publishArgs = UnityPackageConfig.stringValue(values, 'PUBLISH_ARGS')
+        unityAgents = UnityPackageConfig.stringMap(values, 'UNITY_AGENTS')
 
-        if (!prepareAgent || !prepareDockerImage || !publishAgent || !publishDockerImage || unityAgents.any { ignored, label -> !label }) {
+        if (!prepareAgent || !prepareImage || !publishAgent || !publishImage) {
             throw new IllegalArgumentException('Agent labels and Docker images must not be empty')
+        }
+        if (unityAgents.any { name, label -> !name || !label }) {
+            throw new IllegalArgumentException('UNITY_AGENTS must not contain empty names or labels')
         }
     }
 }

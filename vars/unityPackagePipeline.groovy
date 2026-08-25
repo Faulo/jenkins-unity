@@ -28,33 +28,29 @@ def call(Object input = [:]) {
     try {
         stage('Prepare') {
             node(pipelineOptions.prepareAgent) {
-                docker.image(pipelineOptions.prepareDockerImage).inside(pipelineOptions.prepareDockerArgs) {
+                docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
                     checkout scm
                     preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
                 }
             }
         }
 
-        stage('Test') {
-            def linuxAgent = pipelineOptions.unityAgents.linux
-            def windowsAgent = pipelineOptions.unityAgents.windows
-            def linuxContainer = pipelineOptions.unityContainers.linux
-            def windowsContainer = pipelineOptions.unityContainers.windows
-            parallel(
-                linux: {
-                    testOnAgent('linux', linuxAgent, linuxContainer, preparedPackage)
-                },
-                windows: {
-                    testOnAgent('windows', windowsAgent, windowsContainer, preparedPackage)
-                },
-                failFast: false
-            )
+        if (pipelineOptions.unityAgents) {
+            stage('Test') {
+                def testBranches = pipelineOptions.unityAgents.collectEntries { name, agent ->
+                    [(name): {
+                        testOnAgent(name, agent, preparedPackage)
+                    }]
+                }
+                testBranches.failFast = false
+                parallel(testBranches)
+            }
         }
 
         if (currentBuild.currentResult == 'SUCCESS') {
             stage('Publish') {
                 node(pipelineOptions.publishAgent) {
-                    docker.image(pipelineOptions.publishDockerImage).inside(pipelineOptions.publishDockerArgs) {
+                    docker.image(pipelineOptions.publishImage).inside(pipelineOptions.publishArgs) {
                         publishUnityPackage(preparedPackage)
                     }
                 }
@@ -67,16 +63,10 @@ def call(Object input = [:]) {
     }
 }
 
-private void testOnAgent(String os, String agent, String container, PreparedUnityPackage preparedPackage) {
+private void testOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
     node(agent) {
-        stage("Unity package (${os})") {
-            if (container) {
-                withEnv(["JENKINS_UNITY_CONTAINER=${container}"]) {
-                    testUnityPackage(preparedPackage)
-                }
-            } else {
-                testUnityPackage(preparedPackage)
-            }
+        stage("Unity package (${name})") {
+            testUnityPackage(preparedPackage)
         }
     }
 }

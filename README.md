@@ -233,14 +233,13 @@ Its infrastructure settings are separate from package behavior and are all confi
 
 | Option | Default | Contract |
 |---|---|---|
-| `PREPARE_AGENT` | `'npm'` | Jenkins label used by the prepare Docker agent. |
-| `PREPARE_DOCKER_IMAGE` | `'node:22-bookworm-slim'` | Pinned image used for checkout and preparation. |
-| `PREPARE_DOCKER_ARGS` | `''` | Additional Docker agent arguments for preparation. |
-| `PUBLISH_AGENT` | `'npm'` | Jenkins label used by the publish Docker agent. |
-| `PUBLISH_DOCKER_IMAGE` | `'node:22-bookworm-slim'` | Pinned image used for publication. |
-| `PUBLISH_DOCKER_ARGS` | `''` | Additional Docker agent arguments for publication. |
-| `UNITY_AGENTS` | `[linux: 'linux && compose-unity', windows: 'windows && compose-unity']` | Exact Linux and Windows label expressions used by the matrix. Both keys are required. |
-| `UNITY_CONTAINERS` | `[linux: '', windows: '']` | Optional sidecar names. Empty values retain each agent's `JENKINS_UNITY_CONTAINER`; non-empty values override it for that matrix cell. |
+| `PREPARE_AGENT` | `'docker'` | Jenkins label used by the prepare Docker agent. |
+| `PREPARE_IMAGE` | `'node:slim'` | Docker image used for checkout and preparation. |
+| `PREPARE_ARGS` | `''` | Additional Docker container arguments for preparation. |
+| `PUBLISH_AGENT` | `'docker'` | Jenkins label used by the publish Docker agent. |
+| `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
+| `PUBLISH_ARGS` | `''` | Additional Docker container arguments for publication. |
+| `UNITY_AGENTS` | `[Linux: 'linux && compose-unity', Windows: 'windows && compose-unity']` | Map of parallel branch names to Jenkins label expressions. Any names and number of entries are accepted; `[:]` skips the entire test stage. |
 
 Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
 
@@ -255,14 +254,14 @@ The four package phases share one normalized `UnityPackageOptions` value. Public
 | `PACKAGE_VERSION` | `''` | Version override; empty reads `version` from `package.json`. |
 | `PACKAGE_BRANCH` | `''` | Branch override; empty uses `BRANCH_NAME`, then `PLASTICSCM_BRANCH`. Standalone jobs can set this explicitly. |
 | `SOURCE_INCLUDES` | `['**']` | Jenkins stash include patterns for prepared source. |
-| `SOURCE_EXCLUDES` | Generated Unity directories and `.git` | Jenkins stash exclusions. Credentials are bound only in later phases and can never enter these stashes. |
-| `VALIDATE_CHANGELOG` | `true` | Require a dated changelog entry for the exact version, or the stable version for a prerelease. |
-| `CHANGELOG_FILE` | `'CHANGELOG.md'` | Changelog path relative to the package. |
-| `CHECK_FORMATTING` | `true` | Generate a solution, run `dotnet format`, and publish its JUnit report. |
-| `EDITORCONFIG_FILE` | `'.editorconfig'` | Repository-relative EditorConfig file copied to the generated project's root. |
-| `FORMATTING_FILES` | `['.editor/**', 'Directory.Build.props']` | Optional repository-relative files restored into the generated project. |
-| `FORMATTING_EXCLUDE` | `[]` | Paths passed to `dotnet format --exclude`. |
-| `RUN_UNITY_TESTS` | `true` | Install the package into a temporary project and run Unity Test Runner. |
+| `SOURCE_EXCLUDES` | `['.git/**']` | Jenkins stash exclusions. Credentials are bound only in later phases and can never enter these stashes. |
+| `TEST_CHANGELOG` | `true` | Require a dated changelog entry for the exact version, or the stable version for a prerelease. |
+| `CHANGELOG_LOCATION` | `'CHANGELOG.md'` | Changelog path relative to the package. |
+| `TEST_FORMATTING` | `true` | Generate a solution, run `dotnet format`, and publish its JUnit report. |
+| `FORMATTING_LOCATION` | `'.editorconfig'` | Repository-relative formatting configuration copied to the generated project's root. |
+| `FORMATTING_ADDONS` | `['.editor/**', 'Directory.Build.props']` | Optional repository-relative files restored into the generated project. |
+| `FORMATTING_EXCLUSIONS` | `[]` | Paths passed to `dotnet format --exclude`. |
+| `TEST_UNITY` | `true` | Install the package into a temporary project and run Unity Test Runner. |
 | `UNITY_TEST_MODES` | `['EditMode', 'PlayMode']` | Non-empty Unity test-mode argument list when tests are enabled. |
 | `BUILD_DOCUMENTATION` | `false` | Generate and publish DocFX documentation. Documentation failure makes the build unstable. |
 | `UNITY_CREDENTIALS` | `''` | Optional Unity username/password credential ID, bound only during testing. |
@@ -275,7 +274,7 @@ The four package phases share one normalized `UnityPackageOptions` value. Public
 | `PUBLISH_BRANCHES` | `['main', '/main']` | Exact prepared branch names permitted to publish. |
 | `VERDACCIO_URL` | `'http://verdaccio:4873'` | Registry URL used by npm and generated package metadata. |
 | `VERDACCIO_HOST` | `'verdaccio:4873'` | Host used for project-local npm authentication. |
-| `VERDACCIO_STORAGE` | `''` | Direct-storage fallback root. Empty disables the fallback. |
+| `VERDACCIO_STORAGE` | `'/verdaccio/storage'` | Direct-storage fallback root. Empty disables the fallback. |
 | `VERDACCIO_CREDENTIALS` | `''` | Optional npm token credential ID, bound only around publication. |
 | `REPORT_TO_DISCORD` | `false` | Enable Discord reporting. |
 | `DISCORD_WEBHOOK` | `''` | Discord webhook URL. |
@@ -296,7 +295,7 @@ It never allocates or selects a node and never stores a workspace path, credenti
 ```groovy
 def preparedPackage = prepareUnityPackage(
     PACKAGE_LOCATION: 'Packages/net.slothsoft.example',
-    RUN_UNITY_TESTS: true
+    TEST_UNITY: true
 )
 ```
 

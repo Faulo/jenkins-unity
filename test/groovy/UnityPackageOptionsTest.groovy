@@ -15,28 +15,40 @@ class UnityPackageOptionsTest {
         def options = UnityPackageOptions.fromMap([
             PACKAGE_LOCATION: 'Packages/net.example.test',
             PACKAGE_BRANCH: 'release',
-            VALIDATE_CHANGELOG: false,
+            TEST_CHANGELOG: false,
+            CHANGELOG_LOCATION: 'Documentation/CHANGELOG.md',
+            TEST_FORMATTING: false,
+            FORMATTING_LOCATION: 'config/.editorconfig',
+            FORMATTING_ADDONS: ['config/stylecop.json'],
+            FORMATTING_EXCLUSIONS: ['Library'],
+            TEST_UNITY: false,
             UNITY_TEST_MODES: ['EditMode'],
             PUBLISH_BRANCHES: ['release'],
         ])
 
         assertEquals('Packages/net.example.test', options.packageLocation)
         assertEquals('release', options.packageBranch)
-        assertFalse(options.validateChangelog)
+        assertFalse(options.testChangelog)
+        assertEquals('Documentation/CHANGELOG.md', options.changelogLocation)
+        assertFalse(options.testFormatting)
+        assertEquals('config/.editorconfig', options.formattingLocation)
+        assertEquals(['config/stylecop.json'], options.formattingAddons)
+        assertEquals(['Library'], options.formattingExclusions)
+        assertFalse(options.testUnity)
         assertEquals(['EditMode'], options.unityTestModes)
         assertEquals(['release'], options.publishBranches)
-        assertTrue(options.checkFormatting)
-        assertTrue(options.runUnityTests)
+        assertEquals(['.git/**'], options.sourceExcludes)
+        assertEquals('/verdaccio/storage', options.verdaccioStorage)
         assertFalse(options.publishToVerdaccio)
     }
 
     @Test
     void rejectsCompatibilityValuesAndUnknownKeys() {
         assertThrows(IllegalArgumentException) {
-            UnityPackageOptions.fromMap([RUN_UNITY_TESTS: '1'])
+            UnityPackageOptions.fromMap([TEST_UNITY: '1'])
         }
         assertThrows(IllegalArgumentException) {
-            UnityPackageOptions.fromMap([TEST_UNITY: true])
+            UnityPackageOptions.fromMap([RUN_UNITY_TESTS: true])
         }
         assertThrows(IllegalArgumentException) {
             UnityPackageOptions.fromMap([PACKAGE_LOCATION: '../package'])
@@ -45,23 +57,37 @@ class UnityPackageOptionsTest {
 
     @Test
     void keepsInfrastructureSeparateAndConfigurable() {
+        def defaults = UnityPackagePipelineOptions.fromMap()
+        assertEquals('docker', defaults.prepareAgent)
+        assertEquals('node:slim', defaults.prepareImage)
+        assertEquals('docker', defaults.publishAgent)
+        assertEquals('node:slim', defaults.publishImage)
+        assertEquals([Linux: 'linux && compose-unity', Windows: 'windows && compose-unity'], defaults.unityAgents)
+
         def options = UnityPackagePipelineOptions.fromMap([
             PREPARE_AGENT: 'node-prepare',
-            PREPARE_DOCKER_IMAGE: 'node:24-bookworm-slim',
+            PREPARE_IMAGE: 'node:24-bookworm-slim',
+            PREPARE_ARGS: '--network host',
             PUBLISH_AGENT: 'node-publish',
-            PUBLISH_DOCKER_IMAGE: 'node:22-alpine',
-            UNITY_AGENTS: [linux: 'custom-linux', windows: 'custom-windows'],
-            UNITY_CONTAINERS: [linux: 'unity-linux', windows: 'unity-windows'],
+            PUBLISH_IMAGE: 'node:22-alpine',
+            PUBLISH_ARGS: '--user 1000:1000',
+            UNITY_AGENTS: [Editor: 'custom-editor', Player: 'custom-player', WebGL: 'custom-webgl'],
             PACKAGE_LOCATION: 'Package',
         ])
 
         assertEquals('node-prepare', options.prepareAgent)
-        assertEquals('node:24-bookworm-slim', options.prepareDockerImage)
+        assertEquals('node:24-bookworm-slim', options.prepareImage)
+        assertEquals('--network host', options.prepareArgs)
         assertEquals('node-publish', options.publishAgent)
-        assertEquals('node:22-alpine', options.publishDockerImage)
-        assertEquals([linux: 'custom-linux', windows: 'custom-windows'], options.unityAgents)
-        assertEquals([linux: 'unity-linux', windows: 'unity-windows'], options.unityContainers)
+        assertEquals('node:22-alpine', options.publishImage)
+        assertEquals('--user 1000:1000', options.publishArgs)
+        assertEquals([Editor: 'custom-editor', Player: 'custom-player', WebGL: 'custom-webgl'], options.unityAgents)
         assertEquals('Package', options.packageOptions.packageLocation)
+
+        assertEquals([:], UnityPackagePipelineOptions.fromMap([UNITY_AGENTS: [:]]).unityAgents)
+        assertThrows(IllegalArgumentException) {
+            UnityPackagePipelineOptions.fromMap([UNITY_AGENTS: []])
+        }
     }
 
     @Test

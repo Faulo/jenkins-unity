@@ -19,8 +19,8 @@ class UnityPackageCpsTest {
                 import net.slothsoft.jenkins.unity.UnityPackageOptions
 
                 def options = UnityPackageOptions.fromMap([
-                    VALIDATE_CHANGELOG: false,
-                    CHECK_FORMATTING: false,
+                    TEST_CHANGELOG: false,
+                    TEST_FORMATTING: false,
                     PUBLISH_BRANCHES: ['main'],
                 ])
                 def context = new UnityPackageContext('net.example.package', '1.2.3-preview.1', 'main', '.')

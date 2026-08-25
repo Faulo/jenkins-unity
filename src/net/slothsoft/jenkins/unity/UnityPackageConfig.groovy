@@ -52,7 +52,7 @@ final class UnityPackageConfig {
     }
 
     @NonCPS
-    static Map<String, String> stringMap(Map values, String key, Collection<String> requiredKeys) {
+    static Map<String, String> stringMap(Map values, String key, Collection<String> requiredKeys = []) {
         def value = values[key]
         if (!(value instanceof Map) || value.any { entry -> !(entry.key instanceof CharSequence) || !(entry.value instanceof CharSequence) }) {
             throw new IllegalArgumentException("${key} must be a map of strings")
@@ -60,7 +60,7 @@ final class UnityPackageConfig {
 
         def result = value.collectEntries { entry -> [(entry.key.toString()): entry.value.toString()] }
         def missingKeys = requiredKeys - result.keySet()
-        def unknownKeys = result.keySet() - requiredKeys
+        def unknownKeys = requiredKeys ? result.keySet() - requiredKeys : []
         if (missingKeys || unknownKeys) {
             throw new IllegalArgumentException("${key} must contain exactly: ${requiredKeys.join(', ')}")
         }

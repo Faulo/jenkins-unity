@@ -21,8 +21,8 @@ void call(PreparedUnityPackage preparedPackage) {
                 unstash preparedPackage.packageStash
             }
 
-            def createSolution = options.checkFormatting || options.buildDocumentation
-            def createProject = createSolution || options.runUnityTests
+            def createSolution = options.testFormatting || options.buildDocumentation
+            def createProject = createSolution || options.testUnity
             if (!createProject) {
                 echo 'No Unity package tests are enabled.'
                 return
@@ -53,11 +53,11 @@ void call(PreparedUnityPackage preparedPackage) {
                             junit(testResults: 'package-install.xml')
                         }
 
-                        if (options.checkFormatting) {
+                        if (options.testFormatting) {
                             dir('project') {
                                 unstash preparedPackage.configurationStash
-                                if (options.editorConfigFile != '.editorconfig') {
-                                    writeFile(file: '.editorconfig', text: readFile(options.editorConfigFile))
+                                if (options.formattingLocation != '.editorconfig') {
+                                    writeFile(file: '.editorconfig', text: readFile(options.formattingLocation))
                                 }
                             }
                         }
@@ -79,11 +79,11 @@ void call(PreparedUnityPackage preparedPackage) {
                             }
                         }
 
-                        if (options.checkFormatting) {
-                            callDotnetFormat("${projectDirectory}/project.sln", reportsDirectory, options.formattingExclude.join(' '))
+                        if (options.testFormatting) {
+                            callDotnetFormat("${projectDirectory}/project.sln", reportsDirectory, options.formattingExclusions.join(' '))
                         }
 
-                        if (options.runUnityTests) {
+                        if (options.testUnity) {
                             dir('reports') {
                                 callUnity "unity-tests '${projectDirectory}' ${options.unityTestModes.join(' ')}", 'tests.xml'
                                 junit(testResults: 'tests.xml', allowEmptyResults: true)

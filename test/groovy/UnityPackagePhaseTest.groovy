@@ -46,9 +46,9 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def prepared = prepare.call {
             PACKAGE_LOCATION = 'Package'
             PACKAGE_BRANCH = 'release'
-            VALIDATE_CHANGELOG = false
-            CHECK_FORMATTING = false
-            RUN_UNITY_TESTS = false
+            TEST_CHANGELOG = false
+            TEST_FORMATTING = false
+            TEST_UNITY = false
         }
 
         assertEquals(1, metadataReads)
@@ -70,8 +70,8 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         }
 
         def prepared = preparedPackage([
-            CHECK_FORMATTING: false,
-            RUN_UNITY_TESTS: false,
+            TEST_FORMATTING: false,
+            TEST_UNITY: false,
         ])
         def testPackage = loadScript('vars/testUnityPackage.groovy')
         testPackage.call(prepared)
@@ -94,7 +94,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
         def testPackage = loadScript('vars/testUnityPackage.groovy')
         def thrown = assertThrows(FlowInterruptedException) {
-            testPackage.call(preparedPackage([CHECK_FORMATTING: false]))
+            testPackage.call(preparedPackage([TEST_FORMATTING: false]))
         }
 
         assertSame(interruption, thrown)
@@ -114,7 +114,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
         def publish = loadScript('vars/publishUnityPackage.groovy')
         publish.call(preparedPackage([
-            CHECK_FORMATTING: false,
+            TEST_FORMATTING: false,
             PUBLISH_TO_VERDACCIO: true,
         ]))
 
@@ -133,7 +133,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def publish = loadScript('vars/publishUnityPackage.groovy')
         def failure = assertThrows(IllegalStateException) {
             publish.call(preparedPackage([
-                CHECK_FORMATTING: false,
+                TEST_FORMATTING: false,
                 PUBLISH_TO_VERDACCIO: true,
             ]))
         }
@@ -170,7 +170,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
         def publish = loadScript('vars/publishUnityPackage.groovy')
         publish.call(preparedPackage([
-            CHECK_FORMATTING: false,
+            TEST_FORMATTING: false,
             PUBLISH_TO_VERDACCIO: true,
             VERDACCIO_STORAGE: '/storage',
         ]))
@@ -192,7 +192,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
         def report = loadScript('vars/reportUnityPackage.groovy')
         report.call(preparedPackage([
-            CHECK_FORMATTING: false,
+            TEST_FORMATTING: false,
             REPORT_TO_DISCORD: true,
             DISCORD_WEBHOOK: 'https://discord.example/webhook',
             DISCORD_THRESHOLD: 'FAILURE',
@@ -209,7 +209,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def tested = []
         def published = []
         def reported = []
-        def prepared = preparedPackage([CHECK_FORMATTING: false, RUN_UNITY_TESTS: false])
+        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false])
         binding.setVariable('scm', new Expando())
         binding.setVariable('docker', new Expando(image: { String imageName ->
             images << imageName
@@ -233,24 +233,64 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def wrapper = loadScript('vars/unityPackagePipeline.groovy')
         wrapper.call([
             PREPARE_AGENT: 'prepare-node',
-            PREPARE_DOCKER_IMAGE: 'prepare-image',
+            PREPARE_IMAGE: 'prepare-image',
             PUBLISH_AGENT: 'publish-node',
-            PUBLISH_DOCKER_IMAGE: 'publish-image',
-            UNITY_AGENTS: [linux: 'linux-node', windows: 'windows-node'],
-            UNITY_CONTAINERS: [linux: 'linux-container', windows: ''],
+            PUBLISH_IMAGE: 'publish-image',
+            UNITY_AGENTS: [Editor: 'editor-node', Player: 'player-node', WebGL: 'webgl-node'],
         ])
 
-        assertEquals(['prepare-node', 'linux-node', 'windows-node', 'publish-node'], nodes)
+        assertEquals(['prepare-node', 'editor-node', 'player-node', 'webgl-node', 'publish-node'], nodes)
         assertEquals(['prepare-image', 'publish-image'], images)
-        assertEquals([prepared, prepared], tested)
+        assertEquals([prepared, prepared, prepared], tested)
         assertEquals([prepared], published)
         assertEquals([prepared], reported)
     }
 
+    @Test
+    void skipsTheTestStageWhenUnityAgentsAreDisabled() {
+        def stages = []
+        def nodes = []
+        def tested = []
+        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false])
+        binding.setVariable('scm', new Expando())
+        binding.setVariable('docker', new Expando(image: { String ignored ->
+            new Expando(inside: { String ignoredArgs, Closure body -> body() })
+        }))
+        helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
+            stages << name
+            body()
+        }
+        helper.registerAllowedMethod('node', [String, Closure]) { String label, Closure body ->
+            nodes << label
+            body()
+        }
+        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
+            throw new AssertionError('parallel must not be called')
+        }
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored -> prepared }
+        helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
+        helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
+        helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
+
+        def wrapper = loadScript('vars/unityPackagePipeline.groovy')
+        wrapper.call([
+            PREPARE_AGENT: 'prepare-node',
+            PREPARE_IMAGE: 'prepare-image',
+            PUBLISH_AGENT: 'publish-node',
+            PUBLISH_IMAGE: 'publish-image',
+            UNITY_AGENTS: [:],
+        ])
+
+        assertEquals(['Prepare', 'Publish'], stages)
+        assertEquals(['prepare-node', 'publish-node'], nodes)
+        assertTrue(tested.empty)
+    }
+
     private PreparedUnityPackage preparedPackage(Map overrides = [:]) {
         def options = UnityPackageOptions.fromMap([
-            VALIDATE_CHANGELOG: false,
-            CHECK_FORMATTING: false,
+            TEST_CHANGELOG: false,
+            TEST_FORMATTING: false,
         ] + overrides)
         def context = new UnityPackageContext('net.example.package', '1.2.3', 'main', '.')
         new PreparedUnityPackage(options, context, 'execution', 'package-stash', 'configuration-stash')
