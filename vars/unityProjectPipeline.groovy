@@ -52,9 +52,9 @@ def call(Object input = [:]) {
 
 private UnityProjectContext inspectProject(UnityProjectPipelineOptions pipelineOptions) {
     def options = pipelineOptions.projectOptions
-    def workspaceDirectory = pwd()
+    def workspaceDirectory = normalizePath(pwd())
     def projectDirectory = "${workspaceDirectory}/${options.projectLocation}"
-    def reportsDirectory = "${pwd(tmp: true)}/unity-project-reports"
+    def reportsDirectory = "${normalizePath(pwd(tmp: true))}/unity-project-reports"
     def branch = options.projectBranch ?: env.BRANCH_NAME ?: env.PLASTICSCM_BRANCH
     if (!branch) {
         throw new IllegalArgumentException('PROJECT_BRANCH is required when no Jenkins branch environment is available')
@@ -191,4 +191,8 @@ private boolean shouldReport(String threshold) {
 
 private String displayName(String location) {
     location.replace('\\', '/').tokenize('/').last()
+}
+
+private String normalizePath(String path) {
+    path.replace('\\', '/')
 }

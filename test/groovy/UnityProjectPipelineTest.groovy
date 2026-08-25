@@ -63,8 +63,8 @@ class UnityProjectPipelineTest extends BasePipelineTest {
             body()
         }
         helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
-        helper.registerAllowedMethod('pwd', []) { 'C:/workspace' }
-        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/workspace@tmp' }
+        helper.registerAllowedMethod('pwd', []) { 'C:\\workspace' }
+        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:\\workspace@tmp' }
         helper.registerAllowedMethod('withUnityProjectEnvironment', [UnityProjectOptions, Closure]) { UnityProjectOptions ignored, Closure body -> body() }
         helper.registerAllowedMethod('setUnityProjectVersion', [UnityProjectContext]) { UnityProjectContext project -> versioned << project }
         helper.registerAllowedMethod('buildUnityProject', [UnityProjectContext, String]) { UnityProjectContext project, String operation -> built << [project, operation] }
