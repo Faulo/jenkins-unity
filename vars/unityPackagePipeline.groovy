@@ -58,8 +58,8 @@ def call(Object input = [:]) {
 }
 
 private void testOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
-    node(agent) {
-        stage("Agent: ${name}") {
+    stage("Agent: ${name}") {
+        node(agent) {
             testUnityPackage(preparedPackage)
         }
     }

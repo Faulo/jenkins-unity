@@ -248,6 +248,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     void orchestratesConfiguredAgentsInDeclarationOrder() {
         def stages = []
         def nodes = []
+        def events = []
         def images = []
         def tested = []
         def published = []
@@ -260,10 +261,12 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         }))
         helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
             stages << name
+            events << "stage:${name}".toString()
             body()
         }
         helper.registerAllowedMethod('node', [String, Closure]) { String label, Closure body ->
             nodes << label
+            events << "node:${label}".toString()
             body()
         }
         helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
@@ -291,6 +294,17 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
         assertEquals(['Package: net.example.package', 'Agent: Windows', 'Agent: Linux', 'Agent: WebGL', 'Publish: Verdaccio'], stages)
         assertEquals(['prepare-node', 'windows-node', 'linux-node', 'webgl-node', 'publish-node'], nodes)
+        assertEquals([
+            'node:prepare-node',
+            'stage:Agent: Windows',
+            'node:windows-node',
+            'stage:Agent: Linux',
+            'node:linux-node',
+            'stage:Agent: WebGL',
+            'node:webgl-node',
+            'stage:Publish: Verdaccio',
+            'node:publish-node',
+        ], events)
         assertEquals(['prepare-image', 'publish-image'], images)
         assertEquals([prepared, prepared, prepared], tested)
         assertEquals([prepared], published)
