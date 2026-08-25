@@ -19,7 +19,7 @@ InstalledUnityPackage call(PreparedUnityPackage preparedPackage) {
             }
         }
 
-        withUnityPackageEnvironment(preparedPackage) {
+        withUnityPackageEnvironment(preparedPackage, packageDirectory) {
             dir(reportsDirectory) {
                 callUnity "unity-package-install '${packageDirectory}' '${projectDirectory}'", 'package-install.xml'
                 junit(testResults: 'package-install.xml')

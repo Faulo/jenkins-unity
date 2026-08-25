@@ -41,7 +41,7 @@ node('compose-unity') {
 unityPackagePipeline {
     PACKAGE_LOCATION = '.jenkins/fixtures/unity-package'
     PACKAGE_ID = 'net.slothsoft.jenkins-unity.integration'
-    PACKAGE_BRANCH = 'main'
+    UNITY_MANIFEST_LOCATION = '.jenkins/manifest.json'
     TEST_CHANGELOG = true
     TEST_FORMATTING = true
     FORMATTING_LOCATION = '.jenkins/fixtures/unity-package/.editorconfig'

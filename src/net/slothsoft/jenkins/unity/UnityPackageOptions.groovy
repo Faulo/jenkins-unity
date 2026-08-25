@@ -18,7 +18,7 @@ final class UnityPackageOptions implements Serializable {
         TEST_FORMATTING: true,
         FORMATTING_LOCATION: '.editorconfig',
         FORMATTING_ADDONS: ['.editor/**', 'Directory.Build.props'],
-        FORMATTING_EXCLUSIONS: [],
+        FORMATTING_EXCLUSIONS: ['Library'],
         TEST_UNITY: true,
         UNITY_TEST_MODES: ['EditMode', 'PlayMode'],
         BUILD_DOCUMENTATION: false,
@@ -26,6 +26,7 @@ final class UnityPackageOptions implements Serializable {
         UNITY_CREDENTIALS: '',
         EMAIL_CREDENTIALS: '',
         UNITY_MANIFEST_CREDENTIALS: '',
+        UNITY_MANIFEST_LOCATION: '',
 
         PUBLISH_TO_VERDACCIO: false,
         PUBLISH_ON_FAILURE: false,
@@ -66,6 +67,7 @@ final class UnityPackageOptions implements Serializable {
     final String unityCredentialsId
     final String emailCredentialsId
     final String unityManifestCredentialsId
+    final String unityManifestLocation
     final boolean publishToVerdaccio
     final boolean publishOnFailure
     final boolean publishReleases
@@ -112,6 +114,13 @@ final class UnityPackageOptions implements Serializable {
         unityCredentialsId = UnityPackageConfig.stringValue(values, 'UNITY_CREDENTIALS')
         emailCredentialsId = UnityPackageConfig.stringValue(values, 'EMAIL_CREDENTIALS')
         unityManifestCredentialsId = UnityPackageConfig.stringValue(values, 'UNITY_MANIFEST_CREDENTIALS')
+        unityManifestLocation = UnityPackageConfig.stringValue(values, 'UNITY_MANIFEST_LOCATION')
+        if (unityManifestLocation) {
+            UnityPackageConfig.requireRelativePath(unityManifestLocation, 'UNITY_MANIFEST_LOCATION')
+        }
+        if (unityManifestCredentialsId && unityManifestLocation) {
+            throw new IllegalArgumentException('UNITY_MANIFEST_CREDENTIALS and UNITY_MANIFEST_LOCATION are mutually exclusive')
+        }
         publishToVerdaccio = UnityPackageConfig.booleanValue(values, 'PUBLISH_TO_VERDACCIO')
         publishOnFailure = UnityPackageConfig.booleanValue(values, 'PUBLISH_ON_FAILURE')
         publishReleases = UnityPackageConfig.booleanValue(values, 'PUBLISH_RELEASES')

@@ -1,6 +1,10 @@
 import net.slothsoft.jenkins.unity.PreparedUnityPackage
 
 void call(PreparedUnityPackage preparedPackage, Closure body) {
+    call(preparedPackage, '', body)
+}
+
+void call(PreparedUnityPackage preparedPackage, String packageDirectory, Closure body) {
     if (!preparedPackage) {
         throw new IllegalArgumentException('preparedPackage must not be null')
     }
@@ -8,6 +12,7 @@ void call(PreparedUnityPackage preparedPackage, Closure body) {
     def options = preparedPackage.options
     def credentials = []
     def forwardedEnvironment = []
+    def environmentOverrides = []
     if (options.unityCredentialsId) {
         credentials << usernamePassword(credentialsId: options.unityCredentialsId, usernameVariable: 'UNITY_CREDENTIALS_USR', passwordVariable: 'UNITY_CREDENTIALS_PSW')
         forwardedEnvironment.addAll(['UNITY_CREDENTIALS_USR', 'UNITY_CREDENTIALS_PSW'])
@@ -19,12 +24,19 @@ void call(PreparedUnityPackage preparedPackage, Closure body) {
     if (options.unityManifestCredentialsId) {
         credentials << file(credentialsId: options.unityManifestCredentialsId, variable: 'UNITY_EMPTY_MANIFEST')
         forwardedEnvironment << 'UNITY_EMPTY_MANIFEST'
+    } else if (options.unityManifestLocation && packageDirectory) {
+        def manifestFile = "${packageDirectory}/${options.unityManifestLocation}".replace('\\', '/')
+        if (!fileExists(manifestFile)) {
+            error "Unity manifest '${options.unityManifestLocation}' does not exist in the prepared package."
+        }
+        environmentOverrides << "UNITY_EMPTY_MANIFEST=${manifestFile}"
+        forwardedEnvironment << 'UNITY_EMPTY_MANIFEST'
     }
 
     withCredentials(credentials) {
         def existingEnvironment = (env.JENKINS_UNITY_ENV ?: '').tokenize(':')
         def environmentNames = (existingEnvironment + forwardedEnvironment).findAll { it }.unique()
-        withEnv(["JENKINS_UNITY_ENV=${environmentNames.join(':')}"]) {
+        withEnv(environmentOverrides + ["JENKINS_UNITY_ENV=${environmentNames.join(':')}"]) {
             withUnity(body)
         }
     }

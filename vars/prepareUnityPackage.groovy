@@ -22,9 +22,13 @@ PreparedUnityPackage call(Map args) {
 }
 
 PreparedUnityPackage call(UnityPackageOptions options) {
+    call(options, [:])
+}
+
+PreparedUnityPackage call(UnityPackageOptions options, Map checkoutVariables) {
     def workspace = pwd()
     def packageDirectory = "${workspace}/${options.packageLocation}"
-    def branch = options.packageBranch ?: env.BRANCH_NAME ?: env.PLASTICSCM_BRANCH
+    def branch = resolveBranch(options, checkoutVariables)
 
     def discovered = dir(packageDirectory) {
         def packageData = readJSON(file: 'package.json')
@@ -62,4 +66,24 @@ PreparedUnityPackage call(UnityPackageOptions options) {
     }
 
     new PreparedUnityPackage(options, context, executionId, packageStash, configurationStash)
+}
+
+private String resolveBranch(UnityPackageOptions options, Map checkoutVariables) {
+    options.packageBranch ?:
+        env.BRANCH_NAME ?:
+        normalizeGitBranch(checkoutVariables?.GIT_LOCAL_BRANCH) ?:
+        normalizeGitBranch(checkoutVariables?.GIT_BRANCH) ?:
+        normalizeGitBranch(env.GIT_LOCAL_BRANCH) ?:
+        normalizeGitBranch(env.GIT_BRANCH) ?:
+        env.PLASTICSCM_BRANCH
+}
+
+private String normalizeGitBranch(Object value) {
+    def branch = value?.toString() ?: ''
+    for (String prefix : ['refs/remotes/origin/', 'refs/heads/', 'origin/', '*/']) {
+        if (branch.startsWith(prefix)) {
+            return branch.substring(prefix.length())
+        }
+    }
+    branch
 }

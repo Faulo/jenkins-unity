@@ -60,6 +60,27 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     }
 
     @Test
+    void preparationInheritsAndNormalizesTheCheckedOutGitBranch() {
+        binding.getVariable('env').BRANCH_NAME = ''
+        binding.getVariable('env').PLASTICSCM_BRANCH = ''
+        helper.registerAllowedMethod('pwd', []) { 'C:/workspace' }
+        helper.registerAllowedMethod('readJSON', [Map]) { Map ignored ->
+            [name: 'net.example.package', version: '1.2.3']
+        }
+        helper.registerAllowedMethod('stash', [Map]) { Map ignored -> }
+
+        def prepare = loadScript('vars/prepareUnityPackage.groovy')
+        def options = UnityPackageOptions.fromMap([
+            PACKAGE_LOCATION: 'Package',
+            TEST_FORMATTING: false,
+            TEST_UNITY: false,
+        ])
+        def prepared = prepare.call(options, [GIT_BRANCH: 'origin/feature/manifests'])
+
+        assertEquals('feature/manifests', prepared.context.branch)
+    }
+
+    @Test
     void installsPackageIntoOneReusableUnityProject() {
         def directories = []
         def commands = []
@@ -68,7 +89,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             directories << directory
             body()
         }
-        helper.registerAllowedMethod('withUnityPackageEnvironment', [PreparedUnityPackage, Closure]) { PreparedUnityPackage ignored, Closure body -> body() }
+        helper.registerAllowedMethod('withUnityPackageEnvironment', [PreparedUnityPackage, String, Closure]) { PreparedUnityPackage ignored, String ignoredDirectory, Closure body -> body() }
         helper.registerAllowedMethod('callUnity', [String, String]) { String command, String report -> commands << [command, report] }
         helper.registerAllowedMethod('junit', [Map]) { Map ignored -> }
         helper.registerAllowedMethod('fileExists', [String]) { String ignored -> true }
@@ -80,6 +101,53 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals("${installed.workDirectory}/project".toString(), installed.projectDirectory)
         assertEquals([["unity-package-install '${installed.packageDirectory}' '${installed.projectDirectory}'".toString(), 'package-install.xml']], commands)
         assertFalse(helper.callStack.any { it.methodName in ['stage', 'node'] })
+    }
+
+    @Test
+    void forwardsARepositoryManifestFromThePreparedPackage() {
+        def existingFiles = []
+        def environments = []
+        boolean invoked = false
+        helper.registerAllowedMethod('fileExists', [String]) { String path ->
+            existingFiles << path
+            true
+        }
+        helper.registerAllowedMethod('withCredentials', [List, Closure]) { List ignored, Closure body -> body() }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List values, Closure body ->
+            environments.addAll(values)
+            body()
+        }
+        helper.registerAllowedMethod('withUnity', [Closure]) { Closure body -> body() }
+
+        def environment = loadScript('vars/withUnityPackageEnvironment.groovy')
+        environment.call(preparedPackage([
+            UNITY_MANIFEST_LOCATION: '.jenkins/manifest.json',
+        ]), 'C:\\work\\package') {
+            invoked = true
+        }
+
+        assertTrue(invoked)
+        assertEquals(['C:/work/package/.jenkins/manifest.json'], existingFiles)
+        assertTrue((environments*.toString()).contains('UNITY_EMPTY_MANIFEST=C:/work/package/.jenkins/manifest.json'))
+        assertTrue((environments*.toString()).contains('JENKINS_UNITY_ENV=EXISTING:UNITY_EMPTY_MANIFEST'))
+    }
+
+    @Test
+    void rejectsAMissingRepositoryManifestBeforeStartingUnity() {
+        helper.registerAllowedMethod('fileExists', [String]) { String ignored -> false }
+        helper.registerAllowedMethod('error', [String]) { String message -> throw new IllegalStateException(message) }
+
+        def environment = loadScript('vars/withUnityPackageEnvironment.groovy')
+        def failure = assertThrows(IllegalStateException) {
+            environment.call(preparedPackage([
+                UNITY_MANIFEST_LOCATION: '.jenkins/missing.json',
+            ]), 'C:/work/package') {
+                throw new AssertionError('Unity must not start')
+            }
+        }
+
+        assertEquals("Unity manifest '.jenkins/missing.json' does not exist in the prepared package.", failure.message)
+        assertFalse(helper.callStack.any { it.methodName == 'withUnity' })
     }
 
     @Test
@@ -119,7 +187,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertTrue(commands.contains(["unity-method '${installed.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution".toString(), 'build-solution.xml']))
         assertTrue(commands.contains("unity-documentation '${installed.projectDirectory}'".toString()))
         assertTrue(commands.contains('net.example.package'))
-        assertTrue(commands.contains(["${installed.projectDirectory}/project.sln".toString(), installed.reportsDirectory, '']))
+        assertTrue(commands.contains(["${installed.projectDirectory}/project.sln".toString(), installed.reportsDirectory, 'Library']))
         assertTrue(commands.contains(["unity-tests '${installed.projectDirectory}' EditMode PlayMode".toString(), 'tests.xml']))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
     }
@@ -281,11 +349,12 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             events << "node:${label}".toString()
             body()
         }
-        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> [GIT_BRANCH: 'origin/main'] }
         helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
             throw new AssertionError('parallel must not be called')
         }
-        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions, Map]) { UnityPackageOptions ignored, Map checkoutVariables ->
+            assertEquals('origin/main', checkoutVariables.GIT_BRANCH)
             prepared
         }
         helper.registerAllowedMethod('installUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value ->
@@ -404,11 +473,11 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             nodes << label
             body()
         }
-        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
+        helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> [GIT_BRANCH: 'origin/main'] }
         helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
             throw new AssertionError('parallel must not be called')
         }
-        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
+        helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions, Map]) { UnityPackageOptions ignored, Map ignoredCheckoutVariables ->
             prepared
         }
         helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }

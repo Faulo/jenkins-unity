@@ -30,8 +30,8 @@ def call(Object input = [:]) {
         stage("Package: ${pipelineOptions.packageOptions.packageId ?: 'Unity package'}") {
             node(pipelineOptions.prepareAgent) {
                 docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
-                    checkout scm
-                    preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
+                    def checkoutVariables = checkout scm
+                    preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions, checkoutVariables ?: [:])
                 }
             }
         }

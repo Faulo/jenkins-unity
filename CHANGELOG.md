@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add the typed, single-agent `unityProjectPipeline` with stage-free project build, test, Steam/itch deployment, and reporting operations.
 - Keep checkout and project inspection inside `Project: <id>` instead of adding a redundant `prepareUnityProject` phase.
 - Constrain the default package prepare and publish agents to `linux && docker`, matching the Linux-only `node:slim` image while retaining fully configurable labels and images.
+- Let packages supply `UNITY_MANIFEST_LOCATION` from their prepared source as an alternative to a Jenkins file credential.
+- Inherit an unset `PACKAGE_BRANCH` from Git checkout metadata, including normalized remote branch names, before falling back to Plastic SCM.
+- Exclude Unity's generated `Library` directory from package formatting by default.
+- Use one default package agent named `Unity` with the `compose-unity` label, matching `unityProjectPipeline`.
 
 
 ## [5.0.1] - 2026-08-25

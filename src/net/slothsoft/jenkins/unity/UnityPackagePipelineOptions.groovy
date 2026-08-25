@@ -14,7 +14,7 @@ final class UnityPackagePipelineOptions implements Serializable {
         PUBLISH_IMAGE: 'node:slim',
         PUBLISH_ARGS: '',
 
-        UNITY_AGENTS: [Linux: 'linux && compose-unity', Windows: 'windows && compose-unity'],
+        UNITY_AGENTS: [Unity: 'compose-unity'],
     ])
 
     final UnityPackageOptions packageOptions

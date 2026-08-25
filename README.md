@@ -309,7 +309,7 @@ Its infrastructure settings are separate from package behavior and are all confi
 | `PUBLISH_AGENT` | `'linux && docker'` | Jenkins label used by the publish Docker agent. The default matches the Linux-only `node:slim` image. |
 | `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
 | `PUBLISH_ARGS` | `''` | Additional Docker container arguments for publication. |
-| `UNITY_AGENTS` | `[Linux: 'linux && compose-unity', Windows: 'windows && compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
+| `UNITY_AGENTS` | `[Unity: 'compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
 
 Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
 
@@ -322,7 +322,7 @@ The package lifecycle steps share one normalized `UnityPackageOptions` value. Pu
 | `PACKAGE_LOCATION` | `'.'` | Relative package directory in the prepare workspace. Absolute paths and `..` are rejected. |
 | `PACKAGE_ID` | `''` | Package ID override; empty reads `name` from `package.json`. |
 | `PACKAGE_VERSION` | `''` | Version override; empty reads `version` from `package.json`. |
-| `PACKAGE_BRANCH` | `''` | Branch override; empty uses `BRANCH_NAME`, then `PLASTICSCM_BRANCH`. Standalone jobs can set this explicitly. |
+| `PACKAGE_BRANCH` | `''` | Branch override; empty inherits `BRANCH_NAME`, the Git checkout branch, or `PLASTICSCM_BRANCH`, in that order. Common Git remote prefixes are removed. |
 | `SOURCE_INCLUDES` | `['**']` | Jenkins stash include patterns for prepared source. |
 | `SOURCE_EXCLUDES` | `['.git/**']` | Jenkins stash exclusions. Credentials are bound only in later phases and can never enter these stashes. |
 | `TEST_CHANGELOG` | `true` | Require a dated changelog entry for the exact version, or the stable version for a prerelease. |
@@ -330,13 +330,14 @@ The package lifecycle steps share one normalized `UnityPackageOptions` value. Pu
 | `TEST_FORMATTING` | `true` | Generate a solution, run `dotnet format`, and publish its JUnit report. |
 | `FORMATTING_LOCATION` | `'.editorconfig'` | Repository-relative formatting configuration copied to the generated project's root. |
 | `FORMATTING_ADDONS` | `['.editor/**', 'Directory.Build.props']` | Optional repository-relative files restored into the generated project. |
-| `FORMATTING_EXCLUSIONS` | `[]` | Paths passed to `dotnet format --exclude`. |
+| `FORMATTING_EXCLUSIONS` | `['Library']` | Paths passed to `dotnet format --exclude`. Unity's generated `Library` directory is excluded by default. |
 | `TEST_UNITY` | `true` | Install the package into a temporary project and run Unity Test Runner. |
 | `UNITY_TEST_MODES` | `['EditMode', 'PlayMode']` | Non-empty Unity test-mode argument list when tests are enabled. |
 | `BUILD_DOCUMENTATION` | `false` | Generate and publish DocFX documentation. Documentation failure makes the build unstable. |
 | `UNITY_CREDENTIALS` | `''` | Optional Unity username/password credential ID, bound only during testing. |
 | `EMAIL_CREDENTIALS` | `''` | Optional email username/password credential ID, bound only during testing. |
 | `UNITY_MANIFEST_CREDENTIALS` | `''` | Optional Unity manifest file credential ID, bound only during testing. |
+| `UNITY_MANIFEST_LOCATION` | `''` | Optional manifest path relative to `PACKAGE_LOCATION`. The unstashed file is supplied to package installation as `UNITY_EMPTY_MANIFEST`. Mutually exclusive with `UNITY_MANIFEST_CREDENTIALS`. |
 | `PUBLISH_TO_VERDACCIO` | `false` | Enable the Verdaccio publish stage. When false, the stage and its agent allocation are omitted entirely. |
 | `PUBLISH_ON_FAILURE` | `false` | Permit publication when the current result is not `SUCCESS`. |
 | `PUBLISH_RELEASES` | `true` | Permit versions without a prerelease suffix. |

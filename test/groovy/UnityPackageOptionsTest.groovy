@@ -20,9 +20,9 @@ class UnityPackageOptionsTest {
             TEST_FORMATTING: false,
             FORMATTING_LOCATION: 'config/.editorconfig',
             FORMATTING_ADDONS: ['config/stylecop.json'],
-            FORMATTING_EXCLUSIONS: ['Library'],
             TEST_UNITY: false,
             UNITY_TEST_MODES: ['EditMode'],
+            UNITY_MANIFEST_LOCATION: '.jenkins/manifest.json',
             PUBLISH_BRANCHES: ['release'],
         ])
 
@@ -36,6 +36,7 @@ class UnityPackageOptionsTest {
         assertEquals(['Library'], options.formattingExclusions)
         assertFalse(options.testUnity)
         assertEquals(['EditMode'], options.unityTestModes)
+        assertEquals('.jenkins/manifest.json', options.unityManifestLocation)
         assertEquals(['release'], options.publishBranches)
         assertEquals(['.git/**'], options.sourceExcludes)
         assertEquals('/verdaccio/storage', options.verdaccioStorage)
@@ -53,6 +54,15 @@ class UnityPackageOptionsTest {
         assertThrows(IllegalArgumentException) {
             UnityPackageOptions.fromMap([PACKAGE_LOCATION: '../package'])
         }
+        assertThrows(IllegalArgumentException) {
+            UnityPackageOptions.fromMap([UNITY_MANIFEST_LOCATION: '../manifest.json'])
+        }
+        assertThrows(IllegalArgumentException) {
+            UnityPackageOptions.fromMap([
+                UNITY_MANIFEST_CREDENTIALS: 'unity-manifest',
+                UNITY_MANIFEST_LOCATION: '.jenkins/manifest.json',
+            ])
+        }
     }
 
     @Test
@@ -62,7 +72,8 @@ class UnityPackageOptionsTest {
         assertEquals('node:slim', defaults.prepareImage)
         assertEquals('linux && docker', defaults.publishAgent)
         assertEquals('node:slim', defaults.publishImage)
-        assertEquals([Linux: 'linux && compose-unity', Windows: 'windows && compose-unity'], defaults.unityAgents)
+        assertEquals([Unity: 'compose-unity'], defaults.unityAgents)
+        assertEquals(['Library'], defaults.packageOptions.formattingExclusions)
 
         def options = UnityPackagePipelineOptions.fromMap([
             PREPARE_AGENT: 'node-prepare',
@@ -92,7 +103,10 @@ class UnityPackageOptionsTest {
 
     @Test
     void preparedPackageIsImmutableAndSerializable() {
-        def options = UnityPackageOptions.fromMap([PUBLISH_BRANCHES: ['main']])
+        def options = UnityPackageOptions.fromMap([
+            UNITY_MANIFEST_LOCATION: '.jenkins/manifest.json',
+            PUBLISH_BRANCHES: ['main'],
+        ])
         def context = new UnityPackageContext('net.example.test', '1.2.3-preview.1', 'main', '.')
         def prepared = new PreparedUnityPackage(options, context, 'execution', 'source', 'configuration')
 
@@ -109,6 +123,7 @@ class UnityPackageOptionsTest {
         assertEquals('1.2.3-preview.1', restored.context.version)
         assertEquals('1.2.3', restored.context.stableVersion)
         assertFalse(restored.context.release)
+        assertEquals('.jenkins/manifest.json', restored.options.unityManifestLocation)
         assertEquals(['main'], restored.options.publishBranches)
         assertThrows(UnsupportedOperationException) {
             restored.options.publishBranches << 'other'
