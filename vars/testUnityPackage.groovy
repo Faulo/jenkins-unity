@@ -80,13 +80,17 @@ void call(PreparedUnityPackage preparedPackage) {
                         }
 
                         if (options.testFormatting) {
-                            callDotnetFormat("${projectDirectory}/project.sln", reportsDirectory, options.formattingExclusions.join(' '))
+                            stage("Testing: ${options.formattingLocation}") {
+                                callDotnetFormat("${projectDirectory}/project.sln", reportsDirectory, options.formattingExclusions.join(' '))
+                            }
                         }
 
                         if (options.testUnity) {
-                            dir('reports') {
-                                callUnity "unity-tests '${projectDirectory}' ${options.unityTestModes.join(' ')}", 'tests.xml'
-                                junit(testResults: 'tests.xml', allowEmptyResults: true)
+                            stage("Testing: ${options.unityTestModes.join(', ')}") {
+                                dir('reports') {
+                                    callUnity "unity-tests '${projectDirectory}' ${options.unityTestModes.join(' ')}", 'tests.xml'
+                                    junit(testResults: 'tests.xml', allowEmptyResults: true)
+                                }
                             }
                         }
                     }

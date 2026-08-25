@@ -227,7 +227,7 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper owns scripted prepare, parallel Linux/Windows test and success-gated publish stages plus final reporting. The prepare agent is released before Unity testing starts, and the publish agent is allocated only after both test branches have completed successfully. The Jenkinsfile performs no implicit checkout outside the configured prepare agent.
+The wrapper owns scripted preparation, named parallel test branches, opt-in publication, and final reporting. Each agent entry creates a `Testing: <name>` stage directly, without a singular parent test stage. Each enabled `TEST_*` option creates exactly one focused stage within its phase. The prepare agent is released before Unity testing starts; the publish stage and agent are allocated only when `PUBLISH_TO_VERDACCIO` is enabled and the tests completed successfully. The Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
 Its infrastructure settings are separate from package behavior and are all configurable:
 
@@ -267,7 +267,7 @@ The four package phases share one normalized `UnityPackageOptions` value. Public
 | `UNITY_CREDENTIALS` | `''` | Optional Unity username/password credential ID, bound only during testing. |
 | `EMAIL_CREDENTIALS` | `''` | Optional email username/password credential ID, bound only during testing. |
 | `UNITY_MANIFEST_CREDENTIALS` | `''` | Optional Unity manifest file credential ID, bound only during testing. |
-| `PUBLISH_TO_VERDACCIO` | `false` | Enable Verdaccio publication. Publication is opt-in. |
+| `PUBLISH_TO_VERDACCIO` | `false` | Enable the Verdaccio publish stage. When false, the stage and its agent allocation are omitted entirely. |
 | `PUBLISH_ON_FAILURE` | `false` | Permit publication when the current result is not `SUCCESS`. |
 | `PUBLISH_RELEASES` | `true` | Permit versions without a prerelease suffix. |
 | `PUBLISH_PRERELEASES` | `true` | Permit versions with a prerelease suffix. |

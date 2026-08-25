@@ -36,18 +36,16 @@ def call(Object input = [:]) {
         }
 
         if (pipelineOptions.unityAgents) {
-            stage('Test') {
-                def testBranches = pipelineOptions.unityAgents.collectEntries { name, agent ->
-                    [(name): {
-                        testOnAgent(name, agent, preparedPackage)
-                    }]
-                }
-                testBranches.failFast = false
-                parallel(testBranches)
+            def testBranches = pipelineOptions.unityAgents.collectEntries { name, agent ->
+                [(name): {
+                    testOnAgent(name, agent, preparedPackage)
+                }]
             }
+            testBranches.failFast = false
+            parallel(testBranches)
         }
 
-        if (currentBuild.currentResult == 'SUCCESS') {
+        if (pipelineOptions.packageOptions.publishToVerdaccio && currentBuild.currentResult == 'SUCCESS') {
             stage('Publish') {
                 node(pipelineOptions.publishAgent) {
                     docker.image(pipelineOptions.publishImage).inside(pipelineOptions.publishArgs) {
@@ -65,7 +63,7 @@ def call(Object input = [:]) {
 
 private void testOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
     node(agent) {
-        stage("Unity package (${name})") {
+        stage("Testing: ${name}") {
             testUnityPackage(preparedPackage)
         }
     }

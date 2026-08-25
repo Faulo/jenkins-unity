@@ -33,9 +33,15 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     @Test
     void preparesMetadataOnceWithoutAllocatingANode() {
         int metadataReads = 0
+        def stages = []
         def stashes = []
         helper.registerAllowedMethod('pwd', []) { 'C:/workspace' }
-        helper.registerAllowedMethod('fileExists', [String]) { String path -> path.endsWith('/Package') }
+        helper.registerAllowedMethod('fileExists', [String]) { String path -> path.endsWith('/Package') || path == 'CHANGELOG.md' }
+        helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
+            stages << name
+            body()
+        }
+        helper.registerAllowedMethod('readFile', [String]) { String ignored -> '## [1.2.3] - 2026-08-25' }
         helper.registerAllowedMethod('readJSON', [Map]) { Map ignored ->
             metadataReads++
             [name: 'net.example.package', version: '1.2.3']
@@ -46,7 +52,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def prepared = prepare.call {
             PACKAGE_LOCATION = 'Package'
             PACKAGE_BRANCH = 'release'
-            TEST_CHANGELOG = false
+            TEST_CHANGELOG = true
             TEST_FORMATTING = false
             TEST_UNITY = false
         }
@@ -55,6 +61,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals('net.example.package', prepared.context.packageId)
         assertEquals('1.2.3', prepared.context.version)
         assertEquals('release', prepared.context.branch)
+        assertEquals(['Testing: CHANGELOG.md'], stages)
         assertEquals(1, stashes.size())
         assertTrue(stashes[0].name.startsWith('unity-package-source-'))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
@@ -81,6 +88,31 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals(2, invocationDirectories.size())
         assertNotEquals(invocationDirectories[0], invocationDirectories[1])
         assertFalse(helper.callStack.any { it.methodName == 'node' })
+    }
+
+    @Test
+    void givesEachEnabledPackageTestExactlyOneStage() {
+        def stages = []
+        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/workspace@tmp' }
+        helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
+            stages << name
+            body()
+        }
+        helper.registerAllowedMethod('withCredentials', [List, Closure]) { List ignored, Closure body -> body() }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
+        helper.registerAllowedMethod('withUnity', [Closure]) { Closure body -> body() }
+        helper.registerAllowedMethod('callUnity', [String, String]) { String ignored, String ignoredFile -> }
+        helper.registerAllowedMethod('junit', [Map]) { Map ignored -> }
+        helper.registerAllowedMethod('callDotnetFormat', [String, String, String]) { String ignoredSolution, String ignoredReports, String ignoredExclusions -> }
+
+        def testPackage = loadScript('vars/testUnityPackage.groovy')
+        testPackage.call(preparedPackage([
+            TEST_FORMATTING: true,
+            TEST_UNITY: true,
+            UNITY_TEST_MODES: ['EditMode', 'PlayMode'],
+        ]))
+
+        assertEquals(['Testing: .editorconfig', 'Testing: EditMode, PlayMode'], stages)
     }
 
     @Test
@@ -204,18 +236,22 @@ class UnityPackagePhaseTest extends BasePipelineTest {
 
     @Test
     void orchestratesConfiguredAgentsAndImages() {
+        def stages = []
         def nodes = []
         def images = []
         def tested = []
         def published = []
         def reported = []
-        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false])
+        def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false, PUBLISH_TO_VERDACCIO: true])
         binding.setVariable('scm', new Expando())
         binding.setVariable('docker', new Expando(image: { String imageName ->
             images << imageName
             new Expando(inside: { String ignored, Closure body -> body() })
         }))
-        helper.registerAllowedMethod('stage', [String, Closure]) { String ignored, Closure body -> body() }
+        helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
+            stages << name
+            body()
+        }
         helper.registerAllowedMethod('node', [String, Closure]) { String label, Closure body ->
             nodes << label
             body()
@@ -237,8 +273,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             PUBLISH_AGENT: 'publish-node',
             PUBLISH_IMAGE: 'publish-image',
             UNITY_AGENTS: [Editor: 'editor-node', Player: 'player-node', WebGL: 'webgl-node'],
+            PUBLISH_TO_VERDACCIO: true,
         ])
 
+        assertEquals(['Prepare', 'Testing: Editor', 'Testing: Player', 'Testing: WebGL', 'Publish'], stages)
         assertEquals(['prepare-node', 'editor-node', 'player-node', 'webgl-node', 'publish-node'], nodes)
         assertEquals(['prepare-image', 'publish-image'], images)
         assertEquals([prepared, prepared, prepared], tested)
@@ -247,9 +285,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     }
 
     @Test
-    void skipsTheTestStageWhenUnityAgentsAreDisabled() {
+    void skipsDisabledTestAndPublishStages() {
         def stages = []
         def nodes = []
+        def published = []
         def tested = []
         def prepared = preparedPackage([TEST_FORMATTING: false, TEST_UNITY: false])
         binding.setVariable('scm', new Expando())
@@ -270,7 +309,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         }
         helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored -> prepared }
         helper.registerAllowedMethod('testUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> tested << value }
-        helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
+        helper.registerAllowedMethod('publishUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage value -> published << value }
         helper.registerAllowedMethod('reportUnityPackage', [PreparedUnityPackage]) { PreparedUnityPackage ignored -> }
 
         def wrapper = loadScript('vars/unityPackagePipeline.groovy')
@@ -282,9 +321,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             UNITY_AGENTS: [:],
         ])
 
-        assertEquals(['Prepare', 'Publish'], stages)
-        assertEquals(['prepare-node', 'publish-node'], nodes)
+        assertEquals(['Prepare'], stages)
+        assertEquals(['prepare-node'], nodes)
         assertTrue(tested.empty)
+        assertTrue(published.empty)
     }
 
     private PreparedUnityPackage preparedPackage(Map overrides = [:]) {

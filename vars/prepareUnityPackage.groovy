@@ -44,17 +44,19 @@ PreparedUnityPackage call(UnityPackageOptions options) {
     def context = new UnityPackageContext(discovered.id, discovered.version, branch.toString(), options.packageLocation)
 
     if (options.testChangelog) {
-        dir(packageDirectory) {
-            if (!fileExists(options.changelogLocation)) {
-                unstable "Changelog at '${options.changelogLocation}' is missing."
-            } else {
-                def changelogContent = readFile(options.changelogLocation)
-                def validChangelog = containsDatedVersion(changelogContent, context.version)
-                if (!context.release) {
-                    validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
-                }
-                if (!validChangelog) {
-                    unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+        stage("Testing: ${options.changelogLocation}") {
+            dir(packageDirectory) {
+                if (!fileExists(options.changelogLocation)) {
+                    unstable "Changelog at '${options.changelogLocation}' is missing."
+                } else {
+                    def changelogContent = readFile(options.changelogLocation)
+                    def validChangelog = containsDatedVersion(changelogContent, context.version)
+                    if (!context.release) {
+                        validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
+                    }
+                    if (!validChangelog) {
+                        unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+                    }
                 }
             }
         }
