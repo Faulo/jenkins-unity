@@ -227,7 +227,7 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper owns scripted preparation, named parallel test branches, opt-in publication, and final reporting. Preparation appears as `Package: <package ID>`, each configured Unity agent as `Agent: <name>`, formatting as `Test: .editorconfig`, changelog validation as `Test: CHANGELOG.md`, and Unity modes as `Test: Unity (EditMode PlayMode)`. Each enabled `TEST_*` option creates exactly one focused stage. Verdaccio publication appears as `Publish: Verdaccio`; that stage and its agent are omitted when `PUBLISH_TO_VERDACCIO` is disabled. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
+The wrapper owns scripted preparation, ordered test agents, opt-in publication, and final reporting. Preparation appears as `Package: <package ID>`, followed by changelog validation as `Test: CHANGELOG.md`. Each configured Unity agent then appears as `Agent: <name>`, with formatting as `Test: .editorconfig` and Unity modes as `Test: Unity (EditMode PlayMode)`. Agents and their tests run sequentially in `UNITY_AGENTS` declaration order so the Jenkins stage graph is deterministic. Each enabled `TEST_*` option creates exactly one focused stage per applicable scope: changelog validation once, and formatting and Unity testing once per agent. Verdaccio publication appears as `Publish: Verdaccio`; that stage and its agent are omitted when `PUBLISH_TO_VERDACCIO` is disabled. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
 Its infrastructure settings are separate from package behavior and are all configurable:
 
@@ -239,7 +239,7 @@ Its infrastructure settings are separate from package behavior and are all confi
 | `PUBLISH_AGENT` | `'docker'` | Jenkins label used by the publish Docker agent. |
 | `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
 | `PUBLISH_ARGS` | `''` | Additional Docker container arguments for publication. |
-| `UNITY_AGENTS` | `[Linux: 'linux && compose-unity', Windows: 'windows && compose-unity']` | Map of parallel branch names to Jenkins label expressions. Any names and number of entries are accepted; `[:]` skips the entire test stage. |
+| `UNITY_AGENTS` | `[Linux: 'linux && compose-unity', Windows: 'windows && compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
 
 Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
 

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Renamed Unity package Pipeline stages to `Package: <id>`, `Agent: <name>`, `Test: <target>`, and `Publish: Verdaccio`.
+- Run `UNITY_AGENTS` sequentially in declaration order so agent stages and their nested tests always have deterministic ordering.
+- Show `TEST_CHANGELOG` as its own stage immediately after package preparation.
 
 
 ## [5.0.1] - 2026-08-25

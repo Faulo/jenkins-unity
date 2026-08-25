@@ -45,25 +45,6 @@ PreparedUnityPackage call(UnityPackageOptions options) {
 
     PreparedUnityPackage preparedPackage
     stage("Package: ${context.packageId}") {
-        if (options.testChangelog) {
-            stage("Test: ${displayName(options.changelogLocation)}") {
-                dir(packageDirectory) {
-                    if (!fileExists(options.changelogLocation)) {
-                        unstable "Changelog at '${options.changelogLocation}' is missing."
-                    } else {
-                        def changelogContent = readFile(options.changelogLocation)
-                        def validChangelog = containsDatedVersion(changelogContent, context.version)
-                        if (!context.release) {
-                            validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
-                        }
-                        if (!validChangelog) {
-                            unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
-                        }
-                    }
-                }
-            }
-        }
-
         if (options.testFormatting && !fileExists("${workspace}/${options.formattingLocation}")) {
             error "Formatting configuration '${options.formattingLocation}' does not exist in the current workspace."
         }
@@ -95,6 +76,25 @@ PreparedUnityPackage call(UnityPackageOptions options) {
         }
 
         preparedPackage = new PreparedUnityPackage(options, context, executionId, packageStash, configurationStash)
+    }
+
+    if (options.testChangelog) {
+        stage("Test: ${displayName(options.changelogLocation)}") {
+            dir(packageDirectory) {
+                if (!fileExists(options.changelogLocation)) {
+                    unstable "Changelog at '${options.changelogLocation}' is missing."
+                } else {
+                    def changelogContent = readFile(options.changelogLocation)
+                    def validChangelog = containsDatedVersion(changelogContent, context.version)
+                    if (!context.release) {
+                        validChangelog = validChangelog || containsDatedVersion(changelogContent, context.stableVersion)
+                    }
+                    if (!validChangelog) {
+                        unstable "${options.changelogLocation} does not contain a dated entry for ${context.version}${context.release ? '' : " or ${context.stableVersion}"}."
+                    }
+                }
+            }
+        }
     }
     preparedPackage
 }

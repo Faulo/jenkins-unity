@@ -34,13 +34,11 @@ def call(Object input = [:]) {
         }
 
         if (pipelineOptions.unityAgents) {
-            def testBranches = pipelineOptions.unityAgents.collectEntries { name, agent ->
-                [(name): {
-                    testOnAgent(name, agent, preparedPackage)
-                }]
+            def agentNames = new ArrayList(pipelineOptions.unityAgents.keySet())
+            for (int index = 0; index < agentNames.size(); index++) {
+                def name = agentNames[index]
+                testOnAgent(name, pipelineOptions.unityAgents[name], preparedPackage)
             }
-            testBranches.failFast = false
-            parallel(testBranches)
         }
 
         if (pipelineOptions.packageOptions.publishToVerdaccio && currentBuild.currentResult == 'SUCCESS') {

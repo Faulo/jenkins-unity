@@ -34,12 +34,20 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     void preparesMetadataOnceWithoutAllocatingANode() {
         int metadataReads = 0
         def stages = []
+        def stageStack = []
+        def stageParents = [:]
         def stashes = []
         helper.registerAllowedMethod('pwd', []) { 'C:/workspace' }
         helper.registerAllowedMethod('fileExists', [String]) { String path -> path.endsWith('/Package') || path == 'CHANGELOG.md' }
         helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
             stages << name
-            body()
+            stageParents[name] = stageStack ? stageStack.last() : null
+            stageStack << name
+            try {
+                body()
+            } finally {
+                stageStack.remove(stageStack.size() - 1)
+            }
         }
         helper.registerAllowedMethod('readFile', [String]) { String ignored -> '## [1.2.3] - 2026-08-25' }
         helper.registerAllowedMethod('readJSON', [Map]) { Map ignored ->
@@ -62,6 +70,8 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals('1.2.3', prepared.context.version)
         assertEquals('release', prepared.context.branch)
         assertEquals(['Package: net.example.package', 'Test: CHANGELOG.md'], stages)
+        assertEquals(null, stageParents['Package: net.example.package'])
+        assertEquals(null, stageParents['Test: CHANGELOG.md'])
         assertEquals(1, stashes.size())
         assertTrue(stashes[0].name.startsWith('unity-package-source-'))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
@@ -235,7 +245,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     }
 
     @Test
-    void orchestratesConfiguredAgentsAndImages() {
+    void orchestratesConfiguredAgentsInDeclarationOrder() {
         def stages = []
         def nodes = []
         def images = []
@@ -257,8 +267,8 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             body()
         }
         helper.registerAllowedMethod('checkout', [Object]) { Object ignored -> }
-        helper.registerAllowedMethod('parallel', [Map]) { Map branches ->
-            branches.findAll { name, ignored -> name != 'failFast' }.each { name, branch -> branch() }
+        helper.registerAllowedMethod('parallel', [Map]) { Map ignored ->
+            throw new AssertionError('parallel must not be called')
         }
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
         helper.registerAllowedMethod('prepareUnityPackage', [UnityPackageOptions]) { UnityPackageOptions ignored ->
@@ -275,12 +285,12 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             PREPARE_IMAGE: 'prepare-image',
             PUBLISH_AGENT: 'publish-node',
             PUBLISH_IMAGE: 'publish-image',
-            UNITY_AGENTS: [Editor: 'editor-node', Player: 'player-node', WebGL: 'webgl-node'],
+            UNITY_AGENTS: [Windows: 'windows-node', Linux: 'linux-node', WebGL: 'webgl-node'],
             PUBLISH_TO_VERDACCIO: true,
         ])
 
-        assertEquals(['Package: net.example.package', 'Agent: Editor', 'Agent: Player', 'Agent: WebGL', 'Publish: Verdaccio'], stages)
-        assertEquals(['prepare-node', 'editor-node', 'player-node', 'webgl-node', 'publish-node'], nodes)
+        assertEquals(['Package: net.example.package', 'Agent: Windows', 'Agent: Linux', 'Agent: WebGL', 'Publish: Verdaccio'], stages)
+        assertEquals(['prepare-node', 'windows-node', 'linux-node', 'webgl-node', 'publish-node'], nodes)
         assertEquals(['prepare-image', 'publish-image'], images)
         assertEquals([prepared, prepared, prepared], tested)
         assertEquals([prepared], published)

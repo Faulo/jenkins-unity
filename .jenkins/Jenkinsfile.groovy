@@ -46,6 +46,7 @@ unityPackagePipeline {
     FORMATTING_LOCATION = '.jenkins/fixtures/unity-package/.editorconfig'
     TEST_UNITY = true
     UNITY_TEST_MODES = ['EditMode']
+    UNITY_AGENTS = [Windows: 'windows && compose-unity', Linux: 'linux && compose-unity']
     BUILD_DOCUMENTATION = false
     PUBLISH_TO_VERDACCIO = false
 
