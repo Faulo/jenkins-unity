@@ -1,4 +1,5 @@
 import net.slothsoft.jenkins.unity.PreparedUnityPackage
+import net.slothsoft.jenkins.unity.InstalledUnityPackage
 import net.slothsoft.jenkins.unity.UnityPackagePipelineOptions
 
 def call(Object input = [:]) {
@@ -26,11 +27,10 @@ def call(Object input = [:]) {
 
     PreparedUnityPackage preparedPackage
     try {
-        node(pipelineOptions.prepareAgent) {
-            docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
-                checkout scm
-                def packageId = packageIdForStage(pipelineOptions)
-                stage("Package: ${packageId}") {
+        stage("Package: ${pipelineOptions.packageOptions.packageId ?: 'Unity package'}") {
+            node(pipelineOptions.prepareAgent) {
+                docker.image(pipelineOptions.prepareImage).inside(pipelineOptions.prepareArgs) {
+                    checkout scm
                     preparedPackage = prepareUnityPackage(pipelineOptions.packageOptions)
                 }
             }
@@ -38,14 +38,11 @@ def call(Object input = [:]) {
 
         if (pipelineOptions.unityAgents) {
             def agentNames = new ArrayList(pipelineOptions.unityAgents.keySet())
-            def firstName = agentNames[0]
-            if (hasSingletonWork(preparedPackage) || preparedPackage.options.testUnity) {
-                testOnFirstAgent(firstName, pipelineOptions.unityAgents[firstName], preparedPackage)
-            }
-            if (preparedPackage.options.testUnity) {
-                for (int index = 1; index < agentNames.size(); index++) {
+            for (int index = 0; index < agentNames.size(); index++) {
+                def isFirstAgent = index == 0
+                if ((isFirstAgent && hasSingletonWork(preparedPackage)) || preparedPackage.options.testUnity) {
                     def name = agentNames[index]
-                    testUnityOnAgent(name, pipelineOptions.unityAgents[name], preparedPackage)
+                    runOnAgent(name, pipelineOptions.unityAgents[name], preparedPackage, isFirstAgent)
                 }
             }
         }
@@ -66,39 +63,42 @@ def call(Object input = [:]) {
     }
 }
 
-private void testOnFirstAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
+private void runOnAgent(String name, String agent, PreparedUnityPackage preparedPackage, boolean isFirstAgent) {
     stage("Agent: ${name}") {
         node(agent) {
             def options = preparedPackage.options
-            if (options.testChangelog) {
-                stage("Test: ${displayName(options.changelogLocation)}") {
-                    testUnityPackage(preparedPackage, 'changelog')
+            InstalledUnityPackage installedPackage
+            try {
+                stage('Build: Unity package') {
+                    installedPackage = installUnityPackage(preparedPackage)
                 }
-            }
-            if (options.testFormatting) {
-                stage("Test: ${displayName(options.formattingLocation)}") {
-                    testUnityPackage(preparedPackage, 'formatting')
+                if (isFirstAgent) {
+                    if (options.testChangelog) {
+                        stage("Test: ${displayName(options.changelogLocation)}") {
+                            testUnityPackage(installedPackage)
+                        }
+                    }
+                    if (options.testFormatting) {
+                        stage('Build: C# solution') {
+                            buildUnityProject(installedPackage, 'solution')
+                        }
+                        stage("Test: ${displayName(options.formattingLocation)}") {
+                            testUnityProject(installedPackage, 'formatting')
+                        }
+                    }
+                    if (options.buildDocumentation) {
+                        stage('Build: DocFX documentation') {
+                            buildUnityProject(installedPackage, 'documentation')
+                        }
+                    }
                 }
-            }
-            if (options.buildDocumentation) {
-                stage('Build: DocFX documentation') {
-                    testUnityPackage(preparedPackage, 'documentation')
+                if (options.testUnity) {
+                    stage("Test: Unity (${options.unityTestModes.join(' ')})") {
+                        testUnityProject(installedPackage, 'unity')
+                    }
                 }
-            }
-            if (options.testUnity) {
-                stage("Test: Unity (${options.unityTestModes.join(' ')})") {
-                    testUnityPackage(preparedPackage, 'unity')
-                }
-            }
-        }
-    }
-}
-
-private void testUnityOnAgent(String name, String agent, PreparedUnityPackage preparedPackage) {
-    stage("Agent: ${name}") {
-        node(agent) {
-            stage("Test: Unity (${preparedPackage.options.unityTestModes.join(' ')})") {
-                testUnityPackage(preparedPackage, 'unity')
+            } finally {
+                deleteUnityProject(installedPackage)
             }
         }
     }
@@ -134,14 +134,4 @@ private boolean shouldReport(String threshold) {
 
 private String displayName(String location) {
     location.replace('\\', '/').tokenize('/').last()
-}
-
-private String packageIdForStage(UnityPackagePipelineOptions pipelineOptions) {
-    def options = pipelineOptions.packageOptions
-    if (options.packageId) {
-        return options.packageId
-    }
-    dir(options.packageLocation) {
-        readJSON(file: 'package.json').name.toString()
-    }
 }

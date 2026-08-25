@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make `unityPackagePipeline` the sole owner of package stages, run changelog, formatting, and documentation exactly once on the first declared Unity agent, and reserve subsequent agents for Unity Test Runner.
 - Give each enabled and threshold-eligible reporting method its own `Report: <method>` stage.
 - Restore DocFX documentation coverage to the Unity package integration build.
+- Split package installation, package validation, Unity project builds, and Unity project tests into `installUnityPackage`, `testUnityPackage`, `buildUnityProject`, and `testUnityProject` steps that share one installed project per agent.
+- Show solution generation and DocFX as project `Build:` stages, while formatting and Unity Test Runner remain project `Test:` stages.
 
 
 ## [5.0.1] - 2026-08-25

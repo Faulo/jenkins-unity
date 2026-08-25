@@ -19,7 +19,11 @@ The new Unity package release API uses real booleans and typed collections and r
 | [`unityProject`](#unityproject) | Test, document, build, deploy, and report on a Unity project. |
 | [`unityPackagePipeline`](#unitypackagepipeline) | Run the standard prepare, Linux/Windows test, publish, and report topology for a Unity package. |
 | [`prepareUnityPackage`](#prepareunitypackage) | Resolve and validate package metadata and create portable source stashes. |
-| [`testUnityPackage`](#testunitypackage) | Restore and test a prepared package on the caller-selected Unity agent. |
+| [`installUnityPackage`](#installunitypackage) | Create a temporary Unity project and install a prepared package into it. |
+| [`testUnityPackage`](#testunitypackage) | Validate package-level concerns in an installed package. |
+| [`buildUnityProject`](#buildunityproject) | Build the solution or DocFX site for an installed Unity project. |
+| [`testUnityProject`](#testunityproject) | Run formatting or Unity Test Runner against an installed Unity project. |
+| [`deleteUnityProject`](#deleteunityproject) | Delete an installed package's temporary Unity project. |
 | [`publishUnityPackage`](#publishunitypackage) | Restore and publish a prepared package on the caller-selected npm agent. |
 | [`reportUnityPackage`](#reportunitypackage) | Report a prepared package's final build result without requiring a workspace. |
 | [`withUnity`](#withunity) | Run library shell commands inside a Unity sidecar container. |
@@ -227,7 +231,9 @@ unityPackagePipeline {
 }
 ```
 
-The wrapper is the sole owner of Pipeline stages. Preparation appears as `Package: <package ID>`. The first entry in `UNITY_AGENTS` runs the singleton `Test: CHANGELOG.md`, `Test: .editorconfig`, and `Build: DocFX documentation` stages when enabled, followed by `Test: Unity (EditMode PlayMode)`. Every remaining entry runs only the Unity Test Runner stage. Agent stages and their nested work run sequentially in map declaration order, so the Jenkins stage graph is deterministic. `[:]` skips all singleton and per-agent work.
+The wrapper is the sole owner of Pipeline stages. Preparation appears as `Package: <package ID>` and that stage encloses its prepare node. Set `PACKAGE_ID` when the exact ID must be visible before checkout; otherwise the stage uses `Package: Unity package` and preparation discovers the ID from `package.json` inside the node.
+
+Every used Unity agent gets one `Agent: <name>` stage enclosing its node and one `Build: Unity package` stage that installs the package into a fresh temporary project. The first entry in `UNITY_AGENTS` additionally runs the singleton `Test: CHANGELOG.md`, `Build: C# solution`, `Test: .editorconfig`, and `Build: DocFX documentation` stages when their options require them, followed by `Test: Unity (EditMode PlayMode)`. Every remaining entry runs only package installation and Unity Test Runner. Agent stages and their nested work run sequentially in map declaration order, so the Jenkins stage graph is deterministic. `[:]` skips all singleton and per-agent work.
 
 Verdaccio publication appears as `Publish: Verdaccio`; that stage and its node allocation are omitted when `PUBLISH_TO_VERDACCIO` is disabled. Each enabled reporting method that satisfies its result threshold gets its own agent-free `Report: Discord`, `Report: Office 365`, or `Report: Adaptive Cards` stage. The prepare agent is released before Unity testing starts, and the Jenkinsfile performs no implicit checkout outside the configured prepare agent.
 
@@ -247,7 +253,7 @@ Map and delegated-Closure forms accept the infrastructure options above together
 
 ### Unity package options
 
-The four package phases share one normalized `UnityPackageOptions` value. Public Map and DSL adapters require real `Boolean`, `Collection<String>` and `Map<String, String>` values; the legacy `'0'`/`'1'` switches are intentionally not accepted.
+The package lifecycle steps share one normalized `UnityPackageOptions` value. Public Map and DSL adapters require real `Boolean`, `Collection<String>` and `Map<String, String>` values; the legacy `'0'`/`'1'` switches are intentionally not accepted.
 
 | Option | Default | Contract |
 |---|---|---|
@@ -303,9 +309,25 @@ def preparedPackage = prepareUnityPackage(
 
 ### `testUnityPackage`
 
-Runs on the caller-selected Unity agent and never allocates a stage or another node. It restores prepared source below a unique directory derived from `pwd(tmp: true)`, binds credentials locally, enters `withUnity`, creates the temporary project and solution as needed, then performs formatting, documentation and Unity tests with their JUnit publication behavior. The one-argument form runs every enabled operation without adding stages. The orchestration wrapper uses the two-argument operation form (`changelog`, `formatting`, `documentation`, or `unity`) to place each operation in the appropriate stage.
+Validates the changelog in an `InstalledUnityPackage`. This is the package-level test: it operates on the restored package source, never allocates a stage or node, and does not create another project.
 
-The same prepared object may be passed concurrently to Linux and Windows calls. Each call has a distinct temporary directory and only reads shared DTO and stash data.
+### `installUnityPackage`
+
+Runs on the caller-selected Unity agent. It restores the prepared package below a unique directory derived from `pwd(tmp: true)`, creates an empty Unity project with `unity-package-install`, publishes the installation JUnit report, and restores formatting inputs when needed. It returns a serializable `InstalledUnityPackage` containing the prepared metadata and temporary package, project, report, and work-directory paths. It allocates no stage or node.
+
+Each agent must create its own installation. Subsequent package tests, project builds, and project tests on that agent share the returned project.
+
+### `buildUnityProject`
+
+Runs build operations against an `InstalledUnityPackage` without allocating a stage or node. The two-argument form accepts `solution` to generate `project.sln`, or `documentation` to generate and publish DocFX documentation. The one-argument form builds the solution when `TEST_FORMATTING` is enabled and documentation when `BUILD_DOCUMENTATION` is enabled.
+
+### `testUnityProject`
+
+Runs project-level tests against an `InstalledUnityPackage` without allocating a stage or node. The two-argument form accepts `formatting` or `unity`; the one-argument form runs the operations enabled by `TEST_FORMATTING` and `TEST_UNITY`. Formatting checks the previously generated solution. Unity Test Runner uses the configured `UNITY_TEST_MODES` and publishes its JUnit report.
+
+### `deleteUnityProject`
+
+Deletes the temporary work directory belonging to an `InstalledUnityPackage`. It allocates no stage or node and safely accepts `null`, making it suitable for a `finally` block.
 
 ### `publishUnityPackage`
 
@@ -338,16 +360,19 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            failFast false
-            parallel {
-                stage('Linux') {
-                    agent { label 'linux && compose-unity' }
-                    steps { script { testUnityPackage(preparedPackage) } }
-                }
-                stage('Windows') {
-                    agent { label 'windows && compose-unity' }
-                    steps { script { testUnityPackage(preparedPackage) } }
+        stage('Linux') {
+            agent { label 'linux && compose-unity' }
+            steps {
+                script {
+                    def installedPackage
+                    try {
+                        installedPackage = installUnityPackage(preparedPackage)
+                        testUnityPackage(installedPackage)
+                        buildUnityProject(installedPackage, 'solution')
+                        testUnityProject(installedPackage)
+                    } finally {
+                        deleteUnityProject(installedPackage)
+                    }
                 }
             }
         }

@@ -10,11 +10,12 @@ class UnityPackageCpsTest {
     public JenkinsSessionRule sessions = new JenkinsSessionRule()
 
     @Test
-    void preparedPackageSurvivesControllerRestart() {
+    void packageLifecycleValuesSurviveControllerRestart() {
         sessions.then { JenkinsRule jenkins ->
             def job = jenkins.createProject(WorkflowJob, 'prepared-package-restart')
             job.definition = new CpsFlowDefinition('''
                 import net.slothsoft.jenkins.unity.PreparedUnityPackage
+                import net.slothsoft.jenkins.unity.InstalledUnityPackage
                 import net.slothsoft.jenkins.unity.UnityPackageContext
                 import net.slothsoft.jenkins.unity.UnityPackageOptions
 
@@ -25,8 +26,9 @@ class UnityPackageCpsTest {
                 ])
                 def context = new UnityPackageContext('net.example.package', '1.2.3-preview.1', 'main', '.')
                 def prepared = new PreparedUnityPackage(options, context, 'execution', 'source', 'configuration')
+                def installed = new InstalledUnityPackage(prepared, '/tmp/work', '/tmp/work/package', '/tmp/work/project', '/tmp/work/reports')
                 sleep time: 3, unit: 'SECONDS'
-                echo "restored ${prepared.context.packageId}@${prepared.context.version} on ${prepared.context.branch}"
+                echo "restored ${installed.preparedPackage.context.packageId}@${installed.preparedPackage.context.version} in ${installed.projectDirectory}"
             '''.stripIndent(), false)
             def build = job.scheduleBuild2(0).waitForStart()
             jenkins.waitForMessage('Sleeping for 3 sec', build)
@@ -36,7 +38,7 @@ class UnityPackageCpsTest {
             def job = jenkins.jenkins.getItemByFullName('prepared-package-restart', WorkflowJob)
             def build = jenkins.waitForCompletion(job.lastBuild)
             jenkins.assertBuildStatusSuccess(build)
-            jenkins.assertLogContains('restored net.example.package@1.2.3-preview.1 on main', build)
+            jenkins.assertLogContains('restored net.example.package@1.2.3-preview.1 in /tmp/work/project', build)
         }
     }
 }
