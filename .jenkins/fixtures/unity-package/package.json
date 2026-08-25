@@ -4,5 +4,8 @@
     "displayName": "Jenkins Unity Integration Fixture",
     "description": "Stub package used by the jenkins-unity integration build.",
     "unity": "6000.3",
-    "unityRelease": "13f1"
+    "unityRelease": "13f1",
+    "dependencies": {
+        "com.unity.ide.visualstudio": "2.0.23"
+    }
 }

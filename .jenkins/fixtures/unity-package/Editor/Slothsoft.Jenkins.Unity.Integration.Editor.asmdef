@@ -1,0 +1,10 @@
+{
+    "name": "Slothsoft.Jenkins.Unity.Integration.Editor",
+    "rootNamespace": "Slothsoft.Jenkins.Unity.Integration.Editor",
+    "references": [
+        "Unity.VisualStudio.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}
