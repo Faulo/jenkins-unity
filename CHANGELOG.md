@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exclude Unity's generated `Library` directory from package formatting by default.
 - Use one default package agent named `Unity` with the `compose-unity` label, matching `unityProjectPipeline`.
 
+### Fixed
+- Keep installed package project paths short enough for Windows tools that still enforce the legacy 260-character path limit.
+- Join publish containers to the default Verdaccio network and publish prerelease versions under their prerelease identifier instead of npm's forbidden `latest` tag.
+
 
 ## [5.0.1] - 2026-08-25
 

@@ -7,7 +7,9 @@ InstalledUnityPackage call(PreparedUnityPackage preparedPackage) {
         throw new IllegalArgumentException('preparedPackage must not be null')
     }
 
-    def workDirectory = "${pwd(tmp: true)}/unity-package-${preparedPackage.executionId}-${UUID.randomUUID()}"
+    def executionId = preparedPackage.executionId.replace('-', '').take(8)
+    def invocationId = UUID.randomUUID().toString().replace('-', '').take(12)
+    def workDirectory = "${pwd(tmp: true)}/unity-pkg-${executionId}-${invocationId}"
     def packageDirectory = "${workDirectory}/package"
     def projectDirectory = "${workDirectory}/project"
     def reportsDirectory = "${workDirectory}/reports"

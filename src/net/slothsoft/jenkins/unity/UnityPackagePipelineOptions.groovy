@@ -12,7 +12,7 @@ final class UnityPackagePipelineOptions implements Serializable {
 
         PUBLISH_AGENT: 'linux && docker',
         PUBLISH_IMAGE: 'node:slim',
-        PUBLISH_ARGS: '',
+        PUBLISH_ARGS: '--network verdaccio',
 
         UNITY_AGENTS: [Unity: 'compose-unity'],
     ])

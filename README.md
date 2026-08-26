@@ -308,7 +308,7 @@ Its infrastructure settings are separate from package behavior and are all confi
 | `PREPARE_ARGS` | `''` | Additional Docker container arguments for preparation. |
 | `PUBLISH_AGENT` | `'linux && docker'` | Jenkins label used by the publish Docker agent. The default matches the Linux-only `node:slim` image. |
 | `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
-| `PUBLISH_ARGS` | `''` | Additional Docker container arguments for publication. |
+| `PUBLISH_ARGS` | `'--network verdaccio'` | Additional Docker container arguments for publication. The default joins the network used by the default Verdaccio URL. |
 | `UNITY_AGENTS` | `[Unity: 'compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
 
 Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
@@ -376,7 +376,7 @@ Validates the changelog in an `InstalledUnityPackage`. This is the package-level
 
 ### `installUnityPackage`
 
-Runs on the caller-selected Unity agent. It restores the prepared package below a unique directory derived from `pwd(tmp: true)`, creates an empty Unity project with `unity-package-install`, publishes the installation JUnit report, and restores formatting inputs when needed. It returns a serializable `InstalledUnityPackage` containing the prepared metadata and temporary package, project, report, and work-directory paths. It allocates no stage or node.
+Runs on the caller-selected Unity agent. It restores the prepared package below a short unique directory derived from `pwd(tmp: true)`, keeping nested Unity package paths below the legacy Windows path limit, creates an empty Unity project with `unity-package-install`, publishes the installation JUnit report, and restores formatting inputs when needed. It returns a serializable `InstalledUnityPackage` containing the prepared metadata and temporary package, project, report, and work-directory paths. It allocates no stage or node.
 
 Each agent must create its own installation. Subsequent package tests, project builds, and project tests on that agent share the returned project.
 
@@ -402,7 +402,7 @@ Uses only project metadata and `currentBuild`; it does not allocate a stage, cal
 
 ### `publishUnityPackage`
 
-Runs on the caller-selected npm/Verdaccio-capable agent and never allocates another node. It restores prepared source afresh, verifies the prepared branch, release policy and final build result, checks whether the exact version already exists, and binds the npm token only around `npm publish`.
+Runs on the caller-selected npm/Verdaccio-capable agent and never allocates another node. It restores prepared source afresh, verifies the prepared branch, release policy and final build result, checks whether the exact version already exists, and binds the npm token only around `npm publish`. Releases publish under `latest`; prereleases use their first prerelease identifier, such as `pre` for `1.2.3-pre.4`.
 
 When npm returns a nonzero status and `VERDACCIO_STORAGE` identifies existing package storage, it uses `npm pack --json` metadata for the direct-storage fallback. An empty or missing storage configuration fails instead of silently falling back.
 

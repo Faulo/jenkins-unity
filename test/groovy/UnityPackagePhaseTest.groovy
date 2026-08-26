@@ -84,7 +84,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
     void installsPackageIntoOneReusableUnityProject() {
         def directories = []
         def commands = []
-        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/workspace@tmp' }
+        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/jenkins/workspace/unity-packages/Slothsoft.Aseprite@tmp' }
         helper.registerAllowedMethod('dir', [String, Closure]) { String directory, Closure body ->
             directories << directory
             body()
@@ -96,9 +96,11 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def install = loadScript('vars/installUnityPackage.groovy')
         def installed = install.call(preparedPackage([TEST_FORMATTING: false]))
 
-        assertTrue(installed.workDirectory.startsWith('C:/workspace@tmp/unity-package-execution-'))
+        assertTrue(installed.workDirectory ==~ /C:\/jenkins\/workspace\/unity-packages\/Slothsoft\.Aseprite@tmp\/unity-pkg-[a-z0-9]{8}-[a-z0-9]{12}/)
         assertEquals("${installed.workDirectory}/package".toString(), installed.packageDirectory)
         assertEquals("${installed.workDirectory}/project".toString(), installed.projectDirectory)
+        def nestedWindowsPath = "${installed.projectDirectory}/Packages/net.slothsoft.aseprite/.cache/Packages/net.slothsoft.aseprite/TestAssets/TEST_Aseprite_PortraitsWithTags.aseprite.png"
+        assertTrue(nestedWindowsPath.length() < 260)
         assertEquals([["unity-package-install '${installed.packageDirectory}' '${installed.projectDirectory}'".toString(), 'package-install.xml']], commands)
         assertFalse(helper.callStack.any { it.methodName in ['stage', 'node'] })
     }
@@ -227,7 +229,31 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals(2, commands.size())
         assertTrue(commands[0].startsWith("npm view 'net.example.package@1.2.3'"))
         assertTrue(commands[1].startsWith('npm publish .'))
+        assertTrue(commands[1].endsWith("--tag 'latest'"))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
+    }
+
+    @Test
+    void publishesPrereleaseUnderItsIdentifierTag() {
+        def commands = []
+        def statuses = [1, 0]
+        helper.registerAllowedMethod('pwd', [Map]) { Map ignored -> 'C:/publish@tmp' }
+        helper.registerAllowedMethod('execStatus', [String]) { String command ->
+            commands << command
+            statuses.remove(0)
+        }
+
+        def options = UnityPackageOptions.fromMap([
+            TEST_FORMATTING: false,
+            PUBLISH_TO_VERDACCIO: true,
+        ])
+        def context = new UnityPackageContext('net.example.package', '1.2.3-pre.4', 'main', '.')
+        def prepared = new PreparedUnityPackage(options, context, 'execution', 'package-stash')
+
+        def publish = loadScript('vars/publishUnityPackage.groovy')
+        publish.call(prepared)
+
+        assertTrue(commands[1].endsWith("--tag 'pre'"))
     }
 
     @Test
@@ -314,6 +340,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         def nodes = []
         def events = []
         def images = []
+        def imageArgs = []
         def installedOn = []
         def built = []
         def tested = []
@@ -337,7 +364,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         binding.setVariable('scm', new Expando())
         binding.setVariable('docker', new Expando(image: { String imageName ->
             images << imageName
-            new Expando(inside: { String ignored, Closure body -> body() })
+            new Expando(inside: { String args, Closure body ->
+                imageArgs << [imageName, args]
+                body()
+            })
         }))
         helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body ->
             stages << name
@@ -427,6 +457,10 @@ class UnityPackagePhaseTest extends BasePipelineTest {
             'stage:Report: Adaptive Cards',
         ], events)
         assertEquals(['prepare-image', 'publish-image'], images)
+        assertEquals([
+            ['prepare-image', ''],
+            ['publish-image', '--network verdaccio'],
+        ], imageArgs)
         assertEquals(['windows-node', 'linux-node', 'webgl-node'], installedOn)
         assertEquals([
             ['solution', 'C:/windows-node'],

@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import net.slothsoft.jenkins.unity.PreparedUnityPackage
+import net.slothsoft.jenkins.unity.UnityPackageContext
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 void call(PreparedUnityPackage preparedPackage) {
@@ -43,6 +44,7 @@ void call(PreparedUnityPackage preparedPackage) {
             dir('package') {
                 def packageSpec = shellQuote("${context.packageId}@${context.version}")
                 def registry = shellQuote(options.verdaccioUrl)
+                def tag = shellQuote(publicationTag(context))
                 if (execStatus("npm view ${packageSpec} version --registry ${registry}") == 0) {
                     echo "${context.packageId}@${context.version} is already published."
                     return
@@ -52,10 +54,10 @@ void call(PreparedUnityPackage preparedPackage) {
                 if (options.verdaccioCredentialsId) {
                     withCredentials([string(credentialsId: options.verdaccioCredentialsId, variable: 'NPM_TOKEN')]) {
                         exec "npm config set --location project ${shellQuote("//${options.verdaccioHost}/:_authToken")} \"\$NPM_TOKEN\""
-                        publishStatus = execStatus("npm publish . --registry ${registry}")
+                        publishStatus = execStatus("npm publish . --registry ${registry} --tag ${tag}")
                     }
                 } else {
-                    publishStatus = execStatus("npm publish . --registry ${registry}")
+                    publishStatus = execStatus("npm publish . --registry ${registry} --tag ${tag}")
                 }
 
                 if (publishStatus != 0) {
@@ -107,7 +109,7 @@ private void publishDirectly(PreparedUnityPackage preparedPackage, String workDi
     def timestamp = java.time.Instant.now().toString()
     storageData.time.modified = timestamp
     storageData.time[context.version] = timestamp
-    storageData['dist-tags'].latest = context.version
+    storageData['dist-tags'][publicationTag(context)] = context.version
     storageData._attachments[archiveName] = [
         shasum: archive.shasum.toString(),
         version: context.version,
@@ -115,6 +117,18 @@ private void publishDirectly(PreparedUnityPackage preparedPackage, String workDi
 
     exec "mv ${shellQuote("${workDirectory}/${archiveName}")} ${shellQuote("${storageDirectory}/${archiveName}")}"
     writeJSON(file: storageFile, json: storageData, pretty: 2)
+}
+
+@NonCPS
+private String publicationTag(UnityPackageContext context) {
+    if (context.release) {
+        return 'latest'
+    }
+
+    def versionWithoutBuild = context.version.tokenize('+')[0]
+    def prerelease = versionWithoutBuild.substring(versionWithoutBuild.indexOf('-') + 1)
+    def identifier = prerelease.tokenize('.')[0].toLowerCase()
+    identifier ==~ /^[a-z][a-z0-9-]*$/ ? identifier : 'prerelease'
 }
 
 @NonCPS
