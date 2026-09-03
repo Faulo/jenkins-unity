@@ -36,6 +36,77 @@ node('compose-unity') {
             assertValue(insideStatus == 0, true, 'compose-unity is expected to pass inside withUnity')
         }
     }
+
+    stage('Runtime credential files') {
+        dir("${env.WORKSPACE_TMP}/jenkins-unity-credential-files") {
+            deleteDir()
+            writeFile(file: 'unity-user.txt', text: 'integration-user')
+            writeFile(file: 'unity-password.txt', text: 'integration-password')
+            writeFile(file: 'empty.txt', text: '')
+
+            def credentialRoot = pwd()
+            def unsetDirectCredentials = isWindows()
+                ? 'Remove-Item Env:UNITY_CREDENTIALS_USR, Env:UNITY_CREDENTIALS_PSW -ErrorAction SilentlyContinue; '
+                : 'unset UNITY_CREDENTIALS_USR UNITY_CREDENTIALS_PSW; '
+
+            withEnv([
+                'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR_FILE:UNITY_CREDENTIALS_PSW_FILE',
+                "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/unity-user.txt",
+                "UNITY_CREDENTIALS_PSW_FILE=${credentialRoot}/unity-password.txt"
+            ]) {
+                withUnity {
+                    def status = callShellStatus "${unsetDirectCredentials}compose-unity exec unity-help"
+                    assertValue(status == 0, true, 'compose-unity is expected to accept a complete credential file pair')
+                }
+            }
+
+            withEnv([
+                'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR:UNITY_CREDENTIALS_USR_FILE:UNITY_CREDENTIALS_PSW_FILE',
+                'UNITY_CREDENTIALS_USR=integration-user',
+                "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/unity-user.txt",
+                "UNITY_CREDENTIALS_PSW_FILE=${credentialRoot}/unity-password.txt"
+            ]) {
+                withUnity {
+                    def status = callShellStatus 'compose-unity exec unity-help'
+                    assertValue(status == 0, false, 'compose-unity is expected to reject direct and file-backed forms together')
+                }
+            }
+
+            withEnv([
+                'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR_FILE:UNITY_CREDENTIALS_PSW_FILE',
+                "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/missing.txt",
+                "UNITY_CREDENTIALS_PSW_FILE=${credentialRoot}/unity-password.txt"
+            ]) {
+                withUnity {
+                    def status = callShellStatus "${unsetDirectCredentials}compose-unity exec unity-help"
+                    assertValue(status == 0, false, 'compose-unity is expected to reject a missing credential file')
+                }
+            }
+
+            withEnv([
+                'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR_FILE:UNITY_CREDENTIALS_PSW_FILE',
+                "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/empty.txt",
+                "UNITY_CREDENTIALS_PSW_FILE=${credentialRoot}/unity-password.txt"
+            ]) {
+                withUnity {
+                    def status = callShellStatus "${unsetDirectCredentials}compose-unity exec unity-help"
+                    assertValue(status == 0, false, 'compose-unity is expected to reject an empty credential file')
+                }
+            }
+
+            withEnv([
+                'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR_FILE',
+                "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/unity-user.txt"
+            ]) {
+                withUnity {
+                    def status = callShellStatus "${unsetDirectCredentials}compose-unity exec unity-help"
+                    assertValue(status == 0, false, 'compose-unity is expected to reject an incomplete credential pair')
+                }
+            }
+
+            deleteDir()
+        }
+    }
 }
 
 unityPackagePipeline {
