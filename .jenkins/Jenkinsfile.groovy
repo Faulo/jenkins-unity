@@ -4,6 +4,16 @@ def assertValue(actual, expected, description) {
     }
 }
 
+properties([
+    parameters([
+        choice(name: 'DOCKER_NAMESPACE', choices: ['faulo', 'tmp'], description: 'Selects the compose-unity integration image namespace.')
+    ])
+])
+
+if (params.DOCKER_NAMESPACE == 'tmp') {
+    env.JENKINS_UNITY_CONTAINER = 'tmp_compose-unity'
+}
+
 node('compose-unity') {
     stage('Pipeline Steps 0.5.0') {
         assertValue(isWindows(), !isUnix(), 'isWindows is expected to invert isUnix')
