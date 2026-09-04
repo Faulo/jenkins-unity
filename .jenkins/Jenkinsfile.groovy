@@ -14,7 +14,12 @@ if (params.DOCKER_NAMESPACE == 'tmp') {
     env.JENKINS_UNITY_CONTAINER = 'tmp_compose-unity'
 }
 
-def integrationNode = params.DOCKER_NAMESPACE == 'tmp' ? 'Garl || Dende' : 'compose-unity'
+def candidateImage = params.DOCKER_NAMESPACE == 'tmp'
+def integrationNode = candidateImage ? 'Garl || Dende' : 'compose-unity'
+def packageUnityAgents = candidateImage
+    ? [Windows: 'Dende', Linux: 'Garl']
+    : [Windows: 'windows && compose-unity', Linux: 'linux && compose-unity']
+def projectUnityAgent = candidateImage ? 'Garl' : 'compose-unity'
 node(integrationNode) {
     stage('Pipeline Steps 0.5.0') {
         assertValue(isWindows(), !isUnix(), 'isWindows is expected to invert isUnix')
@@ -129,13 +134,14 @@ unityPackagePipeline {
     FORMATTING_LOCATION = '.jenkins/fixtures/unity-package/.editorconfig'
     TEST_UNITY = true
     UNITY_TEST_MODES = ['EditMode']
-    UNITY_AGENTS = [Windows: 'windows && compose-unity', Linux: 'linux && compose-unity']
+    UNITY_AGENTS = packageUnityAgents
     BUILD_DOCUMENTATION = true
     PUBLISH_TO_VERDACCIO = false
 
 }
 
 unityProjectPipeline {
+    UNITY_AGENT = projectUnityAgent
     PROJECT_LOCATION = '.jenkins/fixtures/unity-project'
     PROJECT_ID = 'Jenkins Unity Project Integration'
     PROJECT_BRANCH = 'main'
