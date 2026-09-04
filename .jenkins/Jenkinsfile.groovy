@@ -14,12 +14,9 @@ if (params.DOCKER_NAMESPACE == 'tmp') {
     env.JENKINS_UNITY_CONTAINER = 'tmp_compose-unity'
 }
 
-def candidateImage = params.DOCKER_NAMESPACE == 'tmp'
-def integrationNode = candidateImage ? 'Garl || Dende' : 'compose-unity'
-def packageUnityAgents = candidateImage
-    ? [Windows: 'Dende', Linux: 'Garl']
-    : [Windows: 'windows && compose-unity', Linux: 'linux && compose-unity']
-def projectUnityAgent = candidateImage ? 'Garl' : 'compose-unity'
+def integrationNode = 'Garl || Dende'
+def packageUnityAgents = [Windows: 'Dende', Linux: 'Garl']
+def projectUnityAgent = 'Garl'
 node(integrationNode) {
     stage('Pipeline Steps 0.5.0') {
         assertValue(isWindows(), !isUnix(), 'isWindows is expected to invert isUnix')
