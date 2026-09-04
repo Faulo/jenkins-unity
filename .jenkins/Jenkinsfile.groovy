@@ -14,7 +14,8 @@ if (params.DOCKER_NAMESPACE == 'tmp') {
     env.JENKINS_UNITY_CONTAINER = 'tmp_compose-unity'
 }
 
-node('compose-unity') {
+def integrationNode = params.DOCKER_NAMESPACE == 'tmp' ? 'Garl || Dende' : 'compose-unity'
+node(integrationNode) {
     stage('Pipeline Steps 0.5.0') {
         assertValue(isWindows(), !isUnix(), 'isWindows is expected to invert isUnix')
 
