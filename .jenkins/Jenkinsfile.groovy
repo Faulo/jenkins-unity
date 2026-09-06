@@ -42,11 +42,17 @@ node(integrationNode) {
         def outsideStatus = callShellStatus 'compose-unity exec unity-help'
         assertValue(outsideStatus == 0, false, 'compose-unity is expected to fail outside withUnity')
 
-        withUnity {
-            assertValue(env.PIPELINE_DOCKER_CONTAINER_ID ? true : false, true, 'withUnity is expected to expose the plugin container identity')
+        withEnv([
+            'JENKINS_UNITY_CONTAINER=',
+            'JENKINS_UNITY_CONTAINER_LABEL=net.slothsoft.role=compose-unity'
+        ]) {
+            withUnity {
+                assertValue(env.JENKINS_UNITY_CONTAINER ? true : false, true, 'withUnity is expected to expose the discovered container name')
+                assertValue(env.PIPELINE_DOCKER_CONTAINER_ID ? true : false, true, 'withUnity is expected to expose the plugin container identity')
 
-            def insideStatus = callShellStatus 'compose-unity exec unity-help'
-            assertValue(insideStatus == 0, true, 'compose-unity is expected to pass inside withUnity')
+                def insideStatus = callShellStatus 'compose-unity exec unity-help'
+                assertValue(insideStatus == 0, true, 'compose-unity is expected to pass inside withUnity')
+            }
         }
     }
 

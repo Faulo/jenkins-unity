@@ -586,9 +586,27 @@ withEnv(['JENKINS_UNITY_CONTAINER=agents_unity']) {
 }
 ```
 
+Docker Swarm tasks have unstable names. When `JENKINS_UNITY_CONTAINER` is empty,
+`JENKINS_UNITY_CONTAINER_LABEL` can select a running task through a stable
+container label:
+
+```groovy
+withEnv(['JENKINS_UNITY_CONTAINER_LABEL=net.slothsoft.role=compose-unity']) {
+    withUnity {
+        callUnity 'unity-help'
+    }
+}
+```
+
+The lookup uses the Docker daemon local to the current Jenkins agent and selects
+the first running container returned for the label. The selected task name is
+reused for nested `withUnity` calls inside that scope. A later independent
+invocation performs a new lookup.
+
 Contract:
 
-- Fails when neither an explicit container name nor `JENKINS_UNITY_CONTAINER` supplies a non-empty name.
+- Selects an explicit container name first, then `JENKINS_UNITY_CONTAINER`, then the first running container matching `JENKINS_UNITY_CONTAINER_LABEL`.
+- Fails when none of those sources supplies or discovers a container.
 - Delegates to the Strayfarer Pipeline Steps plugin's `insideDockerContainer` command.
 - Affects the Pipeline Steps plugin's command-execution steps and therefore retained commands built on them.
   Jenkins-native steps such as `dir`, `junit`, `archiveArtifacts`, and `stash` still execute on the agent.

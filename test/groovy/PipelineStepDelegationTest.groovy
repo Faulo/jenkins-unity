@@ -3,6 +3,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertThrows
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class PipelineStepDelegationTest extends BasePipelineTest {
@@ -62,6 +64,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
     void delegatesWithUnityToInsideDockerContainer() {
         binding.setVariable('env', [
             JENKINS_UNITY_CONTAINER: 'unity-sidecar',
+            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity',
             JENKINS_UNITY_ENV: 'FIRST::SECOND:FIRST'
         ])
 
@@ -95,11 +98,15 @@ class PipelineStepDelegationTest extends BasePipelineTest {
             'JENKINS_UNITY_CONTAINER_OS=linux'
         ], compatibilityEnvironment*.toString())
         assertTrue(bodyCalled)
+        assertFalse(helper.callStack.any { it.methodName in ['isWindows', 'powershell', 'sh'] })
     }
 
     @Test
     void delegatesExplicitWithUnityContainer() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER: 'default-sidecar'])
+        binding.setVariable('env', [
+            JENKINS_UNITY_CONTAINER: 'default-sidecar',
+            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'
+        ])
 
         def containerArguments
         helper.registerAllowedMethod('insideDockerContainer', [Map, Closure]) { Map arguments, Closure body ->
@@ -120,5 +127,152 @@ class PipelineStepDelegationTest extends BasePipelineTest {
             container: 'explicit-sidecar',
             environment: []
         ], containerArguments)
+        assertFalse(helper.callStack.any { it.methodName in ['isWindows', 'powershell', 'sh'] })
+    }
+
+    @Test
+    void discoversFirstUnityContainerByLabelOnLinux() {
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+
+        def shellArguments
+        def selectedContainers = []
+        helper.registerAllowedMethod('isWindows', []) { false }
+        helper.registerAllowedMethod('sh', [Map]) { Map arguments ->
+            shellArguments = arguments
+            return "first-task\nsecond-task\n"
+        }
+        registerContainerScope(selectedContainers)
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        withUnity.call {}
+
+        assertEquals(['first-task'], selectedContainers)
+        assertEquals(true, shellArguments.returnStdout)
+        assertEquals('UTF-8', shellArguments.encoding)
+        assertEquals('find Unity container by label', shellArguments.label)
+        assertTrue(shellArguments.script.contains('docker ps --filter'))
+        assertTrue(shellArguments.script.contains('$JENKINS_UNITY_CONTAINER_LABEL'))
+        assertTrue(shellArguments.script.contains("{{.Names}}"))
+        assertFalse(helper.callStack.any { it.methodName == 'powershell' })
+    }
+
+    @Test
+    void discoversUnityContainerByLabelOnWindows() {
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+
+        def powershellArguments
+        def selectedContainers = []
+        helper.registerAllowedMethod('isWindows', []) { true }
+        helper.registerAllowedMethod('powershell', [Map]) { Map arguments ->
+            powershellArguments = arguments
+            return "windows-task\r\n"
+        }
+        registerContainerScope(selectedContainers)
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        withUnity.call {}
+
+        assertEquals(['windows-task'], selectedContainers)
+        assertEquals(true, powershellArguments.returnStdout)
+        assertEquals('UTF-8', powershellArguments.encoding)
+        assertEquals('find Unity container by label', powershellArguments.label)
+        assertTrue(powershellArguments.script.contains('docker ps --filter'))
+        assertTrue(powershellArguments.script.contains('$env:JENKINS_UNITY_CONTAINER_LABEL'))
+        assertTrue(powershellArguments.script.contains('$LASTEXITCODE'))
+        assertFalse(helper.callStack.any { it.methodName == 'sh' })
+    }
+
+    @Test
+    void failsWhenNoRunningUnityContainerMatchesLabel() {
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        helper.registerAllowedMethod('isWindows', []) { false }
+        helper.registerAllowedMethod('sh', [Map]) { Map ignored -> " \n\r\n" }
+        helper.registerAllowedMethod('error', [String]) { String message -> throw new IllegalStateException(message) }
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        def failure = assertThrows(IllegalStateException) {
+            withUnity.call {
+                throw new AssertionError('Unity must not start')
+            }
+        }
+
+        assertEquals("No running Unity container matches label 'net.slothsoft.role=compose-unity'.", failure.message)
+        assertFalse(helper.callStack.any { it.methodName == 'insideDockerContainer' })
+    }
+
+    @Test
+    void preservesMissingContainerErrorWithoutNameOrLabel() {
+        binding.setVariable('env', [:])
+        helper.registerAllowedMethod('error', [String]) { String message -> throw new IllegalStateException(message) }
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        def failure = assertThrows(IllegalStateException) {
+            withUnity.call {
+                throw new AssertionError('Unity must not start')
+            }
+        }
+
+        assertEquals("Invalid Unity container name 'null'.", failure.message)
+        assertFalse(helper.callStack.any { it.methodName in ['isWindows', 'powershell', 'sh', 'insideDockerContainer'] })
+    }
+
+    @Test
+    void reusesDiscoveredContainerForNestedUnityScope() {
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+
+        def selectedContainers = []
+        helper.registerAllowedMethod('isWindows', []) { false }
+        helper.registerAllowedMethod('sh', [Map]) { Map ignored -> 'swarm-task' }
+        helper.registerAllowedMethod('insideDockerContainer', [Map, Closure]) { Map arguments, Closure body ->
+            selectedContainers << arguments.container
+            env.PIPELINE_DOCKER_CONTAINER_NAME = arguments.container
+            env.PIPELINE_DOCKER_CONTAINER_ID = "${arguments.container}-id"
+            env.PIPELINE_DOCKER_CONTAINER_OS = 'linux'
+            body()
+        }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List environment, Closure body ->
+            environment.each { entry ->
+                def parts = entry.toString().split('=', 2)
+                env[parts[0]] = parts[1]
+            }
+            body()
+        }
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        withUnity.call {
+            withUnity.call {}
+        }
+
+        assertEquals(['swarm-task', 'swarm-task'], selectedContainers)
+        assertEquals(1, helper.callStack.count { it.methodName == 'sh' })
+    }
+
+    @Test
+    void discoversAgainForEachIndependentUnityScope() {
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+
+        def discoveredContainers = ['first-task', 'replacement-task']
+        def selectedContainers = []
+        helper.registerAllowedMethod('isWindows', []) { false }
+        helper.registerAllowedMethod('sh', [Map]) { Map ignored -> discoveredContainers.remove(0) }
+        registerContainerScope(selectedContainers)
+
+        def withUnity = loadScript('vars/withUnity.groovy')
+        withUnity.call {}
+        withUnity.call {}
+
+        assertEquals(['first-task', 'replacement-task'], selectedContainers)
+        assertEquals(2, helper.callStack.count { it.methodName == 'sh' })
+    }
+
+    private void registerContainerScope(List selectedContainers) {
+        helper.registerAllowedMethod('insideDockerContainer', [Map, Closure]) { Map arguments, Closure body ->
+            selectedContainers << arguments.container
+            env.PIPELINE_DOCKER_CONTAINER_NAME = arguments.container
+            env.PIPELINE_DOCKER_CONTAINER_ID = "${arguments.container}-id"
+            env.PIPELINE_DOCKER_CONTAINER_OS = 'linux'
+            body()
+        }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
     }
 }
