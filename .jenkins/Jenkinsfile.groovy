@@ -65,6 +65,9 @@ node(integrationNode) {
             def unsetDirectCredentials = isWindows()
                 ? 'Remove-Item Env:UNITY_CREDENTIALS_USR, Env:UNITY_CREDENTIALS_PSW -ErrorAction SilentlyContinue; '
                 : 'unset UNITY_CREDENTIALS_USR UNITY_CREDENTIALS_PSW; '
+            def unsetPasswordFile = isWindows()
+                ? 'Remove-Item Env:UNITY_CREDENTIALS_PSW_FILE -ErrorAction SilentlyContinue; '
+                : 'unset UNITY_CREDENTIALS_PSW_FILE; '
 
             withEnv([
                 'JENKINS_UNITY_ENV=UNITY_CREDENTIALS_USR_FILE:UNITY_CREDENTIALS_PSW_FILE',
@@ -116,7 +119,7 @@ node(integrationNode) {
                 "UNITY_CREDENTIALS_USR_FILE=${credentialRoot}/unity-user.txt"
             ]) {
                 withUnity {
-                    def status = callShellStatus "${unsetDirectCredentials}compose-unity exec unity-help"
+                    def status = callShellStatus "${unsetDirectCredentials}${unsetPasswordFile}compose-unity exec unity-help"
                     assertValue(status == 0, false, 'compose-unity is expected to reject an incomplete credential pair')
                 }
             }
