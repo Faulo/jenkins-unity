@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [5.1.0] - 2026-09-08
+
+### Added
+- Let `withUnity` discover a running Unity sidecar through `JENKINS_UNITY_CONTAINER_LABEL`, selecting the first match once per outer invocation while preserving explicit and static container-name precedence.
+
 ### Changed
 - Renamed Unity package Pipeline stages to `Package: <id>`, `Agent: <name>`, `Test: <target>`, and `Publish: Verdaccio`.
 - Run `UNITY_AGENTS` sequentially in declaration order so agent stages and their nested tests always have deterministic ordering.
