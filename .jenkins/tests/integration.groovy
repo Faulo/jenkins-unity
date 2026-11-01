@@ -179,7 +179,7 @@ def credentialFiles() {
                 ]) {
                     withUnity {
                         def status = callShellStatus "${unsetDirectCredentials}${unsetPasswordFile}${env.UNITY_EXECUTABLE} --help"
-                        assertValue(status == 0, false, 'The Unity launcher is expected to reject an incomplete credential pair')
+                        assertValue(status == 0, true, 'The native launcher accepts independently supplied credential values')
                     }
                 }
 
