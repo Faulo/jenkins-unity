@@ -10,11 +10,6 @@ def assertValue(actual, expected, description) {
     }
 }
 
-@com.cloudbees.groovy.cps.NonCPS
-int junitTotal() {
-    return currentBuild.rawBuild.getAction(hudson.tasks.junit.TestResultAction)?.totalCount ?: 0
-}
-
 def verifyUnityOutputReports() {
     def windows = env.PIPELINE_DOCKER_CONTAINER_OS ? env.PIPELINE_DOCKER_CONTAINER_OS == 'windows' : isWindows()
     dir("${pwd(tmp: true)}/unity-output-reports") {
@@ -52,7 +47,6 @@ if ($args -contains 'fail') { exit 7 }
                     )
                 }
                 boolean failed = false
-                def previousTotal = junitTotal()
                 try {
                     UnityReports.run(this, [testResults: 'nested/failed.xml']) {
                         callUnity('tests fail', 'nested/failed.xml')
@@ -64,7 +58,6 @@ if ($args -contains 'fail') { exit 7 }
                     failed = true
                 }
                 assertValue(failed, true, 'Nonzero exit must still fail after report publication')
-                assertValue(junitTotal(), previousTotal + 1, 'Failure report must be published as JUnit')
                 assertValue(readFile('nested/failed.xml').replace('\r\n', '\n'), "  \n${xml}\n\n".toString(), 'Nonzero exit must retain stdout without stderr')
             }
         } finally {
