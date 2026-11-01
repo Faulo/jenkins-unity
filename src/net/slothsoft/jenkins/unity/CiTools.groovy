@@ -44,7 +44,7 @@ class CiTools {
         if (steps.isUnix()) {
             return steps.sh(script: "set +x\n${script}".toString(), returnStdout: capture)
         }
-        return steps.powershell(script: "& ${script}\nif (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }".toString(), returnStdout: capture, encoding: 'UTF-8')
+        return steps.pwsh(script: "\$PSNativeCommandArgumentPassing = 'Standard'\n& ${script}\nif (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }".toString(), returnStdout: capture, encoding: 'UTF-8')
     }
 
     @NonCPS

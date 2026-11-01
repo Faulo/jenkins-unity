@@ -34,7 +34,7 @@ class CiToolsTest {
                 def state = [containers: [], commands: [], files: [], active: false]
                 def steps = steps(state, windows)
                 steps.sh = { Map ignored -> throw failure }
-                steps.powershell = { Map ignored -> throw failure }
+                steps.pwsh = { Map ignored -> throw failure }
                 assertSame(failure, assertThrows(failure.class) { CiTools.steam(steps, 'reports', '1234', ['11=build'], 'main') })
                 assertFalse(state.active)
                 assertTrue(state.files.empty)
@@ -64,7 +64,7 @@ class CiToolsTest {
                 })
             }),
             sh: { Map args -> assertTrue(state.active); state.commands << args; args.returnStdout ? '  generated VDF\n' : null },
-            powershell: { Map args -> assertTrue(state.active); state.commands << args; args.returnStdout ? '  generated VDF\n' : null }
+            pwsh: { Map args -> assertTrue(state.active); state.commands << args; args.returnStdout ? '  generated VDF\n' : null }
         )
     }
 }

@@ -138,6 +138,13 @@ def verifyCiTools() {
                         failed = true
                     }
                     assertValue(failed, true, 'A failed deployment command must fail its Pipeline step')
+                    if (windows) {
+                        writeFile(file: 'arguments.ps1', text: 'ConvertTo-Json -InputObject @($args) -Compress', encoding: 'UTF-8')
+                        def values = ['account with spaces', 'p"ass\'word', 'trailing\\']
+                        def arguments = values.collect { CiTools.quote(it, true) }.join(' ')
+                        def actual = CiTools.command(this, "pwsh -NoProfile -File 'arguments.ps1' ${arguments}".toString(), true)
+                        assertValue(readJSON(text: actual, returnPojo: true), values, 'Windows preserves native argument boundaries')
+                    }
                     def path = CiTools.quote(pwd().replace('\\', '/'), windows)
                     def vdf = CiTools.command(this, "steam-buildfile ${path} ${path} '1234' '11=payload' 'preview'".toString(), true)
                     assertValue(vdf.contains('1234') && vdf.contains('preview'), true, 'Steam buildfile generation')

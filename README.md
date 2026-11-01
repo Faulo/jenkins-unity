@@ -398,7 +398,7 @@ Deploys a checked-out `UnityProjectContext` without allocating a stage or node. 
 
 Steam login, build-file generation, and upload share one container. Steam state uses a persistent named volume, `jenkins-unity-steam-<workspace-path-hash>`, mounted at `/root/Steam` on Linux or `C:/steam` on Windows. The volume is local to that Docker daemon and report-directory path; separate workspace allocations have separate state. Keep concurrent invocations in distinct report directories. Steam and optional mailbox credentials are bound around that operation; the Butler token is bound only around itch.io deployment. Credentials are never written into reports or archived.
 
-Deployment uses Jenkins' native `sh` and `powershell` steps so an enclosing `withUnity` scope cannot redirect commands into the Unity sidecar. Unity credentials and the Unity sidecar are not required for the deployment step itself. Failures and interruptions propagate. Callers and tests must not invoke uploads or Steam login unless the external deployment is explicitly authorized.
+Deployment uses Jenkins' native `sh` and `pwsh` steps so an enclosing `withUnity` scope cannot redirect commands into the Unity sidecar. Windows uses the image's PowerShell Core with standard native argument passing to preserve credential argument boundaries. Unity credentials and the Unity sidecar are not required for the deployment step itself. Failures and interruptions propagate. Callers and tests must not invoke uploads or Steam login unless the external deployment is explicitly authorized.
 
 ### `reportUnityProject`
 
