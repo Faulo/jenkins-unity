@@ -30,12 +30,15 @@ class CiToolsTest {
     @Test
     void failuresAndInterruptionsStopBeforeUploadAndLeaveTheContainer() {
         for (Throwable failure : [new IllegalStateException('exit 7'), new FlowInterruptedException(Result.ABORTED, true)]) {
-            def state = [containers: [], commands: [], files: [], active: false]
-            def steps = steps(state, false)
-            steps.sh = { Map ignored -> throw failure }
-            assertSame(failure, assertThrows(failure.class) { CiTools.steam(steps, 'reports', '1234', ['11=build'], 'main') })
-            assertFalse(state.active)
-            assertTrue(state.files.empty)
+            for (boolean windows : [false, true]) {
+                def state = [containers: [], commands: [], files: [], active: false]
+                def steps = steps(state, windows)
+                steps.sh = { Map ignored -> throw failure }
+                steps.powershell = { Map ignored -> throw failure }
+                assertSame(failure, assertThrows(failure.class) { CiTools.steam(steps, 'reports', '1234', ['11=build'], 'main') })
+                assertFalse(state.active)
+                assertTrue(state.files.empty)
+            }
         }
     }
 

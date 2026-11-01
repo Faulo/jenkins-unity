@@ -128,6 +128,16 @@ def verifyCiTools() {
                     assertValue(CiTools.command(this, 'steam-login unexpected-argument', true).contains('Sign in to Steam'), true, 'Steam login helper is installed')
                     def check = windows ? '''{ if ($env:BUTLER_API_KEY -ne 'ci-tools-fixture') { throw 'Missing token environment' }; if ((Get-Content -Raw 'payload/check.txt') -ne 'shared payload') { throw 'Missing shared payload' } }''' : '''test "$BUTLER_API_KEY" = ci-tools-fixture && test "$(cat payload/check.txt)" = 'shared payload' '''
                     CiTools.command(this, check)
+                    boolean failed = false
+                    try {
+                        CiTools.command(this, windows ? "pwsh -NoProfile -Command 'exit 7'" : "sh -c 'exit 7'")
+                    } catch (FlowInterruptedException e) {
+                        throw e
+                    } catch (Throwable expected) {
+                        assertValue(expected.message.contains('7'), true, 'CI-tools shell preserves exit status')
+                        failed = true
+                    }
+                    assertValue(failed, true, 'A failed deployment command must fail its Pipeline step')
                     def path = CiTools.quote(pwd().replace('\\', '/'), windows)
                     def vdf = CiTools.command(this, "steam-buildfile ${path} ${path} '1234' '11=payload' 'preview'".toString(), true)
                     assertValue(vdf.contains('1234') && vdf.contains('preview'), true, 'Steam buildfile generation')
