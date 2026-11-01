@@ -216,7 +216,10 @@ def packagePhases(Map config) {
         stage('Package solution') { buildUnityProject(installed, 'solution') }
         stage('Package formatting') { testUnityProject(installed, 'formatting') }
         stage('Package documentation') { buildUnityProject(installed, 'documentation') }
-        stage('Package Unity tests') { testUnityProject(installed, 'unity') }
+        stage('Package Unity tests') {
+            testUnityProject(installed, 'unity')
+            assertFixtureTest(installed.reportsDirectory)
+        }
     } finally {
         if (installed != null) {
             deleteUnityProject(installed)
@@ -243,9 +246,20 @@ def projectPhases(Map config) {
         stage('Project solution') { buildUnityProject(project, 'solution') }
         stage('Project formatting') { testUnityProject(project, 'formatting') }
         stage('Project documentation') { buildUnityProject(project, 'documentation') }
-        stage('Project Unity tests') { testUnityProject(project, 'unity') }
+        stage('Project Unity tests') {
+            testUnityProject(project, 'unity')
+            assertFixtureTest(project.reportsDirectory)
+        }
     } finally {
         dir(project.reportsDirectory) { deleteDir() }
+    }
+}
+
+def assertFixtureTest(String reportsDirectory) {
+    dir(reportsDirectory) {
+        if (!readFile('tests.xml').contains('name="ReturnsExpectedValue"')) {
+            error 'Unity did not execute the expected integration fixture test.'
+        }
     }
 }
 

@@ -32,6 +32,16 @@ class CiIntegrationSuiteTest {
         assertEquals('delete project reports', events.last())
     }
 
+    @Test
+    void refusesAnEmptyUnityTestRun() {
+        def script = integrationScript([])
+        script.metaClass.readFile = { String ignored -> '<testsuites/>' }
+        script.metaClass.error = { String message -> throw new IllegalStateException(message) }
+        assertThrows(IllegalStateException) {
+            script.assertFixtureTest('C:/workspace@tmp/project-reports')
+        }
+    }
+
     private static Map configuration() {
         def properties = new Properties()
         new File('.jenkins/testProject.properties').withReader('UTF-8') { properties.load(it) }
@@ -51,7 +61,7 @@ class CiIntegrationSuiteTest {
         }
         script.metaClass.installUnityPackage = { Object ignored ->
             events << 'install'
-            new Expando()
+            new Expando(reportsDirectory: 'C:/workspace@tmp/package-reports')
         }
         script.metaClass.testUnityPackage = { Object ignored -> events << 'changelog' }
         script.metaClass.buildUnityProject = { Object project, String operation ->
@@ -62,9 +72,10 @@ class CiIntegrationSuiteTest {
         }
         script.metaClass.deleteUnityProject = { Object ignored -> events << 'delete package' }
         script.metaClass.dir = { String path, Closure body ->
-            assertEquals('C:/workspace@tmp/project-reports', path)
+            assertEquals(true, path in ['C:/workspace@tmp/project-reports', 'C:/workspace@tmp/package-reports'])
             body()
         }
+        script.metaClass.readFile = { String ignored -> '<testsuites><testsuite><testcase name="ReturnsExpectedValue"/></testsuite></testsuites>' }
         script.metaClass.deleteDir = { -> events << 'delete project reports' }
         script
     }
