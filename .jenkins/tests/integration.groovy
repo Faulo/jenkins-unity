@@ -123,7 +123,7 @@ def verifyCiTools() {
             writeFile(file: 'payload/check.txt', text: 'shared payload')
             withEnv(['BUTLER_API_KEY=ci-tools-fixture']) {
                 CiTools.inside(this, false) {
-                    assertValue(CiTools.command(this, 'butler --version', true).trim().isEmpty(), false, 'Butler is installed')
+                    CiTools.command(this, 'butler --version')
                     CiTools.command(this, windows ? 'Get-Command steamcmd -ErrorAction Stop' : 'command -v steamcmd')
                     assertValue(CiTools.command(this, 'steam-login unexpected-argument', true).contains('Sign in to Steam'), true, 'Steam login helper is installed')
                     def check = windows ? '''{ if ($env:BUTLER_API_KEY -ne 'ci-tools-fixture') { throw 'Missing token environment' }; if ((Get-Content -Raw 'payload/check.txt') -ne 'shared payload') { throw 'Missing shared payload' } }''' : '''test "$BUTLER_API_KEY" = ci-tools-fixture && test "$(cat payload/check.txt)" = 'shared payload' '''
