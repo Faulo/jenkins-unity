@@ -1,4 +1,5 @@
 import net.slothsoft.jenkins.unity.UnityProjectContext
+import net.slothsoft.jenkins.unity.CiTools
 import net.slothsoft.jenkins.unity.UnityProjectOptions
 
 import net.slothsoft.jenkins.unity.UnityReports
@@ -105,9 +106,54 @@ def call(Map config, String platform) {
                 }
             }
         }
+        stage('CI tools deployment environment') {
+            withUnity { verifyCiTools() }
+        }
         credentialFiles()
         packagePhases(config)
         projectPhases(config)
+    }
+}
+
+def verifyCiTools() {
+    def windows = !isUnix()
+    dir("${pwd(tmp: true)}/ci-tools fixture") {
+        deleteDir()
+        try {
+            writeFile(file: 'payload/check.txt', text: 'shared payload')
+            withEnv(['BUTLER_API_KEY=ci-tools-fixture']) {
+                CiTools.inside(this, false) {
+                    assertValue(CiTools.command(this, 'butler --version', true).trim().isEmpty(), false, 'Butler is installed')
+                    CiTools.command(this, windows ? 'Get-Command steamcmd -ErrorAction Stop' : 'command -v steamcmd')
+                    assertValue(CiTools.command(this, 'steam-login unexpected-argument', true).contains('Sign in to Steam'), true, 'Steam login helper is installed')
+                    def check = windows ? '''{ if ($env:BUTLER_API_KEY -ne 'ci-tools-fixture') { throw 'Missing token environment' }; if ((Get-Content -Raw 'payload/check.txt') -ne 'shared payload') { throw 'Missing shared payload' } }''' : '''test "$BUTLER_API_KEY" = ci-tools-fixture && test "$(cat payload/check.txt)" = 'shared payload' '''
+                    CiTools.command(this, check)
+                    def path = CiTools.quote(pwd().replace('\\', '/'), windows)
+                    def vdf = CiTools.command(this, "steam-buildfile ${path} ${path} '1234' '11=payload' 'preview'".toString(), true)
+                    assertValue(vdf.contains('1234') && vdf.contains('preview'), true, 'Steam buildfile generation')
+                    writeFile(file: 'generated.vdf', text: vdf, encoding: 'UTF-8')
+                }
+            }
+            assertValue(readFile('generated.vdf').contains('1234'), true, 'Container output remains visible to Jenkins')
+            def marker = "jenkins-unity-fixture-${UUID.randomUUID()}".toString()
+            def path = windows ? "C:/steam/${marker}".toString() : "/root/Steam/${marker}".toString()
+            def quoted = CiTools.quote(path, windows)
+            try {
+                CiTools.inside(this, true) {
+                    CiTools.command(this, windows ? "{ [IO.File]::WriteAllText(${quoted}, 'retained') }".toString() : "printf retained > ${quoted}".toString())
+                }
+                CiTools.inside(this, true) {
+                    def retained = CiTools.command(this, windows ? "{ [IO.File]::ReadAllText(${quoted}) }".toString() : "cat ${quoted}".toString(), true)
+                    assertValue(retained.trim(), 'retained', 'Steam state survives container recreation')
+                }
+            } finally {
+                CiTools.inside(this, true) {
+                    CiTools.command(this, windows ? "Remove-Item -LiteralPath ${quoted} -Force -ErrorAction SilentlyContinue".toString() : "rm -f ${quoted}".toString())
+                }
+            }
+        } finally {
+            deleteDir()
+        }
     }
 }
 

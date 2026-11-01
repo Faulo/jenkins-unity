@@ -1,4 +1,5 @@
 import net.slothsoft.jenkins.unity.UnityReports
+import net.slothsoft.jenkins.unity.CiTools
 
 def call(Closure body) {
     def args = [:]
@@ -327,26 +328,22 @@ def call(Map args) {
                                         error "Current result is '${currentBuild.currentResult}', skipping deployment."
                                     }
 
-                                    def depots = ''
+                                    def depots = []
                                     if (args.BUILD_FOR_WINDOWS == '1' && args.STEAM_DEPOT_WINDOWS != '') {
-                                        depots += "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows "
+                                        depots << "${args.STEAM_DEPOT_WINDOWS}=${args.BUILD_NAME}-windows".toString()
                                     }
                                     if (args.BUILD_FOR_LINUX == '1' && args.STEAM_DEPOT_LINUX != '') {
-                                        depots += "${args.STEAM_DEPOT_LINUX}=${args.BUILD_NAME}-linux "
+                                        depots << "${args.STEAM_DEPOT_LINUX}=${args.BUILD_NAME}-linux".toString()
                                     }
                                     if (args.BUILD_FOR_MAC == '1' && args.STEAM_DEPOT_MAC != '') {
-                                        depots += "${args.STEAM_DEPOT_MAC}=${args.BUILD_NAME}-mac "
+                                        depots << "${args.STEAM_DEPOT_MAC}=${args.BUILD_NAME}-mac".toString()
                                     }
 
-                                    if (depots == '') {
+                                    if (!depots) {
                                         error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
                                     }
 
-                                    callComposer "exec steam-login"
-
-                                    callComposer "exec steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
-
-                                    callShell "steamcmd +login \"\$STEAM_CREDENTIALS_USR\" \"\$STEAM_CREDENTIALS_PSW\" +run_app_build '${reports}/deploy-steam.vdf' +quit"
+                                    CiTools.steam(this, reports.toString(), args.STEAM_ID, depots, args.STEAM_BRANCH)
                                 }
                             }
 
@@ -356,21 +353,23 @@ def call(Map args) {
                                         error "Current result is '${currentBuild.currentResult}', skipping deployment."
                                     }
 
+                                    def uploads = []
                                     if (args.BUILD_FOR_WINDOWS == '1') {
-                                        callShell "butler push --if-changed ${args.BUILD_NAME}-windows ${args.ITCH_ID}:windows-x64"
+                                        uploads << [source: "${args.BUILD_NAME}-windows".toString(), target: "${args.ITCH_ID}:windows-x64".toString()]
                                     }
                                     if (args.BUILD_FOR_LINUX == '1') {
-                                        callShell "butler push --if-changed ${args.BUILD_NAME}-linux ${args.ITCH_ID}:linux-x64"
+                                        uploads << [source: "${args.BUILD_NAME}-linux".toString(), target: "${args.ITCH_ID}:linux-x64".toString()]
                                     }
                                     if (args.BUILD_FOR_MAC == '1') {
-                                        callShell "butler push --if-changed ${args.BUILD_NAME}-mac ${args.ITCH_ID}:mac-x64"
+                                        uploads << [source: "${args.BUILD_NAME}-mac".toString(), target: "${args.ITCH_ID}:mac-x64".toString()]
                                     }
                                     if (args.BUILD_FOR_WEBGL == '1') {
-                                        callShell "butler push --if-changed ${args.BUILD_NAME}-webgl ${args.ITCH_ID}:html"
+                                        uploads << [source: "${args.BUILD_NAME}-webgl".toString(), target: "${args.ITCH_ID}:html".toString()]
                                     }
                                     if (args.BUILD_FOR_ANDROID == '1') {
-                                        callShell "butler push --if-changed ${args.BUILD_NAME}-android.apk ${args.ITCH_ID}:android"
+                                        uploads << [source: "${args.BUILD_NAME}-android.apk".toString(), target: "${args.ITCH_ID}:android".toString()]
                                     }
+                                    CiTools.itch(this, reports.toString(), uploads)
                                 }
                             }
                         }

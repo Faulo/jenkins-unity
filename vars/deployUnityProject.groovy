@@ -1,4 +1,4 @@
-import com.cloudbees.groovy.cps.NonCPS
+import net.slothsoft.jenkins.unity.CiTools
 import net.slothsoft.jenkins.unity.UnityProjectContext
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
@@ -52,17 +52,13 @@ private void deployToSteam(UnityProjectContext project) {
         error 'Steam deployment requires at least one enabled desktop build with a depot ID.'
     }
 
-    withCredentials([usernamePassword(credentialsId: options.steamCredentialsId, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')]) {
-        withForwardedEnvironment(['STEAM_CREDENTIALS_USR', 'STEAM_CREDENTIALS_PSW']) {
-            withUnityProjectEnvironment(options) {
-                dir(project.reportsDirectory) {
-                    def steamBranch = options.steamBranch ?: project.branch.replace('/', ' ').trim().replace(' ', '-')
-                    callComposer 'exec steam-login'
-                    callComposer "exec steam-buildfile '${project.reportsDirectory}' '${project.reportsDirectory}' ${options.steamId} ${depots.join(' ')} ${steamBranch}", 'deploy-steam.vdf'
-                    callShell "steamcmd +login \"\$STEAM_CREDENTIALS_USR\" \"\$STEAM_CREDENTIALS_PSW\" +run_app_build 'deploy-steam.vdf' +quit"
-                }
-            }
-        }
+    def credentials = [usernamePassword(credentialsId: options.steamCredentialsId, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')]
+    if (options.emailCredentialsId) {
+        credentials << usernamePassword(credentialsId: options.emailCredentialsId, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
+    }
+    withCredentials(credentials) {
+        def steamBranch = options.steamBranch ?: project.branch.replace('/', ' ').trim().replace(' ', '-')
+        CiTools.steam(this, project.reportsDirectory, options.steamId, depots, steamBranch)
     }
 }
 
@@ -73,38 +69,23 @@ private void deployToItch(UnityProjectContext project) {
     }
 
     withCredentials([string(credentialsId: options.itchCredentialsId, variable: 'BUTLER_API_KEY')]) {
-        withForwardedEnvironment(['BUTLER_API_KEY']) {
-            withUnityProjectEnvironment(options) {
-                dir(project.reportsDirectory) {
-                    if (options.buildForWindows) {
-                        pushToItch("${options.buildName}-windows", options.itchId, 'windows-x64')
-                    }
-                    if (options.buildForLinux) {
-                        pushToItch("${options.buildName}-linux", options.itchId, 'linux-x64')
-                    }
-                    if (options.buildForMac) {
-                        pushToItch("${options.buildName}-mac", options.itchId, 'mac-x64')
-                    }
-                    if (options.buildForWebGL) {
-                        pushToItch("${options.buildName}-webgl", options.itchId, 'html')
-                    }
-                    if (options.buildForAndroid) {
-                        pushToItch("${options.buildName}-android.apk", options.itchId, 'android')
-                    }
-                }
-            }
+        def uploads = []
+        if (options.buildForWindows) {
+            uploads << [source: "${options.buildName}-windows".toString(), target: "${options.itchId}:windows-x64".toString()]
         }
-    }
-}
-
-private void pushToItch(String source, String itchId, String channel) {
-    callShell "butler push --if-changed ${shellQuote(source)} ${shellQuote("${itchId}:${channel}")}"
-}
-
-private void withForwardedEnvironment(List<String> names, Closure body) {
-    def existingEnvironment = (env.JENKINS_UNITY_ENV ?: '').tokenize(':')
-    withEnv(["JENKINS_UNITY_ENV=${(existingEnvironment + names).findAll { it }.unique().join(':')}"]) {
-        body()
+        if (options.buildForLinux) {
+            uploads << [source: "${options.buildName}-linux".toString(), target: "${options.itchId}:linux-x64".toString()]
+        }
+        if (options.buildForMac) {
+            uploads << [source: "${options.buildName}-mac".toString(), target: "${options.itchId}:mac-x64".toString()]
+        }
+        if (options.buildForWebGL) {
+            uploads << [source: "${options.buildName}-webgl".toString(), target: "${options.itchId}:html".toString()]
+        }
+        if (options.buildForAndroid) {
+            uploads << [source: "${options.buildName}-android.apk".toString(), target: "${options.itchId}:android".toString()]
+        }
+        CiTools.itch(this, project.reportsDirectory, uploads)
     }
 }
 
@@ -118,9 +99,4 @@ private void requireProject(UnityProjectContext project) {
     if (!project) {
         throw new IllegalArgumentException('project must not be null')
     }
-}
-
-@NonCPS
-private String shellQuote(String value) {
-    "'${value.replace("'", "'\"'\"'")}'"
 }

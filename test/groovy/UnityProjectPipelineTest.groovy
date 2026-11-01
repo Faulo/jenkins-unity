@@ -185,11 +185,15 @@ class UnityProjectPipelineTest extends BasePipelineTest {
         helper.registerAllowedMethod('string', [Map]) { Map args -> args }
         helper.registerAllowedMethod('withCredentials', [List, Closure]) { List values, Closure body -> credentials.addAll(values); body() }
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
-        helper.registerAllowedMethod('withUnityProjectEnvironment', [UnityProjectOptions, Closure]) { UnityProjectOptions ignored, Closure body -> body() }
-        helper.registerAllowedMethod('callComposer', [String]) { String command -> commands << command }
-        helper.registerAllowedMethod('callUnity', [String, String]) { String command, String report -> commands << [command, report] }
-        helper.registerAllowedMethod('callComposer', [String, String]) { String command, String report -> commands << [command, report] }
-        helper.registerAllowedMethod('callShell', [String]) { String command -> commands << command }
+        def containers = []
+        binding.setVariable('docker', new Expando(image: { String image ->
+            assertEquals('faulo/ci-tools', image)
+            new Expando(inside: { String arguments, Closure body -> containers << arguments; body() })
+        }))
+        helper.registerAllowedMethod('pwd', []) { '/workspace@tmp/reports' }
+        helper.registerAllowedMethod('isUnix', []) { true }
+        helper.registerAllowedMethod('sh', [Map]) { Map args -> commands << args.script.toString(); args.returnStdout ? 'generated VDF' : null }
+        helper.registerAllowedMethod('writeFile', [Map]) { Map args -> assertEquals('generated VDF', args.text) }
 
         def project = projectContext([
             TEST_FORMATTING: false,
@@ -198,6 +202,7 @@ class UnityProjectPipelineTest extends BasePipelineTest {
             BUILD_FOR_LINUX: true,
             DEPLOY_TO_STEAM: true,
             STEAM_CREDENTIALS: 'steam-credentials',
+            EMAIL_CREDENTIALS: 'email-credentials',
             STEAM_ID: '1234',
             STEAM_DEPOT_WINDOWS: '11',
             STEAM_DEPOT_LINUX: '12',
@@ -209,11 +214,15 @@ class UnityProjectPipelineTest extends BasePipelineTest {
         deploy.call(project, 'steam')
         deploy.call(project, 'itch')
 
-        assertEquals(['steam-credentials', 'itch-credentials'], credentials*.credentialsId)
-        assertTrue(commands.contains('exec steam-login'))
-        assertTrue(commands.any { it instanceof List && it[0].contains('11=build-windows 12=build-linux') })
-        assertTrue(commands.contains("butler push --if-changed 'build-windows' 'slothsoft/example:windows-x64'"))
-        assertTrue(commands.contains("butler push --if-changed 'build-linux' 'slothsoft/example:linux-x64'"))
+        assertEquals(['steam-credentials', 'email-credentials', 'itch-credentials'], credentials*.credentialsId)
+        assertEquals(2, containers.size())
+        assertTrue(containers[0].endsWith(':/root/Steam'))
+        assertEquals('', containers[1])
+        assertTrue(commands.any { it.endsWith('steam-login') })
+        assertTrue(commands.any { it.contains("'11=build-windows' '12=build-linux'") })
+        assertTrue(commands.any { it.endsWith("butler push --if-changed 'build-windows' 'slothsoft/example:windows-x64'") })
+        assertTrue(commands.any { it.endsWith("butler push --if-changed 'build-linux' 'slothsoft/example:linux-x64'") })
+        assertFalse(helper.callStack.any { it.methodName == 'withUnityProjectEnvironment' })
         assertFalse(helper.callStack.any { it.methodName in ['stage', 'node'] })
     }
 

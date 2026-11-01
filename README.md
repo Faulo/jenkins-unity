@@ -394,7 +394,11 @@ Deletes the temporary work directory belonging to an `InstalledUnityPackage`. It
 
 ### `deployUnityProject`
 
-Deploys a checked-out `UnityProjectContext` without allocating a stage or node. The two-argument form selects `steam` or `itch`; the one-argument form runs both enabled methods. Steam and itch credentials are bound only around their own operation and forwarded to the Unity sidecar without being archived. Callers and tests must not invoke this step unless the external deployment is explicitly authorized.
+Deploys a checked-out `UnityProjectContext` without allocating a stage or node. The two-argument form selects `steam` or `itch`; the one-argument form runs both enabled methods. Both this step and legacy `unityProject` run deployment commands in `docker.image('faulo/ci-tools').inside(...)` on the allocated agent. Docker selects the matching Linux or Windows image. Build output and reports must be visible through the Docker workspace mounts.
+
+Steam login, build-file generation, and upload share one container. Steam state uses a persistent named volume, `jenkins-unity-steam-<workspace-path-hash>`, mounted at `/root/Steam` on Linux or `C:/steam` on Windows. The volume is local to that Docker daemon and report-directory path; separate workspace allocations have separate state. Keep concurrent invocations in distinct report directories. Steam and optional mailbox credentials are bound around that operation; the Butler token is bound only around itch.io deployment. Credentials are never written into reports or archived.
+
+Deployment uses Jenkins' native `sh` and `powershell` steps so an enclosing `withUnity` scope cannot redirect commands into the Unity sidecar. Unity credentials and the Unity sidecar are not required for the deployment step itself. Failures and interruptions propagate. Callers and tests must not invoke uploads or Steam login unless the external deployment is explicitly authorized.
 
 ### `reportUnityProject`
 
@@ -797,8 +801,7 @@ The node or Unity sidecar executing these commands must provide the tools requir
 
 - the native `unity` launcher, Composer utilities, and the expected Unity installations and reusable license state;
 - `dotnet` and DocFX for formatting or documentation;
-- `steamcmd` for Steam deployment;
-- Butler for itch.io deployment;
+- Docker access and `faulo/ci-tools` for Steam or itch.io deployment; SteamCMD, Butler, and Steam helpers run in that image;
 - Node.js and NPM for `unityPackage` metadata and Verdaccio publication;
 - the Jenkins plugins providing the Pipeline steps used by the selected commands, including Strayfarer Pipeline Steps 0.9.0 or newer.
 
@@ -820,6 +823,6 @@ The CI test layout follows the neighboring Docker projects:
 - `.jenkins/testProject.properties` selects the integration agent labels, timeout, test script, credentials, launcher, container selectors, and fixtures.
 - `.jenkins/tests/integration.groovy` contains the runtime assertions and package/project phase tests.
 
-CI runs the Maven/JUnit suite with Java 21 in a Maven container on `docker && linux`, then checks out and runs the integration suite once on `unity && linux` and once on `unity && windows`. An ordinary integration failure is recorded without skipping the other OS; interruptions still propagate. Each OS exercises report streaming and failure publication, environment files, node reuse, credential-file validation, and package/project solution, formatting, documentation, and Unity tests. Deployment and notifications are not invoked.
+CI runs the Maven/JUnit suite with Java 21 in a Maven container on `docker && linux`, then checks out and runs the integration suite once on `unity && linux` and once on `unity && windows`. An ordinary integration failure is recorded without skipping the other OS; interruptions still propagate. Each OS exercises report streaming and failure publication, environment files, node reuse, credential-file validation, and package/project solution, formatting, documentation, and Unity tests. A CI-tools smoke test nested within `withUnity` checks tool availability, shared paths, scoped environment, Steam build-file generation, and persistent Steam-volume reuse. Steam login, uploads, and notifications are not invoked.
 
 Integration configuration uses `unity` for native operations and `composer` for the remaining utilities. The current library phase helpers still require a `withUnity` sidecar: empty `unityContainer` and `unityContainerLabel` settings inherit `JENKINS_UNITY_CONTAINER` or `JENKINS_UNITY_CONTAINER_LABEL` from the allocated agent. Supply a selector in the properties file if the infrastructure does not provide one. Workspaces and temporary paths must be shared with that container as described above.
