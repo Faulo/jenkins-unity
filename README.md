@@ -634,7 +634,7 @@ The retained `call*` commands below compose application-specific behavior from t
 
 ### `callComposer`
 
-Invokes Composer and returns trimmed captured stdout. Use it for utilities that have no native `unity` equivalent: `autoversion`, `unity-project-setting`, `unity-project-version`, `unity-documentation`, `transform-dotnet-format`, `steam-login`, and `steam-buildfile`.
+Invokes Composer and returns trimmed captured stdout. Use it for utilities that have no native `unity` equivalent: `autoversion`, `unity-project-setting`, `unity-project-version`, `unity-documentation`, and `transform-dotnet-format`. Deployment uses the Steam helper commands supplied by `faulo/ci-tools` inside its deployment container.
 
 ```groovy
 String productName = callComposer("exec unity-project-setting '${env.WORKSPACE}/Game' productName")
@@ -672,7 +672,7 @@ Signature: `String callUnity(String body, String file = '')`.
 
 Library build, installation, test, and formatting-report callers publish JUnit reports even when their command fails. A command failure remains the primary exception if publication also fails. Aborts and timeouts propagate immediately without attempting publication. Existing reports are cleared before each attempt to prevent stale results after a launch failure. Legacy lifecycle exception handling and installation cleanup remain unchanged.
 
-The native API does not replace Composer's metadata/version utilities, DocFX template generation, formatting-report conversion, or Steam helpers. Those remain explicit Composer calls. Numeric-status execution for `dotnet format` and captures used for metadata are also retained.
+The native API does not replace Composer's metadata/version utilities, DocFX template generation, or formatting-report conversion. Those remain explicit Composer calls. Steam helpers run through the commands supplied by the CI-tools deployment image. Numeric-status execution for `dotnet format` and captures used for metadata are also retained.
 
 ### `callDotnetFormat`
 
