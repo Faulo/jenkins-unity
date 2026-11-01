@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-11-01
+
 ### Changed
 - Use the native `unity` API for Unity execution, with report-only stdout when `callUnity` receives a report file; preserve historical command names through an explicit Composer compatibility route.
 - Remove automatic Composer updates and static per-agent initialization; use the installed image toolchain.
