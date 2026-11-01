@@ -6,7 +6,7 @@ final class UnityProjectPipelineOptions implements Serializable {
     private static final long serialVersionUID = 1L
 
     static final Map<String, Object> INFRASTRUCTURE_DEFAULTS = Collections.unmodifiableMap([
-        UNITY_AGENT: 'compose-unity',
+        UNITY_AGENT: 'unity',
     ])
 
     final UnityProjectOptions projectOptions

@@ -67,7 +67,7 @@ private UnityProjectContext inspectProject(UnityProjectPipelineOptions pipelineO
             withUnityProjectEnvironment(options) {
                 if (!projectId) {
                     try {
-                        projectId = callUnity "unity-project-setting '${projectDirectory}' 'productName'"
+                        projectId = callComposer "exec unity-project-setting '${projectDirectory}' 'productName'"
                     } catch (FlowInterruptedException e) {
                         throw e
                     } catch (Throwable ignored) {
@@ -76,13 +76,13 @@ private UnityProjectContext inspectProject(UnityProjectPipelineOptions pipelineO
                 }
 
                 if (options.autoversion) {
-                    version = callUnity "autoversion '${options.autoversion}' '${workspaceDirectory}'"
+                    version = callComposer "exec autoversion '${options.autoversion}' '${workspaceDirectory}'"
                     if (options.autoversionRevision) {
                         version += "+${options.autoversionRevisionPrefix}${env.BUILD_NUMBER}${options.autoversionRevisionSuffix}"
                     }
                 } else if (!version && options.hasReporting()) {
                     try {
-                        version = callUnity "unity-project-setting '${projectDirectory}' 'bundleVersion'"
+                        version = callComposer "exec unity-project-setting '${projectDirectory}' 'bundleVersion'"
                     } catch (FlowInterruptedException e) {
                         throw e
                     } catch (Throwable ignored) {

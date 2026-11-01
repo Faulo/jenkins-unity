@@ -14,7 +14,7 @@ final class UnityPackagePipelineOptions implements Serializable {
         PUBLISH_IMAGE: 'node:slim',
         PUBLISH_ARGS: '--network verdaccio',
 
-        UNITY_AGENTS: [Unity: 'compose-unity'],
+        UNITY_AGENTS: [Unity: 'unity'],
     ])
 
     final UnityPackageOptions packageOptions

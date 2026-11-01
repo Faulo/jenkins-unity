@@ -1,3 +1,5 @@
+import net.slothsoft.jenkins.unity.UnityReports
+
 def call(Closure body) {
     def args = [:]
 
@@ -216,8 +218,9 @@ def call(Map args) {
                                 withEnv(envOverrides) {
                                     dir('reports') {
                                         stage("Build: Empty project with package") {
-                                            callUnity "unity-package-install '$WORKSPACE_TMP/package' '$WORKSPACE_TMP/project'", "package-install.xml"
-                                            junit(testResults: 'package-install.xml')
+                                            UnityReports.run(this, [testResults: 'package-install.xml']) {
+                                                callUnity "package-install '$WORKSPACE_TMP/project' '$WORKSPACE_TMP/package'", "package-install.xml"
+                                            }
                                         }
                                     }
 
@@ -230,8 +233,9 @@ def call(Map args) {
                                     dir('reports') {
                                         if (createSolution) {
                                             stage("Build: C# solution") {
-                                                callUnity "unity-method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
-                                                junit(testResults: 'build-solution.xml')
+                                                UnityReports.run(this, [testResults: 'build-solution.xml']) {
+                                                    callUnity "method '$WORKSPACE_TMP/project' Slothsoft.UnityExtensions.Editor.Build.Solution", "build-solution.xml"
+                                                }
                                             }
                                         }
                                     }
@@ -242,7 +246,7 @@ def call(Map args) {
                                                 dir('project/.Documentation') {
                                                     deleteDir()
 
-                                                    callUnity "unity-documentation '$WORKSPACE_TMP/project'"
+                                                    callComposer "exec unity-documentation '$WORKSPACE_TMP/project'"
 
                                                     callDocFX(id)
                                                 }
@@ -264,9 +268,9 @@ def call(Map args) {
                                                 if (args.TEST_MODES == '') {
                                                     unstable "Parameter TEST_MODES is missing."
                                                 }
-                                                callUnity "unity-tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
-
-                                                junit(testResults: 'tests.xml', allowEmptyResults: true)
+                                                UnityReports.run(this, [testResults: 'tests.xml', allowEmptyResults: true]) {
+                                                    callUnity "tests '$WORKSPACE_TMP/project' ${args.TEST_MODES}", "tests.xml"
+                                                }
                                             }
                                         }
                                     }

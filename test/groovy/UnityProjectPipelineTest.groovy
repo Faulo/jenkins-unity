@@ -29,7 +29,7 @@ class UnityProjectPipelineTest extends BasePipelineTest {
     void optionsAreStrictAndUseOneUnityAgent() {
         def options = UnityProjectPipelineOptions.fromMap([:])
 
-        assertEquals('compose-unity', options.unityAgent)
+        assertEquals('unity', options.unityAgent)
         assertTrue(options.projectOptions.testFormatting)
         assertTrue(options.projectOptions.testUnity)
         assertFalse(options.projectOptions.deployToSteam)
@@ -145,7 +145,8 @@ class UnityProjectPipelineTest extends BasePipelineTest {
         helper.registerAllowedMethod('stage', [String, Closure]) { String name, Closure body -> stages << name; body() }
         helper.registerAllowedMethod('withUnityProjectEnvironment', [UnityProjectOptions, Closure]) { UnityProjectOptions ignored, Closure body -> body() }
         helper.registerAllowedMethod('callUnity', [String, String]) { String command, String report -> commands << [command, report] }
-        helper.registerAllowedMethod('callUnity', [String]) { String command -> commands << command }
+        helper.registerAllowedMethod('callComposer', [String, String]) { String command, String report -> commands << [command, report] }
+        helper.registerAllowedMethod('callComposer', [String]) { String command -> commands << command }
         helper.registerAllowedMethod('junit', [Map]) { Map ignored -> }
         helper.registerAllowedMethod('catchError', [Map, Closure]) { Map ignored, Closure body -> body() }
         helper.registerAllowedMethod('callDocFX', [String]) { String name -> commands << name }
@@ -170,10 +171,10 @@ class UnityProjectPipelineTest extends BasePipelineTest {
 
         assertTrue(stages.empty)
         assertFalse(helper.callStack.any { it.methodName == 'node' })
-        assertTrue(commands.contains(["unity-method 'C:/workspace/Game' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml']))
-        assertTrue(commands.contains("unity-documentation 'C:/workspace/Game'"))
+        assertTrue(commands.contains(["method 'C:/workspace/Game' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml']))
+        assertTrue(commands.contains("exec unity-documentation 'C:/workspace/Game'"))
         assertTrue(commands.contains(['C:/workspace/Game/Game.sln', 'C:/workspace@tmp/reports', 'Library']))
-        assertTrue(commands.contains(["unity-tests 'C:/workspace/Game' EditMode", 'tests.xml']))
+        assertTrue(commands.contains(["tests 'C:/workspace/Game' EditMode", 'tests.xml']))
     }
 
     @Test
@@ -185,8 +186,9 @@ class UnityProjectPipelineTest extends BasePipelineTest {
         helper.registerAllowedMethod('withCredentials', [List, Closure]) { List values, Closure body -> credentials.addAll(values); body() }
         helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
         helper.registerAllowedMethod('withUnityProjectEnvironment', [UnityProjectOptions, Closure]) { UnityProjectOptions ignored, Closure body -> body() }
-        helper.registerAllowedMethod('callUnity', [String]) { String command -> commands << command }
+        helper.registerAllowedMethod('callComposer', [String]) { String command -> commands << command }
         helper.registerAllowedMethod('callUnity', [String, String]) { String command, String report -> commands << [command, report] }
+        helper.registerAllowedMethod('callComposer', [String, String]) { String command, String report -> commands << [command, report] }
         helper.registerAllowedMethod('callShell', [String]) { String command -> commands << command }
 
         def project = projectContext([
@@ -208,7 +210,7 @@ class UnityProjectPipelineTest extends BasePipelineTest {
         deploy.call(project, 'itch')
 
         assertEquals(['steam-credentials', 'itch-credentials'], credentials*.credentialsId)
-        assertTrue(commands.contains('steam-login'))
+        assertTrue(commands.contains('exec steam-login'))
         assertTrue(commands.any { it instanceof List && it[0].contains('11=build-windows 12=build-linux') })
         assertTrue(commands.contains("butler push --if-changed 'build-windows' 'slothsoft/example:windows-x64'"))
         assertTrue(commands.contains("butler push --if-changed 'build-linux' 'slothsoft/example:linux-x64'"))

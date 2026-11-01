@@ -30,8 +30,8 @@ The new Unity project and package Pipeline APIs use real booleans and typed coll
 | [`publishUnityPackage`](#publishunitypackage) | Restore and publish a prepared package on the caller-selected npm agent. |
 | [`reportUnityPackage`](#reportunitypackage) | Report a prepared package's final build result without requiring a workspace. |
 | [`withUnity`](#withunity) | Run library shell commands inside a Unity sidecar container. |
-| [`callComposer`](#callcomposer) | Invoke the configured `compose-unity` launcher. |
-| [`callUnity`](#callunity) | Initialize and invoke a `slothsoft/unity` command. |
+| [`callComposer`](#callcomposer) | Invoke Composer utilities in the configured tool installation. |
+| [`callUnity`](#callunity) | Invoke the native `unity` command. |
 | [`callDotnetFormat`](#calldotnetformat) | Check a solution with `dotnet format` and publish a JUnit report. |
 | [`callDocFX`](#calldocfx) | Build and publish a DocFX site. |
 | [`reportToDiscord`](#reporttodiscord) | Post a build summary to a Discord webhook. |
@@ -61,7 +61,7 @@ Provides the opinionated single-agent Unity project topology. It must be a top-l
 unityProjectPipeline {
     PROJECT_LOCATION = 'Game'
     PROJECT_ID = 'Example Game'
-    UNITY_AGENT = 'compose-unity'
+    UNITY_AGENT = 'unity'
 
     TEST_FORMATTING = true
     TEST_UNITY = true
@@ -82,7 +82,7 @@ All switches are real booleans. String lists require `Collection<String>` values
 
 | Option | Default | Contract |
 |---|---:|---|
-| `UNITY_AGENT` | `'compose-unity'` | Jenkins label for the single project node. |
+| `UNITY_AGENT` | `'unity'` | Jenkins label for the single project node. |
 | `PROJECT_LOCATION` | `'.'` | Relative Unity project directory. Absolute paths and `..` are rejected. |
 | `PROJECT_ID` | `''` | Product-name override used for stage and report names. Empty discovers `productName` inside the node. |
 | `PROJECT_VERSION` | `''` | Explicit version to set. Empty preserves the project version unless autoversioning is enabled. |
@@ -179,7 +179,7 @@ unityProject {
 | Option | Default | Contract |
 |---|---:|---|
 | `LOCATION` | `''` → `'.'` | Unity project directory relative to `WORKSPACE`. An empty value is normalized to `.`. |
-| `AUTOVERSION` | `''` | A non-empty value enables versioning and is passed to `compose-unity autoversion`; expected values are `git` or `plastic`, but this command does not validate them. |
+| `AUTOVERSION` | `''` | A non-empty value enables versioning and is passed to `composer exec autoversion`; expected values are `git` or `plastic`, but this command does not validate them. |
 | `AUTOVERSION_REVISION` | `'0'` | When autoversioning is enabled, append `BUILD_NUMBER` if this is exactly `'1'`. |
 | `AUTOVERSION_REVISION_PREFIX` | `''` | Text inserted before the appended build number. |
 | `AUTOVERSION_REVISION_SUFFIX` | `''` | Text inserted after the appended build number. |
@@ -230,7 +230,7 @@ Each must create the requested build directory and a JUnit-compatible report. Th
 unityProject(
     BUILD_FOR_WINDOWS: '1',
     BUILD_WINDOWS_CALL: { projectDirectory, outputDirectory, reportFile ->
-        callUnity "unity-build '${projectDirectory}' '${outputDirectory}' windows", reportFile
+        callUnity "build '${projectDirectory}' '${outputDirectory}' windows", reportFile
     }
 )
 ```
@@ -309,7 +309,7 @@ Its infrastructure settings are separate from package behavior and are all confi
 | `PUBLISH_AGENT` | `'linux && docker'` | Jenkins label used by the publish Docker agent. The default matches the Linux-only `node:slim` image. |
 | `PUBLISH_IMAGE` | `'node:slim'` | Docker image used for publication. |
 | `PUBLISH_ARGS` | `'--network verdaccio'` | Additional Docker container arguments for publication. The default joins the network used by the default Verdaccio URL. |
-| `UNITY_AGENTS` | `[Unity: 'compose-unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
+| `UNITY_AGENTS` | `[Unity: 'unity']` | Ordered map of agent stage names to Jenkins label expressions. Entries run sequentially in declaration order; `[:]` skips all agent tests. |
 
 Map and delegated-Closure forms accept the infrastructure options above together with the package options below. Internally the wrapper constructs immutable `UnityPackagePipelineOptions` and `UnityPackageOptions` objects before allocating an agent.
 
@@ -432,7 +432,7 @@ pipeline {
         }
 
         stage('Linux') {
-            agent { label 'linux && compose-unity' }
+            agent { label 'unity && linux' }
             steps {
                 script {
                     def installedPackage
@@ -581,7 +581,7 @@ The closure-only form reads the container name from `JENKINS_UNITY_CONTAINER`:
 ```groovy
 withEnv(['JENKINS_UNITY_CONTAINER=agents_unity']) {
     withUnity {
-        callUnity 'unity-help'
+        callUnity '--help'
     }
 }
 ```
@@ -591,9 +591,9 @@ Docker Swarm tasks have unstable names. When `JENKINS_UNITY_CONTAINER` is empty,
 container label:
 
 ```groovy
-withEnv(['JENKINS_UNITY_CONTAINER_LABEL=net.slothsoft.role=compose-unity']) {
+withEnv(['JENKINS_UNITY_CONTAINER_LABEL=net.slothsoft.role=unity-sidecar']) {
     withUnity {
-        callUnity 'unity-help'
+        callUnity '--help'
     }
 }
 ```
@@ -626,51 +626,48 @@ Linux containers need `/bin/sh`, `setsid`, and `pkill`; Windows containers need 
 ## Shell and tool commands
 
 The retained `call*` commands below compose application-specific behavior from the generic commands supplied by
-[Strayfarer Pipeline Steps](https://github.com/Strayfarer/com.strayfarer.jenkins.pipeline-steps), version 0.5.0 or newer.
+[Strayfarer Pipeline Steps](https://github.com/Strayfarer/com.strayfarer.jenkins.pipeline-steps), version 0.9.0 or newer.
 
 ### `callComposer`
 
-Invokes the configured `slothsoft/unity` launcher and returns its captured output.
+Invokes Composer and returns trimmed captured stdout. Use it for utilities that have no native `unity` equivalent: `autoversion`, `unity-project-setting`, `unity-project-version`, `unity-documentation`, `transform-dotnet-format`, `steam-login`, and `steam-buildfile`.
 
 ```groovy
-String help = callComposer('exec unity-help')
+String productName = callComposer("exec unity-project-setting '${env.WORKSPACE}/Game' productName")
+callComposer("exec transform-dotnet-format '${env.WORKSPACE_TMP}/format-report.json'", 'format-report.xml')
 ```
 
-Contract:
+Signatures: `String callComposer(String body)` and `String callComposer(String body, String file)`.
 
-- Signature is `String callComposer(String body)`.
-- Uses `env.COMPOSE_UNITY` as the launcher. When it is empty, sets it to `compose-unity`.
-- Constructs the command as `<COMPOSE_UNITY> <body>` and executes it through Pipeline Steps with captured output.
-- The launcher may contain arguments, for example `composer -d /var/unity exec` on Linux or `composer -d C:\Webserver\unity exec` on Windows.
-- Inherits Pipeline Steps' streaming, captured-output, exit, and interruption behavior.
+- Uses `COMPOSER_EXECUTABLE`, then the historical `COMPOSE_UNITY` override, then `composer`.
+- The configured launcher may include arguments. It runs through `execStdout`, preserving console streaming, captured output, nonzero-exit failures, and interruptions.
+- An optional `file` is forwarded as `stdout`. Omitted, null, and empty paths disable file output. Files preserve whitespace and remain available on nonzero exit; the returned string remains trimmed.
+- Does not install or update dependencies. The agent or sidecar image must supply them.
 
 ### `callUnity`
 
-Initializes and invokes a command supplied by the [slothsoft/unity](https://github.com/Faulo/slothsoft-unity) Composer package.
+Invokes the native `unity` executable supplied by [faulo/unity](https://hub.docker.com/r/faulo/unity), which forwards to `composer exec unity-command --` and provides process supervision and credential-file handling.
 
 ```groovy
-String productName = callUnity(
-    "unity-project-setting '${env.WORKSPACE}/Game' 'productName'"
-)
-
-callUnity(
-    "unity-tests '${env.WORKSPACE}/Game' EditMode",
-    "${env.WORKSPACE_TMP}/tests.xml"
-)
+String help = callUnity('--help')
+String report = callUnity("tests '${env.WORKSPACE}/Game' EditMode", 'tests.xml')
+callUnity("package-install '${env.WORKSPACE_TMP}/project' '${env.WORKSPACE}/Package'", 'package-install.xml')
 ```
 
 Signature: `String callUnity(String body, String file = '')`.
 
-Contract:
+- Uses `UNITY_EXECUTABLE` when set, otherwise `unity`. Does not run Composer updates or maintain initialization state.
+- Accepts native commands `build`, `empty-project`, `method`, `start`, `module-install`, `package-install`, and `tests`, plus CLI help/list options. `package-install` takes **workspace before package**.
+- With a non-empty `file`, report-producing commands receive `--junit -` immediately after the command name. Stdout contains only report XML; normal command output is streamed through stderr. `execStdout` writes the report file and returns its trimmed contents.
+- Without a file destination, captures the native command's ordinary stdout. To request a tool-managed report with normal stdout logs, include `--junit PATH` in the body and omit the second argument; the returned string then contains ordinary stdout rather than report XML.
+- File destinations preserve whitespace, default to UTF-8, and are retained on nonzero exit. Relative paths resolve against the current `pwd()`; absolute agent paths are accepted. Write failures fail the step. Use distinct files for concurrent commands.
+- `--junit -` emits the completed document; it does not stream partial Unity test XML. Logs still stream while Unity runs.
+- Preserves `execStdout` nonzero-exit and interruption behavior. The native `tests` command evaluates valid Unity reports as authoritative and can succeed despite a Unity process exit recorded as warning metadata; missing usable reports are infrastructure errors. Module installation similarly verifies the final module state.
+- Historical command names (`unity-tests`, `unity-method`, `unity-package-install`, and the other bundled legacy binaries/utilities) remain accepted through Composer, retaining their old argument order and output. This compatibility route performs no automatic update. New library call sites use native commands, with utilities explicitly routed through `callComposer`.
 
-- On the first call for an execution identity, invokes `callComposer('update --no-interaction --no-dev --optimize-autoloader --classmap-authoritative')`.
-- Uses `PIPELINE_DOCKER_CONTAINER_ID` as the identity inside a sidecar and otherwise uses `NODE_NAME`. If neither is available, the initializer falls back to the process `NODE_NAME` or `UNKNOWN`.
-- Invokes `callComposer("exec ${body}")` and returns its captured standard output.
-- When `file` is non-empty, writes that same output to the supplied workspace path as UTF-8 before returning it.
-- Container replacement produces a new container identity and therefore triggers initialization for the replacement.
-- Inherits `callComposer` failure and interruption behavior.
+Library build, installation, test, and formatting-report callers publish JUnit reports even when their command fails. A command failure remains the primary exception if publication also fails. Aborts and timeouts propagate immediately without attempting publication. Existing reports are cleared before each attempt to prevent stale results after a launch failure. Legacy lifecycle exception handling and installation cleanup remain unchanged.
 
-Initialization state is maintained by `vars/CallUnityInitializer.groovy`. That file is internal support and does not define a Pipeline command.
+The native API does not replace Composer's metadata/version utilities, DocFX template generation, formatting-report conversion, or Steam helpers. Those remain explicit Composer calls. Numeric-status execution for `dotnet format` and captures used for metadata are also retained.
 
 ### `callDotnetFormat`
 
@@ -692,7 +689,7 @@ Contract:
 - Invokes `dotnet format <solution> --verify-no-changes --verbosity normal --report <reportsDirectory>` and appends `--exclude <exclude>` when `exclude` is non-empty.
 - Requests a numeric exit status, allowing `dotnet format` to return non-zero so its report can still be processed.
 - Requires `format-report.json`; missing output fails the Pipeline.
-- Converts that JSON to `format-report.xml` with `callUnity transform-dotnet-format`; missing converted output also fails the Pipeline.
+- Converts that JSON to `format-report.xml` with `callComposer exec transform-dotnet-format`; missing converted output also fails the Pipeline.
 - Publishes `format-report.xml` with `junit(allowEmptyResults: true)`.
 - Does not provide a stable return value.
 
@@ -797,12 +794,12 @@ Contract:
 
 The node or Unity sidecar executing these commands must provide the tools required by the enabled features:
 
-- a working `COMPOSE_UNITY` launcher and the expected Unity installations and reusable license state;
+- the native `unity` launcher, Composer utilities, and the expected Unity installations and reusable license state;
 - `dotnet` and DocFX for formatting or documentation;
 - `steamcmd` for Steam deployment;
 - Butler for itch.io deployment;
 - Node.js and NPM for `unityPackage` metadata and Verdaccio publication;
-- the Jenkins plugins providing the Pipeline steps used by the selected commands, including Strayfarer Pipeline Steps 0.5.0 or newer.
+- the Jenkins plugins providing the Pipeline steps used by the selected commands, including Strayfarer Pipeline Steps 0.9.0 or newer.
 
 Local tests exercise configuration and delegation without reproducing every Jenkins CPS, durability, agent, credential, container, or plugin behavior:
 
@@ -815,3 +812,13 @@ After Maven dependencies have been downloaded once, the same suite can run offli
 ```shell
 mvn -o test
 ```
+
+The CI test layout follows the neighboring Docker projects:
+
+- `.jenkins/Jenkinsfile.groovy` provides the Unit Tests / Integration Tests orchestration and defines the unit-test agent, image, command, and report path directly.
+- `.jenkins/testProject.properties` selects the integration agent labels, timeout, test script, credentials, launcher, container selectors, and fixtures.
+- `.jenkins/tests/integration.groovy` contains the runtime assertions and package/project phase tests.
+
+CI runs the Maven/JUnit suite with Java 21 in a Maven container on `docker && linux`, then checks out and runs the integration suite once on `unity && linux` and once on `unity && windows`. An ordinary integration failure is recorded without skipping the other OS; interruptions still propagate. Each OS exercises report streaming and failure publication, environment files, node reuse, credential-file validation, and package/project solution, formatting, documentation, and Unity tests. Deployment and notifications are not invoked.
+
+Integration configuration uses `unity` for native operations and `composer` for the remaining utilities. The current library phase helpers still require a `withUnity` sidecar: empty `unityContainer` and `unityContainerLabel` settings inherit `JENKINS_UNITY_CONTAINER` or `JENKINS_UNITY_CONTAINER_LABEL` from the allocated agent. Supply a selector in the properties file if the infrastructure does not provide one. Workspaces and temporary paths must be shared with that container as described above.

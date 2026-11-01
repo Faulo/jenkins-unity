@@ -1,3 +1,5 @@
+import net.slothsoft.jenkins.unity.UnityReports
+
 def call(String solutionFile, String reportsDirectory, String exclude = '') {
     dir(reportsDirectory) {
         if (exclude != '') {
@@ -13,11 +15,11 @@ def call(String solutionFile, String reportsDirectory, String exclude = '') {
             error "dotnet format failed to create '${jsonFile}'."
         }
 
-        callUnity "transform-dotnet-format '${jsonFile}'", xmlFile
-        if (!fileExists(xmlFile)) {
-            error "transform-dotnet-format failed to create '${xmlFile}'."
+        UnityReports.run(this, [testResults: 'format-report.xml', allowEmptyResults: true]) {
+            callComposer "exec transform-dotnet-format '${jsonFile}'", xmlFile
+            if (!fileExists(xmlFile)) {
+                error "transform-dotnet-format failed to create '${xmlFile}'."
+            }
         }
-
-        junit(testResults: 'format-report.xml', allowEmptyResults: true)
     }
 }

@@ -64,7 +64,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
     void delegatesWithUnityToInsideDockerContainer() {
         binding.setVariable('env', [
             JENKINS_UNITY_CONTAINER: 'unity-sidecar',
-            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity',
+            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar',
             JENKINS_UNITY_ENV: 'FIRST::SECOND:FIRST'
         ])
 
@@ -105,7 +105,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
     void delegatesExplicitWithUnityContainer() {
         binding.setVariable('env', [
             JENKINS_UNITY_CONTAINER: 'default-sidecar',
-            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'
+            JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'
         ])
 
         def containerArguments
@@ -132,7 +132,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
 
     @Test
     void discoversFirstUnityContainerByLabelOnLinux() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'])
 
         def shellArguments
         def selectedContainers = []
@@ -158,7 +158,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
 
     @Test
     void discoversUnityContainerByLabelOnWindows() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'])
 
         def powershellArguments
         def selectedContainers = []
@@ -184,7 +184,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
 
     @Test
     void failsWhenNoRunningUnityContainerMatchesLabel() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'])
         helper.registerAllowedMethod('isWindows', []) { false }
         helper.registerAllowedMethod('sh', [Map]) { Map ignored -> " \n\r\n" }
         helper.registerAllowedMethod('error', [String]) { String message -> throw new IllegalStateException(message) }
@@ -196,7 +196,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
             }
         }
 
-        assertEquals("No running Unity container matches label 'net.slothsoft.role=compose-unity'.", failure.message)
+        assertEquals("No running Unity container matches label 'net.slothsoft.role=unity-sidecar'.", failure.message)
         assertFalse(helper.callStack.any { it.methodName == 'insideDockerContainer' })
     }
 
@@ -218,7 +218,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
 
     @Test
     void reusesDiscoveredContainerForNestedUnityScope() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'])
 
         def selectedContainers = []
         helper.registerAllowedMethod('isWindows', []) { false }
@@ -249,7 +249,7 @@ class PipelineStepDelegationTest extends BasePipelineTest {
 
     @Test
     void discoversAgainForEachIndependentUnityScope() {
-        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=compose-unity'])
+        binding.setVariable('env', [JENKINS_UNITY_CONTAINER_LABEL: 'net.slothsoft.role=unity-sidecar'])
 
         def discoveredContainers = ['first-task', 'replacement-task']
         def selectedContainers = []

@@ -1,3 +1,4 @@
+import net.slothsoft.jenkins.unity.UnityReports
 import net.slothsoft.jenkins.unity.InstalledUnityPackage
 import net.slothsoft.jenkins.unity.PreparedUnityPackage
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
@@ -23,8 +24,9 @@ InstalledUnityPackage call(PreparedUnityPackage preparedPackage) {
 
         withUnityPackageEnvironment(preparedPackage, packageDirectory) {
             dir(reportsDirectory) {
-                callUnity "unity-package-install '${packageDirectory}' '${projectDirectory}'", 'package-install.xml'
-                junit(testResults: 'package-install.xml')
+                UnityReports.run(this, [testResults: 'package-install.xml']) {
+                    callUnity "package-install '${projectDirectory}' '${packageDirectory}'", 'package-install.xml'
+                }
             }
         }
 

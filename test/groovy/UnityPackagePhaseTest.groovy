@@ -101,7 +101,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         assertEquals("${installed.workDirectory}/project".toString(), installed.projectDirectory)
         def nestedWindowsPath = "${installed.projectDirectory}/Packages/net.slothsoft.aseprite/.cache/Packages/net.slothsoft.aseprite/TestAssets/TEST_Aseprite_PortraitsWithTags.aseprite.png"
         assertTrue(nestedWindowsPath.length() < 260)
-        assertEquals([["unity-package-install '${installed.packageDirectory}' '${installed.projectDirectory}'".toString(), 'package-install.xml']], commands)
+        assertEquals([["package-install '${installed.projectDirectory}' '${installed.packageDirectory}'".toString(), 'package-install.xml']], commands)
         assertFalse(helper.callStack.any { it.methodName in ['stage', 'node'] })
     }
 
@@ -162,7 +162,7 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         }
         helper.registerAllowedMethod('withUnityPackageEnvironment', [PreparedUnityPackage, Closure]) { PreparedUnityPackage ignored, Closure body -> body() }
         helper.registerAllowedMethod('callUnity', [String, String]) { String command, String report -> commands << [command, report] }
-        helper.registerAllowedMethod('callUnity', [String]) { String command -> commands << command }
+        helper.registerAllowedMethod('callComposer', [String]) { String command -> commands << command }
         helper.registerAllowedMethod('junit', [Map]) { Map ignored -> }
         helper.registerAllowedMethod('callDotnetFormat', [String, String, String]) { String solution, String reports, String exclusions -> commands << [solution, reports, exclusions] }
         helper.registerAllowedMethod('callDocFX', [String]) { String reportName -> commands << reportName }
@@ -186,11 +186,11 @@ class UnityPackagePhaseTest extends BasePipelineTest {
         testProject.call(installed, 'unity')
 
         assertTrue(stages.empty)
-        assertTrue(commands.contains(["unity-method '${installed.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution".toString(), 'build-solution.xml']))
-        assertTrue(commands.contains("unity-documentation '${installed.projectDirectory}'".toString()))
+        assertTrue(commands.contains(["method '${installed.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution".toString(), 'build-solution.xml']))
+        assertTrue(commands.contains("exec unity-documentation '${installed.projectDirectory}'".toString()))
         assertTrue(commands.contains('net.example.package'))
         assertTrue(commands.contains(["${installed.projectDirectory}/project.sln".toString(), installed.reportsDirectory, 'Library']))
-        assertTrue(commands.contains(["unity-tests '${installed.projectDirectory}' EditMode PlayMode".toString(), 'tests.xml']))
+        assertTrue(commands.contains(["tests '${installed.projectDirectory}' EditMode PlayMode".toString(), 'tests.xml']))
         assertFalse(helper.callStack.any { it.methodName == 'node' })
     }
 

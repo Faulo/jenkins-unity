@@ -1,3 +1,5 @@
+import net.slothsoft.jenkins.unity.UnityReports
+
 def call(Closure body) {
     def args = [:]
 
@@ -52,17 +54,17 @@ def call(Map args) {
 
         BUILD_WINDOWS_CALL: { project, build, report ->
             echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
-            callUnity "unity-build '${project}' '${build}' windows", report
+            callUnity "build '${project}' '${build}' windows", report
         },
 
         BUILD_LINUX_CALL: { project, build, report ->
             echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
-            callUnity "unity-build '${project}' '${build}' linux", report
+            callUnity "build '${project}' '${build}' linux", report
         },
 
         BUILD_MAC_CALL: { project, build, report ->
             echo "Building project '${project}' to directory '${build}' while saving log in '${report}'..."
-            callUnity "unity-build '${project}' '${build}' mac", report
+            callUnity "build '${project}' '${build}' mac", report
         },
 
         // Deploy, even if previous steps reported errors or warnings.
@@ -150,7 +152,7 @@ def call(Map args) {
     def id = 'Unknown'
 
     try {
-        id = callUnity "unity-project-setting '${project}' 'productName'"
+        id = callComposer "exec unity-project-setting '${project}' 'productName'"
     } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
         currentBuild.result = e.result
         throw e
@@ -162,12 +164,12 @@ def call(Map args) {
     if (getVersion) {
         try {
             if (setVersion) {
-                localVersion = callUnity "autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
+                localVersion = callComposer "exec autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
                 if (args.AUTOVERSION_REVISION == '1') {
                     localVersion += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
                 }
             } else {
-                localVersion = callUnity "unity-project-setting '${project}' 'bundleVersion'"
+                localVersion = callComposer "exec unity-project-setting '${project}' 'bundleVersion'"
             }
         } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
             currentBuild.result = e.result
@@ -180,7 +182,7 @@ def call(Map args) {
         try {
             if (setVersion) {
                 stage("Set: Project version") {
-                    callUnity "unity-project-version '${project}' set '${localVersion}'"
+                    callComposer "exec unity-project-version '${project}' set '${localVersion}'"
                 }
             }
 
@@ -205,8 +207,9 @@ def call(Map args) {
 
                     if (createSolution) {
                         stage("Build: C# solution") {
-                            callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
-                            junit(testResults: 'build-solution.xml')
+                            UnityReports.run(this, [testResults: 'build-solution.xml']) {
+                                callUnity "method '${project}' Slothsoft.UnityExtensions.Editor.Build.Solution", "${reports}/build-solution.xml"
+                            }
                         }
                     }
 
@@ -216,7 +219,7 @@ def call(Map args) {
                                 dir(docs) {
                                     deleteDir()
 
-                                    callUnity "unity-documentation '${project}'"
+                                    callComposer "exec unity-documentation '${project}'"
 
                                     callDocFX('Documentation')
                                 }
@@ -249,42 +252,48 @@ def call(Map args) {
                             if (args.TEST_MODES == '') {
                                 unstable "Parameter TEST_MODES is missing."
                             }
-                            callUnity "unity-tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
-                            junit(testResults: 'tests.xml', allowEmptyResults: true)
+                            UnityReports.run(this, [testResults: 'tests.xml', allowEmptyResults: true]) {
+                                callUnity "tests '${project}' ${args.TEST_MODES}", "${reports}/tests.xml"
+                            }
                         }
                     }
 
                     if (createBuild) {
                         if (args.BUILD_FOR_WINDOWS == '1') {
                             stage('Build: Windows') {
-                                args.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
-                                junit(testResults: "${args.BUILD_NAME}-windows.xml")
+                                UnityReports.run(this, [testResults: "${args.BUILD_NAME}-windows.xml"]) {
+                                    args.BUILD_WINDOWS_CALL(project, "${reports}/${args.BUILD_NAME}-windows", "${reports}/${args.BUILD_NAME}-windows.xml")
+                                }
                                 zip(zipFile: "${args.BUILD_NAME}-windows.zip", dir: "${args.BUILD_NAME}-windows", archive: true)
                             }
                         }
 
                         if (args.BUILD_FOR_LINUX == '1') {
                             stage('Build: Linux') {
-                                args.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
-                                junit(testResults: "${args.BUILD_NAME}-linux.xml")
+                                UnityReports.run(this, [testResults: "${args.BUILD_NAME}-linux.xml"]) {
+                                    args.BUILD_LINUX_CALL(project, "${reports}/${args.BUILD_NAME}-linux", "${reports}/${args.BUILD_NAME}-linux.xml")
+                                }
                                 zip(zipFile: "${args.BUILD_NAME}-linux.zip", dir: "${args.BUILD_NAME}-linux", archive: true)
                             }
                         }
 
                         if (args.BUILD_FOR_MAC == '1') {
                             stage('Build: MacOS') {
-                                args.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
-                                junit(testResults: "${args.BUILD_NAME}-mac.xml")
+                                UnityReports.run(this, [testResults: "${args.BUILD_NAME}-mac.xml"]) {
+                                    args.BUILD_MAC_CALL(project, "${reports}/${args.BUILD_NAME}-mac", "${reports}/${args.BUILD_NAME}-mac.xml")
+                                }
                                 zip(zipFile: "${args.BUILD_NAME}-mac.zip", dir: "${args.BUILD_NAME}-mac", archive: true)
                             }
                         }
 
                         if (args.BUILD_FOR_WEBGL == '1') {
                             stage('Build: WebGL') {
-                                callUnity "unity-module-install '${project}' webgl", "${reports}/install-webgl.xml"
-                                junit(testResults: 'install-webgl.xml')
-                                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl'", "${reports}/${args.BUILD_NAME}-webgl.xml"
-                                junit(testResults: "${args.BUILD_NAME}-webgl.xml")
+                                UnityReports.run(this, [testResults: 'install-webgl.xml']) {
+                                    callUnity "module-install '${project}' webgl", "${reports}/install-webgl.xml"
+                                }
+                                UnityReports.run(this, [testResults: "${args.BUILD_NAME}-webgl.xml"]) {
+                                    callUnity "method '${project}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${reports}/${args.BUILD_NAME}-webgl'", "${reports}/${args.BUILD_NAME}-webgl.xml"
+                                }
                                 zip(zipFile: "${args.BUILD_NAME}-webgl.zip", dir: "${args.BUILD_NAME}-webgl", archive: true)
                                 publishHTML([
                                     allowMissing: false,
@@ -301,10 +310,12 @@ def call(Map args) {
 
                         if (args.BUILD_FOR_ANDROID == '1') {
                             stage('Build: Android') {
-                                callUnity "unity-module-install '${project}' android", "${reports}/install-android.xml"
-                                junit(testResults: 'install-android.xml')
-                                callUnity "unity-method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk'", "${reports}/${args.BUILD_NAME}-android.xml"
-                                junit(testResults: "${args.BUILD_NAME}-android.xml")
+                                UnityReports.run(this, [testResults: 'install-android.xml']) {
+                                    callUnity "module-install '${project}' android", "${reports}/install-android.xml"
+                                }
+                                UnityReports.run(this, [testResults: "${args.BUILD_NAME}-android.xml"]) {
+                                    callUnity "method '${project}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${reports}/${args.BUILD_NAME}-android.apk'", "${reports}/${args.BUILD_NAME}-android.xml"
+                                }
                                 archiveArtifacts(artifacts: "${args.BUILD_NAME}-android.apk")
                             }
                         }
@@ -331,9 +342,9 @@ def call(Map args) {
                                         error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
                                     }
 
-                                    callUnity "steam-login"
+                                    callComposer "exec steam-login"
 
-                                    callUnity "steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
+                                    callComposer "exec steam-buildfile '${reports}' '${reports}' ${args.STEAM_ID} ${depots} ${args.STEAM_BRANCH}", "${reports}/deploy-steam.vdf"
 
                                     callShell "steamcmd +login \"\$STEAM_CREDENTIALS_USR\" \"\$STEAM_CREDENTIALS_PSW\" +run_app_build '${reports}/deploy-steam.vdf' +quit"
                                 }

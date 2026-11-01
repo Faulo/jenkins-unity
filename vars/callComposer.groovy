@@ -1,6 +1,4 @@
-def call(String body) {
-    if (!env.COMPOSE_UNITY) {
-        env.COMPOSE_UNITY = "compose-unity"
-    }
-    return callShellStdout("$COMPOSE_UNITY ${body}")
+def call(String body, String file = '') {
+    def launcher = env.COMPOSER_EXECUTABLE ?: env.COMPOSE_UNITY ?: 'composer'
+    return execStdout(script: "${launcher} ${body}", stdout: file)
 }

@@ -1,3 +1,4 @@
+import net.slothsoft.jenkins.unity.UnityReports
 import net.slothsoft.jenkins.unity.InstalledUnityPackage
 import net.slothsoft.jenkins.unity.UnityProjectContext
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
@@ -72,8 +73,9 @@ private void testUnity(InstalledUnityPackage installedPackage) {
     withUnityPackageEnvironment(installedPackage.preparedPackage) {
         dir(installedPackage.reportsDirectory) {
             def testModes = installedPackage.preparedPackage.options.unityTestModes.join(' ')
-            callUnity "unity-tests '${installedPackage.projectDirectory}' ${testModes}", 'tests.xml'
-            junit(testResults: 'tests.xml', allowEmptyResults: true)
+            UnityReports.run(this, [testResults: 'tests.xml', allowEmptyResults: true]) {
+                callUnity "tests '${installedPackage.projectDirectory}' ${testModes}", 'tests.xml'
+            }
         }
     }
 }
@@ -105,8 +107,9 @@ private void testFormatting(UnityProjectContext project) {
 private void testUnity(UnityProjectContext project) {
     withUnityProjectEnvironment(project.options) {
         dir(project.reportsDirectory) {
-            callUnity "unity-tests '${project.projectDirectory}' ${project.options.unityTestModes.join(' ')}", 'tests.xml'
-            junit(testResults: 'tests.xml', allowEmptyResults: true)
+            UnityReports.run(this, [testResults: 'tests.xml', allowEmptyResults: true]) {
+                callUnity "tests '${project.projectDirectory}' ${project.options.unityTestModes.join(' ')}", 'tests.xml'
+            }
         }
     }
 }

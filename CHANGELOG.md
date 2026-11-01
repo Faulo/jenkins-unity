@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Use the native `unity` API for Unity execution, with report-only stdout when `callUnity` receives a report file; preserve historical command names through an explicit Composer compatibility route.
+- Remove automatic Composer updates and static per-agent initialization; use the installed image toolchain.
+- Default Unity agent selection to `unity` and Composer execution to `composer`, retaining the historical launcher override.
+- Run the Maven unit suite on Docker and integration tests once per Linux/Windows label, with integration configuration and tests separated from the Jenkinsfile.
+
+### Fixed
+- Retain streamed stdout report files on command failure and publish available JUnit reports without masking command failures or interruptions.
+
 
 ## [5.1.0] - 2026-09-08
 

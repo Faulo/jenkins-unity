@@ -1,3 +1,4 @@
+import net.slothsoft.jenkins.unity.UnityReports
 import net.slothsoft.jenkins.unity.InstalledUnityPackage
 import net.slothsoft.jenkins.unity.UnityProjectContext
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
@@ -91,8 +92,9 @@ void call(UnityProjectContext project, String operation) {
 private void buildSolution(InstalledUnityPackage installedPackage) {
     withUnityPackageEnvironment(installedPackage.preparedPackage) {
         dir(installedPackage.reportsDirectory) {
-            callUnity "unity-method '${installedPackage.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml'
-            junit(testResults: 'build-solution.xml')
+            UnityReports.run(this, [testResults: 'build-solution.xml']) {
+                callUnity "method '${installedPackage.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml'
+            }
         }
     }
 }
@@ -102,7 +104,7 @@ private void buildDocumentation(InstalledUnityPackage installedPackage) {
         withUnityPackageEnvironment(installedPackage.preparedPackage) {
             dir("${installedPackage.projectDirectory}/.Documentation") {
                 deleteDir()
-                callUnity "unity-documentation '${installedPackage.projectDirectory}'"
+                callComposer "exec unity-documentation '${installedPackage.projectDirectory}'"
                 callDocFX(installedPackage.preparedPackage.context.packageId)
             }
         }
@@ -112,8 +114,9 @@ private void buildDocumentation(InstalledUnityPackage installedPackage) {
 private void buildSolution(UnityProjectContext project) {
     withUnityProjectEnvironment(project.options) {
         dir(project.reportsDirectory) {
-            callUnity "unity-method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml'
-            junit(testResults: 'build-solution.xml')
+            UnityReports.run(this, [testResults: 'build-solution.xml']) {
+                callUnity "method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Solution", 'build-solution.xml'
+            }
         }
     }
 }
@@ -123,7 +126,7 @@ private void buildDocumentation(UnityProjectContext project) {
         withUnityProjectEnvironment(project.options) {
             dir(project.documentationDirectory) {
                 deleteDir()
-                callUnity "unity-documentation '${project.projectDirectory}'"
+                callComposer "exec unity-documentation '${project.projectDirectory}'"
                 callDocFX(project.projectId)
             }
         }
@@ -134,8 +137,9 @@ private void buildDesktop(UnityProjectContext project, String platform) {
     def buildName = "${project.options.buildName}-${platform}"
     withUnityProjectEnvironment(project.options) {
         dir(project.reportsDirectory) {
-            callUnity "unity-build '${project.projectDirectory}' '${project.reportsDirectory}/${buildName}' ${platform}", "${buildName}.xml"
-            junit(testResults: "${buildName}.xml")
+            UnityReports.run(this, [testResults: "${buildName}.xml"]) {
+                callUnity "build '${project.projectDirectory}' '${project.reportsDirectory}/${buildName}' ${platform}", "${buildName}.xml"
+            }
             zip(zipFile: "${buildName}.zip", dir: buildName, archive: true)
         }
     }
@@ -145,10 +149,12 @@ private void buildWebGL(UnityProjectContext project) {
     def buildName = "${project.options.buildName}-webgl"
     withUnityProjectEnvironment(project.options) {
         dir(project.reportsDirectory) {
-            callUnity "unity-module-install '${project.projectDirectory}' webgl", 'install-webgl.xml'
-            junit(testResults: 'install-webgl.xml')
-            callUnity "unity-method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${project.reportsDirectory}/${buildName}'", "${buildName}.xml"
-            junit(testResults: "${buildName}.xml")
+            UnityReports.run(this, [testResults: 'install-webgl.xml']) {
+                callUnity "module-install '${project.projectDirectory}' webgl", 'install-webgl.xml'
+            }
+            UnityReports.run(this, [testResults: "${buildName}.xml"]) {
+                callUnity "method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.WebGL -- -buildTarget WebGL '${project.reportsDirectory}/${buildName}'", "${buildName}.xml"
+            }
             zip(zipFile: "${buildName}.zip", dir: buildName, archive: true)
             publishHTML([
                 allowMissing: false,
@@ -168,10 +174,12 @@ private void buildAndroid(UnityProjectContext project) {
     def buildName = "${project.options.buildName}-android"
     withUnityProjectEnvironment(project.options) {
         dir(project.reportsDirectory) {
-            callUnity "unity-module-install '${project.projectDirectory}' android", 'install-android.xml'
-            junit(testResults: 'install-android.xml')
-            callUnity "unity-method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${project.reportsDirectory}/${buildName}.apk'", "${buildName}.xml"
-            junit(testResults: "${buildName}.xml")
+            UnityReports.run(this, [testResults: 'install-android.xml']) {
+                callUnity "module-install '${project.projectDirectory}' android", 'install-android.xml'
+            }
+            UnityReports.run(this, [testResults: "${buildName}.xml"]) {
+                callUnity "method '${project.projectDirectory}' Slothsoft.UnityExtensions.Editor.Build.Android -- -buildTarget Android '${project.reportsDirectory}/${buildName}.apk'", "${buildName}.xml"
+            }
             archiveArtifacts(artifacts: "${buildName}.apk")
         }
     }

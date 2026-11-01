@@ -7,7 +7,7 @@ void call(UnityProjectContext project) {
     }
     try {
         withUnityProjectEnvironment(project.options) {
-            callUnity "unity-project-version '${project.projectDirectory}' set '${project.version}'"
+            callComposer "exec unity-project-version '${project.projectDirectory}' set '${project.version}'"
         }
     } catch (FlowInterruptedException e) {
         currentBuild.result = e.result

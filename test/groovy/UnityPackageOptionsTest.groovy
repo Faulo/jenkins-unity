@@ -73,7 +73,7 @@ class UnityPackageOptionsTest {
         assertEquals('linux && docker', defaults.publishAgent)
         assertEquals('node:slim', defaults.publishImage)
         assertEquals('--network verdaccio', defaults.publishArgs)
-        assertEquals([Unity: 'compose-unity'], defaults.unityAgents)
+        assertEquals([Unity: 'unity'], defaults.unityAgents)
         assertEquals(['Library'], defaults.packageOptions.formattingExclusions)
 
         def options = UnityPackagePipelineOptions.fromMap([

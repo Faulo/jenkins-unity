@@ -59,12 +59,10 @@ cannot faithfully reproduce every Jenkins CPS, durability, agent, and plugin
 integration behavior. Whenever integration tests are run, watch the complete
 console log; scheduling a build alone does not establish success.
 
-The durable test servers are `Mörkö`, a Linux server that also hosts the
-Jenkins container; `Garl`, a Linux server with a GPU; and `Dende`, a Windows
-server with a GPU. Other Jenkins agents are temporary build helpers: do not
-mention them by name in `.jenkins/Jenkinsfile.groovy`. Target helpers only by
-label, and require an available helper matching a tested label to pass the same
-integration tests as the named servers.
+Request Unity test machines by label: `unity`, or `unity && linux` and
+`unity && windows` when testing a specific OS. Do not target named servers or
+use the deprecated `compose-unity` agent label. Run integration tests once per
+OS. Unit tests may request the `docker` label.
 
 ## Jenkins Shared Library Development
 
@@ -91,8 +89,10 @@ This library is loading globally and implicitly in all jobs.
   before live integration testing.
 - Add local coverage for every changed public invocation form and its output,
   return-value, error, and interruption contracts.
-- Keep this Shared Library's integration tests in
-  `.jenkins/Jenkinsfile.groovy`. Add focused coverage for changed runtime
+- Keep the project-agnostic test entry point in `.jenkins/Jenkinsfile.groovy`,
+  unit-test configuration directly in that entry point, integration configuration
+  in `.jenkins/testProject.properties`, and integration tests in
+  `.jenkins/tests/`. Add focused coverage for changed runtime
   behavior and retain assertions for previously discovered regressions. Do not
   invoke deployment or notification side effects unless the test explicitly
   requires and authorizes them.

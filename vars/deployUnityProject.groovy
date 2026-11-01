@@ -57,8 +57,8 @@ private void deployToSteam(UnityProjectContext project) {
             withUnityProjectEnvironment(options) {
                 dir(project.reportsDirectory) {
                     def steamBranch = options.steamBranch ?: project.branch.replace('/', ' ').trim().replace(' ', '-')
-                    callUnity 'steam-login'
-                    callUnity "steam-buildfile '${project.reportsDirectory}' '${project.reportsDirectory}' ${options.steamId} ${depots.join(' ')} ${steamBranch}", 'deploy-steam.vdf'
+                    callComposer 'exec steam-login'
+                    callComposer "exec steam-buildfile '${project.reportsDirectory}' '${project.reportsDirectory}' ${options.steamId} ${depots.join(' ')} ${steamBranch}", 'deploy-steam.vdf'
                     callShell "steamcmd +login \"\$STEAM_CREDENTIALS_USR\" \"\$STEAM_CREDENTIALS_PSW\" +run_app_build 'deploy-steam.vdf' +quit"
                 }
             }
