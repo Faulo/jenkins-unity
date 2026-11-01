@@ -197,12 +197,6 @@ def call(Map args) {
                 if (args.EMAIL_CREDENTIALS != '') {
                     credentials << usernamePassword(credentialsId: args.EMAIL_CREDENTIALS, usernameVariable: 'EMAIL_CREDENTIALS_USR', passwordVariable: 'EMAIL_CREDENTIALS_PSW')
                 }
-                if (args.STEAM_CREDENTIALS != '') {
-                    credentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')
-                }
-                if (args.ITCH_CREDENTIALS != '') {
-                    credentials << string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
-                }
 
                 withCredentials(credentials) {
 
@@ -343,7 +337,13 @@ def call(Map args) {
                                         error "Missing Steam depots! Please specify any of the parameters STEAM_DEPOT_WINDOWS, STEAM_DEPOT_LINUX, or STEAM_DEPOT_MAC."
                                     }
 
-                                    CiTools.steam(this, reports.toString(), args.STEAM_ID, depots, args.STEAM_BRANCH)
+                                    def steamCredentials = []
+                                    if (args.STEAM_CREDENTIALS != '') {
+                                        steamCredentials << usernamePassword(credentialsId: args.STEAM_CREDENTIALS, usernameVariable: 'STEAM_CREDENTIALS_USR', passwordVariable: 'STEAM_CREDENTIALS_PSW')
+                                    }
+                                    withCredentials(steamCredentials) {
+                                        CiTools.steam(this, reports.toString(), args.STEAM_ID, depots, args.STEAM_BRANCH)
+                                    }
                                 }
                             }
 
@@ -369,7 +369,13 @@ def call(Map args) {
                                     if (args.BUILD_FOR_ANDROID == '1') {
                                         uploads << [source: "${args.BUILD_NAME}-android.apk".toString(), target: "${args.ITCH_ID}:android".toString()]
                                     }
-                                    CiTools.itch(this, reports.toString(), uploads)
+                                    def itchCredentials = []
+                                    if (args.ITCH_CREDENTIALS != '') {
+                                        itchCredentials << string(credentialsId: args.ITCH_CREDENTIALS, variable: 'BUTLER_API_KEY')
+                                    }
+                                    withCredentials(itchCredentials) {
+                                        CiTools.itch(this, reports.toString(), uploads)
+                                    }
                                 }
                             }
                         }
