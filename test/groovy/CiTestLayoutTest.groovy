@@ -31,17 +31,28 @@ class CiTestLayoutTest {
         assertEquals('tests:linux', events.last())
     }
 
-    private static def pipeline(List events, Throwable linuxFailure) {
-        def script = new GroovyShell(new Binding([none: 'none', scm: 'scm'])).parse(new File('.jenkins/Jenkinsfile.groovy'))
+    @Test
+    void skipsWindowsBeforeAllocatingAnAgentWhenRequested() {
+        def events = []
+        def script = pipeline(events, null, true)
+        script.run()
+        assertEquals(1, events.count { it.startsWith('node:') })
+        assertEquals(true, events.contains('tests:linux'))
+        assertEquals(false, events.contains('tests:windows'))
+    }
+
+    private static def pipeline(List events, Throwable linuxFailure, boolean skipWindows = false) {
+        def script = new GroovyShell(new Binding([none: 'none', scm: 'scm', params: [SKIP_WINDOWS_VALIDATION: skipWindows]])).parse(new File('.jenkins/Jenkinsfile.groovy'))
         script.metaClass.readTrusted = { String path -> new File(path).getText('UTF-8') }
         script.metaClass.readProperties = { Map args ->
             def properties = new Properties()
             properties.load(new StringReader(args.text))
             properties.collectEntries { key, value -> [(key.toString()): value.toString()] }
         }
-        for (String method : ['pipeline', 'options', 'stages', 'steps', 'post', 'always', 'script', 'docker']) {
+        for (String method : ['pipeline', 'parameters', 'options', 'stages', 'steps', 'post', 'always', 'script', 'docker']) {
             script.metaClass."${method}" = { Closure body -> body() }
         }
+        script.metaClass.booleanParam = { Map ignored -> }
         script.metaClass.agent = { Object value -> if (value instanceof Closure) { value() } }
         for (String method : ['disableConcurrentBuilds', 'disableResume', 'disableRestartFromStage']) {
             script.metaClass."${method}" = { -> }
@@ -74,7 +85,7 @@ class CiTestLayoutTest {
             assertEquals('.jenkins/tests/integration.groovy', path)
             new Expando(call: { Map config, String platform ->
                 events << "tests:${platform}".toString()
-                if (platform == 'linux') {
+                if (platform == 'linux' && linuxFailure != null) {
                     throw linuxFailure
                 }
             })

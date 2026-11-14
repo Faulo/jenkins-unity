@@ -19,6 +19,8 @@ class LegacyDeploymentTest extends BasePipelineTest {
             new Expando(inside: { String arguments, Closure body -> containers << arguments; body() })
         }))
         helper.registerAllowedMethod('isUnix', []) { true }
+        helper.registerAllowedMethod('withEnv', [List, Closure]) { List ignored, Closure body -> body() }
+        helper.registerAllowedMethod('withUnityProjectEnvironment', [net.slothsoft.jenkins.unity.UnityProjectOptions, Closure]) { options, Closure body -> body() }
         helper.registerAllowedMethod('pwd', []) { '/workspace@tmp/reports' }
         helper.registerAllowedMethod('stage', [String, Closure]) { String ignored, Closure body -> body() }
         helper.registerAllowedMethod('dir', [String, Closure]) { String ignored, Closure body -> body() }

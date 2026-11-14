@@ -112,6 +112,7 @@ def call(Map config, String platform) {
         credentialFiles()
         packagePhases(config)
         projectPhases(config)
+        legacyProject(config)
     }
 }
 
@@ -322,6 +323,31 @@ def assertFixtureTest(String reportsDirectory) {
     dir(reportsDirectory) {
         if (!readFile('tests.xml').contains('name="ReturnsExpectedValue"')) {
             error 'Unity did not execute the expected integration fixture test.'
+        }
+    }
+}
+
+def legacyProject(Map config) {
+    stage('Legacy project runtime') {
+        withEnv(['BRANCH_NAME=integration']) {
+            unityProject(
+                LOCATION: config.projectFixture,
+                UNITY_CREDENTIALS: config.unityCredentials,
+                EMAIL_CREDENTIALS: config.emailCredentials,
+                AUTOVERSION: 'git',
+                TEST_UNITY: '1',
+                TEST_MODES: 'EditMode',
+                BUILD_FOR_LINUX: '1',
+                // Verify the callback runs in the sidecar without building a player.
+                BUILD_LINUX_CALL: { project, build, report ->
+                    assertValue(callComposer("exec unity-project-setting '${project}' productName").trim(),
+                        'Jenkins Unity Project Integration', 'Legacy project metadata in Unity environment')
+                    assertValue(callUnity('--help').contains('Usage'), true, 'Legacy callback can use native Unity')
+                    dir(build) { writeFile(file: 'fixture.txt', text: 'legacy build') }
+                    writeFile(file: report, text: "<testsuite name='legacy-build' tests='1'><testcase name='sidecar'/></testsuite>")
+                }
+            )
+            assertValue(currentBuild.currentResult, 'SUCCESS', 'Legacy lifecycle must complete successfully')
         }
     }
 }

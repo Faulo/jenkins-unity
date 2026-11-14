@@ -162,6 +162,8 @@ unityProject {
 #### Contract
 
 - Must run inside an allocated Jenkins workspace with `WORKSPACE` and `WORKSPACE_TMP` available.
+- Enters the configured `withUnity` sidecar for metadata, versioning, tests, builds, and custom build callbacks. Configure `JENKINS_UNITY_CONTAINER` or `JENKINS_UNITY_CONTAINER_LABEL` on the agent. Deployment still uses `faulo/ci-tools`.
+- Forwards Unity and email credential variables from older Jenkinsfile environment blocks as well as credentials selected by `UNITY_CREDENTIALS` and `EMAIL_CREDENTIALS`, preserving any existing `JENKINS_UNITY_ENV` entries.
 - Requires `BRANCH_NAME`. If it is empty and `PLASTICSCM_BRANCH` is present, the command copies that value to `BRANCH_NAME`.
 - Reads the Unity `productName` for the stage name. A failed lookup is ignored and uses `Unknown`.
 - Creates reports and build outputs below `WORKSPACE_TMP/<LOCATION>/reports`. Desktop and WebGL build directories are archived as ZIP files,
@@ -824,5 +826,7 @@ The CI test layout follows the neighboring Docker projects:
 - `.jenkins/tests/integration.groovy` contains the runtime assertions and package/project phase tests.
 
 CI runs the Maven/JUnit suite with Java 21 in a Maven container on `docker && linux`, then checks out and runs the integration suite once on `unity && linux` and once on `unity && windows`. An ordinary integration failure is recorded without skipping the other OS; interruptions still propagate. Each OS exercises report streaming and failure publication, environment files, node reuse, credential-file validation, and package/project solution, formatting, documentation, and Unity tests. A CI-tools smoke test nested within `withUnity` checks tool availability, shared paths, scoped environment, Steam build-file generation, and persistent Steam-volume reuse. Steam login, uploads, and notifications are not invoked.
+
+Set the job parameter `SKIP_WINDOWS_VALIDATION=true` when Windows agents are unavailable. This skips Windows integration before allocating an agent; the default still validates both platforms.
 
 Integration configuration uses `unity` for native operations and `composer` for the remaining utilities. The current library phase helpers still require a `withUnity` sidecar: empty `unityContainer` and `unityContainerLabel` settings inherit `JENKINS_UNITY_CONTAINER` or `JENKINS_UNITY_CONTAINER_LABEL` from the allocated agent. Supply a selector in the properties file if the infrastructure does not provide one. Workspaces and temporary paths must be shared with that container as described above.

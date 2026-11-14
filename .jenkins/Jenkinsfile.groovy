@@ -3,6 +3,10 @@ def testConfig = readProperties text: readTrusted('.jenkins/testProject.properti
 pipeline {
     agent none
 
+    parameters {
+        booleanParam(name: 'SKIP_WINDOWS_VALIDATION', defaultValue: false, description: 'Run integration tests without allocating Windows agents.')
+    }
+
     options {
         disableConcurrentBuilds()
         disableResume()
@@ -30,6 +34,9 @@ pipeline {
             steps {
                 script {
                     for (String platform : testConfig.integrationPlatforms.tokenize(' ')) {
+                        if (platform == 'windows' && params.SKIP_WINDOWS_VALIDATION) {
+                            continue
+                        }
                         stage(platform) {
                             node("${testConfig.integrationAgent} && ${platform}") {
                                 checkout scm

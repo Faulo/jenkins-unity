@@ -52,6 +52,8 @@ masking and never archive, stash, or publish credential files.
 
 ### Jenkins environment and validation
 
+SSH access to Jenkins is permitted for administration and release work authorized by the user.
+
 Prefer configured Jenkins integration over scraping HTML. Read-only build
 inspection is allowed when relevant. Triggering, replaying, stopping, or
 mutating builds requires explicit authorization. Local or standalone execution
@@ -144,6 +146,8 @@ unless the task explicitly permits a breaking change.
 `.editorconfig` is authoritative. Never edit `.editorconfig` unless expressly instructed by the user.
 
 ### Git
+
+Use trunk-based development on `main`; do not create feature branches unless explicitly requested.
 
 Git mutations are forbidden by default. Agents may use read-only inspection
 commands such as `git status`, `git log`, `git diff`, `git show`, `git blame`,

@@ -1,5 +1,6 @@
 import net.slothsoft.jenkins.unity.UnityReports
 import net.slothsoft.jenkins.unity.CiTools
+import net.slothsoft.jenkins.unity.UnityProjectOptions
 
 def call(Closure body) {
     def args = [:]
@@ -12,6 +13,23 @@ def call(Closure body) {
 }
 
 def call(Map args) {
+    def options = UnityProjectOptions.fromMap([
+        UNITY_CREDENTIALS: args.UNITY_CREDENTIALS ?: '',
+        EMAIL_CREDENTIALS: args.EMAIL_CREDENTIALS ?: ''
+    ])
+    // Older Jenkinsfiles bind these credentials in their environment block.
+    def environmentNames = ((env.JENKINS_UNITY_ENV ?: '').tokenize(':') + [
+        'UNITY_CREDENTIALS_USR', 'UNITY_CREDENTIALS_PSW',
+        'EMAIL_CREDENTIALS_USR', 'EMAIL_CREDENTIALS_PSW'
+    ]).unique()
+    withEnv(["JENKINS_UNITY_ENV=${environmentNames.join(':')}"]) {
+        withUnityProjectEnvironment(options) {
+            runProject(args)
+        }
+    }
+}
+
+private void runProject(Map args) {
     if (!env.BRANCH_NAME && env.PLASTICSCM_BRANCH) {
         env.BRANCH_NAME = env.PLASTICSCM_BRANCH
     }
@@ -165,7 +183,7 @@ def call(Map args) {
     if (getVersion) {
         try {
             if (setVersion) {
-                localVersion = callComposer "exec autoversion '${args.AUTOVERSION}' '$WORKSPACE'"
+                localVersion = callComposer "exec autoversion '${args.AUTOVERSION}' '${env.WORKSPACE}'"
                 if (args.AUTOVERSION_REVISION == '1') {
                     localVersion += "+${args.AUTOVERSION_REVISION_PREFIX}${env.BUILD_NUMBER}${args.AUTOVERSION_REVISION_SUFFIX}"
                 }
