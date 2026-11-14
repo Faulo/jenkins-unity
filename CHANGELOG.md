@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.2] - 2026-11-14
+
+### Fixed
+- Run the legacy `unityProject` lifecycle in the configured Unity sidecar, including metadata lookup, versioning, tests, and custom build callbacks. Forward Unity and email credentials supplied by existing Jenkinsfiles while retaining CI-tools deployment.
+- Pass the resolved Jenkins workspace to Git and Plastic autoversioning instead of a literal shell variable.
+
+### Added
+- Allow individual CI builds to skip Windows integration validation with `SKIP_WINDOWS_VALIDATION`, retaining both platforms by default.
+
 ## [5.2.1] - 2026-11-01
 
 ### Fixed
